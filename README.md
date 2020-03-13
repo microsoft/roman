@@ -1,7 +1,13 @@
 
 # RoMan  
+This Python library provides real-time control of a robotic manipulator.
+The supported hardware is:
+- Universal Robots UR5 arm 
+- Robotiq 2F/3F gripper
+- Robotiq FT 300 sensor
+- Takktile fingertip sensors
 
-This Python library provides real-time control of a robotic manipulator consisting of a UR5 arm and Robotiq gripper, with optional Robotiq FT 300 sensor and Takktile fingertips.
+The library is in active development and the APIs are still evolving. 
 
 # Contributing
 
