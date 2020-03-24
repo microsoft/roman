@@ -1,0 +1,109 @@
+################################################################
+## math.script
+## Implements various math functions
+################################################################
+def math():
+    def math_abs(a):
+        if a<0:
+            return -a
+        end
+        return a
+    end
+
+    def math_abs_vec6(a):
+        return [math_abs(a[0]), math_abs(a[1]),math_abs(a[2]),math_abs(a[3]),math_abs(a[4]),math_abs(a[5])]
+    end    
+
+    def math_sum_vec6(a):
+        return a[0] + a[1] + a[2] + a[3] + a[4] + a[5]
+    end  
+
+    def math_add_vec6(a, b):
+        return [a[0]+b[0],a[1]+b[1],a[2]+b[2],a[3]+b[3],a[4]+b[4],a[5]+b[5]]
+    end
+
+    def math_sub_vec6(a, b):
+        return [a[0]-b[0],a[1]-b[1],a[2]-b[2],a[3]-b[3],a[4]-b[4],a[5]-b[5]]
+    end    
+    
+    def math_scale_vec6(a, scalar):
+        return [a[0]*scalar,a[1]*scalar,a[2]*scalar,a[3]*scalar,a[4]*scalar,a[5]*scalar]
+    end
+
+    def math_dot_vec6(a, b):
+        return a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3] + a[4]*b[4] + a[5]*b[5]
+    end  
+
+    def math_gt_vec6(a, b):
+        return (a[0]>b[0]) and (a[1]>b[1]) and (a[2]>b[2]) and (a[3]>b[3]) and (a[4]>b[4]) and (a[5]>b[5])
+    end
+
+    def math_max_vec(v):
+        i=1
+        len = get_list_length(v)
+        max = v[0]
+        while i<len:
+            if v[i] > max:
+                max = v[i]
+            end
+            i = i + 1
+        end
+        return max
+    end
+
+    def math_equal_vec6(a, b):
+        return (a[0]==b[0]) and (a[1]==b[1]) and (a[2]==b[2]) and (a[3]==b[3]) and (a[4]==b[4]) and (a[5]==b[5])
+    end
+
+    def math_almost_zero_vec6(a, epsilon):
+        return (math_abs(a[0])<epsilon) and (math_abs(a[1])<epsilon) and (math_abs(a[2])<epsilon) and (math_abs(a[3])<epsilon) and (math_abs(a[4])<epsilon) and (math_abs(a[5])<epsilon)
+    end
+
+    def math_mul_vec(a, b):
+        v = 0
+        i=0
+        len = get_list_length(a)
+        while i<len:
+            v = v + a[i]*b[i]
+            i = i + 1
+        end
+        return v
+    end
+
+    def math_equal_vec(a,b):
+        i=0
+        lena = get_list_length(a)
+        lenb = get_list_length(b)
+        if lena != lenb:
+            return False
+        end
+        while i<lena:
+            if a[i]!=b[i]:
+                return False
+            end
+            i = i + 1
+        end
+        return True
+    end
+
+    def math_almost_equal_vec(a, b, epsilon_nom, epsilon_den, min_epsilon):
+        i=0
+        lena = get_list_length(a)
+        lenb = get_list_length(b)
+        if lena != lenb:
+            return False
+        end
+        while i<lena:
+            epsilon = math_abs(epsilon_nom[i])/epsilon_den
+            if epsilon < min_epsilon:
+                epsilon=min_epsilon
+            end
+
+            if math_abs(a[i]-b[i]) > epsilon:
+                return False
+            end
+            i = i + 1
+        end
+        return True
+    end
+end # math.script

@@ -1,0 +1,1 @@
+from robot.manipulator import *
