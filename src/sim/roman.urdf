@@ -1,0 +1,752 @@
+<?xml version="1.0" ?>
+
+<!-- =================================================================================== -->
+<!-- |    Combines UR5, Robotiq FT300 and Robotiq 3F Gripper                          |  -->
+<!-- =================================================================================== -->
+<!-- TODO: Replace with .xacro files.  -->
+<!-- 
+  References:
+https://github.com/ros-industrial/universal_robot/tree/kinetic-devel/ur_description/urdf
+https://github.com/ros-industrial/robotiq/tree/kinetic-devel/robotiq_ft_sensor
+https://github.com/ros-industrial/robotiq/tree/kinetic-devel/robotiq_3f_gripper_visualization
+https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
+-->
+<robot name="roman" xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- common stuff -->
+  
+  <!-- ur5 -->
+  <!-- Inertia parameters -->
+  <!-- This mass might be incorrect -->
+  <!-- Kinematic model -->
+  <!-- Properties from urcontrol.conf -->
+  <!--
+    DH for UR5:
+    a = [0.00000, -0.42500, -0.39225,  0.00000,  0.00000,  0.0000]
+    d = [0.089159,  0.00000,  0.00000,  0.10915,  0.09465,  0.0823]
+    alpha = [ 1.570796327, 0, 0, 1.570796327, -1.570796327, 0 ]
+    q_home_offset = [0, -1.570796327, 0, -1.570796327, 0, 0]
+    joint_direction = [-1, -1, 1, 1, 1, 1]
+    mass = [3.7000, 8.3930, 2.2750, 1.2190, 1.2190, 0.1879]
+    center_of_mass = [ [0, -0.02561, 0.00193], [0.2125, 0, 0.11336], [0.11993, 0.0, 0.0265], [0, -0.0018, 0.01634], [0, 0.0018,0.01634], [0, 0, -0.001159] ]
+  -->
+  <!-- Arbitrary offsets for shoulder/elbow joints -->
+  <!-- measured from model -->
+  <!-- measured from model -->
+  <!-- link lengths used in model -->
+  <!--property name="shoulder_height" value="0.089159" /-->
+  <!--property name="shoulder_offset" value="0.13585" /-->
+  <!-- shoulder_offset - elbow_offset + wrist_1_length = 0.10915 -->
+  <!--property name="upper_arm_length" value="0.42500" /-->
+  <!--property name="elbow_offset" value="0.1197" /-->
+  <!-- CAD measured -->
+  <!--property name="forearm_length" value="0.39225" /-->
+  <!--property name="wrist_1_length" value="0.093" /-->
+  <!-- CAD measured -->
+  <!--property name="wrist_2_length" value="0.09465" /-->
+  <!-- In CAD this distance is 0.930, but in the spec it is 0.09465 -->
+  <!--property name="wrist_3_length" value="0.0823" /-->
+  <!-- manually measured -->
+  <!-- manually measured -->
+  <!-- manually measured -->
+  <!-- manually measured -->
+  <!-- manually measured -->
+  <!-- arm -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://meshes/ur5/visual/base.dae"/>
+      </geometry>
+      <material name="LightGrey">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://meshes/ur5/collision/base.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="4.0"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <inertia ixx="0.00443333156" ixy="0.0" ixz="0.0" iyy="0.00443333156" iyz="0.0" izz="0.0072"/>
+    </inertial>
+  </link>
+  <joint name="shoulder_pan_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="shoulder_link"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.089159"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="150.0" lower="-6.2831853" upper="6.2831853" velocity="3.15"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <link name="shoulder_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://meshes/ur5/visual/shoulder.dae"/>
+      </geometry>
+      <material name="LightGrey">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://meshes/ur5/collision/shoulder.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="3.7"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <inertia ixx="0.010267495893" ixy="0.0" ixz="0.0" iyy="0.010267495893" iyz="0.0" izz="0.00666"/>
+    </inertial>
+  </link>
+  <joint name="shoulder_lift_joint" type="revolute">
+    <parent link="shoulder_link"/>
+    <child link="upper_arm_link"/>
+    <origin rpy="0.0 1.570796325 0.0" xyz="0.0 0.13585 0.0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="150.0" lower="-6.2831853" upper="6.2831853" velocity="3.15"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <link name="upper_arm_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://meshes/ur5/visual/upperarm.dae"/>
+      </geometry>
+      <material name="LightGrey">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://meshes/ur5/collision/upperarm.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="8.393"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.28"/>
+      <inertia ixx="0.22689067591" ixy="0.0" ixz="0.0" iyy="0.22689067591" iyz="0.0" izz="0.0151074"/>
+    </inertial>
+  </link>
+  <joint name="elbow_joint" type="revolute">
+    <parent link="upper_arm_link"/>
+    <child link="forearm_link"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 -0.1197 0.425"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="150.0" lower="-6.2831853" upper="6.2831853" velocity="3.15"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <link name="forearm_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://meshes/ur5/visual/forearm.dae"/>
+      </geometry>
+      <material name="LightGrey">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://meshes/ur5/collision/forearm.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.275"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.25"/>
+      <inertia ixx="0.049443313556" ixy="0.0" ixz="0.0" iyy="0.049443313556" iyz="0.0" izz="0.004095"/>
+    </inertial>
+  </link>
+  <joint name="wrist_1_joint" type="revolute">
+    <parent link="forearm_link"/>
+    <child link="wrist_1_link"/>
+    <origin rpy="0.0 1.570796325 0.0" xyz="0.0 0.0 0.39225"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="28.0" lower="-6.2831853" upper="6.2831853" velocity="3.2"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <link name="wrist_1_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://meshes/ur5/visual/wrist1.dae"/>
+      </geometry>
+      <material name="LightGrey">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://meshes/ur5/collision/wrist1.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.219"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <inertia ixx="0.111172755531" ixy="0.0" ixz="0.0" iyy="0.111172755531" iyz="0.0" izz="0.21942"/>
+    </inertial>
+  </link>
+  <joint name="wrist_2_joint" type="revolute">
+    <parent link="wrist_1_link"/>
+    <child link="wrist_2_link"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.093 0.0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="28.0" lower="-6.2831853" upper="6.2831853" velocity="3.2"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <link name="wrist_2_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://meshes/ur5/visual/wrist2.dae"/>
+      </geometry>
+      <material name="LightGrey">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://meshes/ur5/collision/wrist2.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.219"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <inertia ixx="0.111172755531" ixy="0.0" ixz="0.0" iyy="0.111172755531" iyz="0.0" izz="0.21942"/>
+    </inertial>
+  </link>
+  <joint name="wrist_3_joint" type="revolute">
+    <parent link="wrist_2_link"/>
+    <child link="wrist_3_link"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.09465"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="28.0" lower="-6.2831853" upper="6.2831853" velocity="3.2"/>
+    <dynamics damping="0.0" friction="0.0"/>
+  </joint>
+  <link name="wrist_3_link">
+    <visual>
+      <geometry>
+        <mesh filename="package://meshes/ur5/visual/wrist3.dae"/>
+      </geometry>
+      <material name="LightGrey">
+        <color rgba="0.7 0.7 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://meshes/ur5/collision/wrist3.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1879"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <inertia ixx="0.0171364731454" ixy="0.0" ixz="0.0" iyy="0.0171364731454" iyz="0.0" izz="0.033822"/>
+    </inertial>
+  </link>
+<!-- Robotiq FT300 -->
+  <!-- Handcrafted approximation-->
+  <!--TODO: include the mounting plate -->
+  <!--A more precise model available here: https://github.com/ros-industrial/robotiq/blob/kinetic-devel/robotiq_ft_sensor/urdf/robotiq_ft300.urdf.xacro -->
+  <joint name="ft_sensor_fixed_joint" type="fixed">
+    <parent link="wrist_3_link"/>
+    <child link="ft_sensor"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.1 0.0"/>
+  </joint>
+
+  <link name="ft_sensor">
+    <visual>
+      <geometry>
+        <cylinder radius="0.0375" length="0.0375"/>	
+      </geometry>
+      <origin rpy="1.570796326 0 0" xyz="0 0 0"/>
+      <material name="Blue">
+        <color rgba="0.0 0.0 0.7 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.0375" length="0.0375"/>		
+      </geometry>
+      <origin rpy="1.570796326 0 0" xyz="0 0 0"/>
+    </collision>
+    <inertial> 
+      <!-- http://wiki.ros.org/urdf/Tutorials/Adding%20Physical%20and%20Collision%20Properties%20to%20a%20URDF%20Model-->
+      <!--https://en.wikipedia.org/wiki/List_of_moments_of_inertia#List_of_3D_inertia_tensors-->
+      <mass value="0.3"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <inertia ixx="0.00014" ixy="0.0" ixz="0.0" iyy="0.00014" iyz="0.0" izz="0.00021"/> 
+    </inertial>
+  </link>
+<!-- END Robotiq FT300 -->
+
+<!-- Robotiq 3F Gripper -->
+  <joint name="gripper_fixed_joint" type="fixed">
+    <parent link="ft_sensor"/>
+    <child link="palm"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0575 0.0"/>
+  </joint>
+
+<!-- Copy/pasted from https://github.com/ros-industrial/robotiq/tree/kinetic-devel/robotiq_3f_gripper_visualization/meshes -->
+<link name="finger_1_link_0">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.020 0 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_0.DAE"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0414 0.036"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_0.STL"/>
+      </geometry>
+      <material name="yellow">
+        <color rgba="0 1 1 1"/>
+      </material>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="0.01" ixy="-0.00002" ixz="0.00001" iyy="0.0008" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <link name="finger_1_link_1">
+    <visual>
+      <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_1.DAE"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_1.STL"/>
+      </geometry>
+      <material name="yellow"/>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.15"/>
+      <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
+    </inertial>
+  </link>
+  <link name="finger_1_link_2">
+    <!--
+			NOTE: This link has an offset in the z-direction based on the models that were
+			used to generate grap-it poses.  With the offset below the model appears visually
+			correct, but it is suspect.
+			-->
+    <visual>
+      <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_2.DAE"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_2.STL"/>
+      </geometry>
+      <material name="yellow"/>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.15"/>
+      <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
+    </inertial>
+  </link>
+  <link name="finger_1_link_3">
+    <visual>
+      <origin rpy="0 0 0.52" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_3.DAE"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0.52" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_3.STL"/>
+      </geometry>
+      <material name="yellow"/>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="0.001239" ixy="-0.000251" ixz="0.000019" iyy="0.00085" iyz="0" izz="0.001632"/>
+    </inertial>
+  </link>
+  <joint name="finger_1_joint_1" type="revolute">
+    <parent link="finger_1_link_0"/>
+    <child link="finger_1_link_1"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 0" xyz="0.020 0 0"/>
+    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+  </joint>
+  <joint name="finger_1_joint_2" type="revolute">
+    <parent link="finger_1_link_1"/>
+    <child link="finger_1_link_2"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+  </joint>
+  <joint name="finger_1_joint_3" type="revolute">
+    <parent link="finger_1_link_2"/>
+    <child link="finger_1_link_3"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 0" xyz="0.039 0 0"/>
+    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+  </joint>
+  <link name="finger_2_link_0">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.020 0 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_0.DAE"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0414 0.036"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_0.STL"/>
+      </geometry>
+      <material name="yellow">
+        <color rgba="0 1 1 1"/>
+      </material>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="0.01" ixy="-0.00002" ixz="0.00001" iyy="0.0008" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <link name="finger_2_link_1">
+    <visual>
+      <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_1.DAE"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_1.STL"/>
+      </geometry>
+      <material name="yellow"/>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.15"/>
+      <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
+    </inertial>
+  </link>
+  <link name="finger_2_link_2">
+    <!--
+			NOTE: This link has an offset in the z-direction based on the models that were
+			used to generate grap-it poses.  With the offset below the model appears visually
+			correct, but it is suspect.
+			-->
+    <visual>
+      <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_2.DAE"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_2.STL"/>
+      </geometry>
+      <material name="yellow"/>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.15"/>
+      <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
+    </inertial>
+  </link>
+  <link name="finger_2_link_3">
+    <visual>
+      <origin rpy="0 0 0.52" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_3.DAE"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0.52" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_3.STL"/>
+      </geometry>
+      <material name="yellow"/>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="0.001239" ixy="-0.000251" ixz="0.000019" iyy="0.00085" iyz="0" izz="0.001632"/>
+    </inertial>
+  </link>
+  <joint name="finger_2_joint_1" type="revolute">
+    <parent link="finger_2_link_0"/>
+    <child link="finger_2_link_1"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 0" xyz="0.020 0 0"/>
+    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+  </joint>
+  <joint name="finger_2_joint_2" type="revolute">
+    <parent link="finger_2_link_1"/>
+    <child link="finger_2_link_2"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+  </joint>
+  <joint name="finger_2_joint_3" type="revolute">
+    <parent link="finger_2_link_2"/>
+    <child link="finger_2_link_3"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 0" xyz="0.039 0 0"/>
+    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+  </joint>
+  <link name="finger_middle_link_0">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.020 0 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_0.DAE"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0414 0.036"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_0.STL"/>
+      </geometry>
+      <material name="yellow">
+        <color rgba="0 1 1 1"/>
+      </material>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="0.01" ixy="-0.00002" ixz="0.00001" iyy="0.0008" iyz="0" izz="0.001"/>
+    </inertial>
+  </link>
+  <link name="finger_middle_link_1">
+    <visual>
+      <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_1.DAE"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_1.STL"/>
+      </geometry>
+      <material name="yellow"/>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.15"/>
+      <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
+    </inertial>
+  </link>
+  <link name="finger_middle_link_2">
+    <!--
+			NOTE: This link has an offset in the z-direction based on the models that were
+			used to generate grap-it poses.  With the offset below the model appears visually
+			correct, but it is suspect.
+			-->
+    <visual>
+      <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_2.DAE"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_2.STL"/>
+      </geometry>
+      <material name="yellow"/>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.15"/>
+      <inertia ixx="0.001859" ixy="-0.000376" ixz="0.000028" iyy="0.012756" iyz="0" izz="0.0024"/>
+    </inertial>
+  </link>
+  <link name="finger_middle_link_3">
+    <visual>
+      <origin rpy="0 0 0.52" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_3.DAE"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0.52" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_3.STL"/>
+      </geometry>
+      <material name="yellow"/>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="0.05"/>
+      <inertia ixx="0.001239" ixy="-0.000251" ixz="0.000019" iyy="0.00085" iyz="0" izz="0.001632"/>
+    </inertial>
+  </link>
+  <joint name="finger_middle_joint_1" type="revolute">
+    <parent link="finger_middle_link_0"/>
+    <child link="finger_middle_link_1"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 0" xyz="0.020 0 0"/>
+    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+  </joint>
+  <joint name="finger_middle_joint_2" type="revolute">
+    <parent link="finger_middle_link_1"/>
+    <child link="finger_middle_link_2"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
+    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+  </joint>
+  <joint name="finger_middle_joint_3" type="revolute">
+    <parent link="finger_middle_link_2"/>
+    <child link="finger_middle_link_3"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 0" xyz="0.039 0 0"/>
+    <limit effort="100" lower="0" upper="3.1416" velocity="100"/>
+  </joint>
+  <link name="palm">
+    <visual>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/palm.DAE"/>
+      </geometry>
+      <material name="green">
+        <color rgba="0 1 0 1"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://meshes/robotiq-3f-gripper/collision/palm.STL"/>
+      </geometry>
+      <material name="yellow">
+        <color rgba="0 1 1 1"/>
+      </material>
+    </collision>
+    <inertial>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <mass value="1.3"/>
+      <inertia ixx="0.006012" ixy="0.000079" ixz="-0.00024" iyy="0.012892" iyz="0" izz="0.002435"/>
+    </inertial>
+  </link>
+  <joint name="palm_finger_1_joint" type="revolute">
+    <parent link="palm"/>
+    <child link="finger_1_link_0"/>
+    <axis xyz="0 1 0"/>
+    <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0214 0.036"/>
+    <limit effort="100" lower="-0.16" upper="0.25" velocity="100"/>
+  </joint>
+  <joint name="palm_finger_2_joint" type="revolute">
+    <parent link="palm"/>
+    <child link="finger_2_link_0"/>
+    <axis xyz="0 1 0"/>
+    <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0214 -0.036"/>
+    <limit effort="100" lower="-0.25" upper="0.16" velocity="100"/>
+  </joint>
+  <joint name="palm_finger_middle_joint" type="fixed">
+    <parent link="palm"/>
+    <child link="finger_middle_link_0"/>
+    <axis xyz="0 0 1"/>
+    <origin rpy="0 0 1.57" xyz="0.0455 0.0214 0"/>
+  </joint>
+<!--END Robotiq 3F Gripper -->
+  <transmission name="shoulder_pan_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="shoulder_pan_joint">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="shoulder_pan_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="shoulder_lift_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="shoulder_lift_joint">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="shoulder_lift_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="elbow_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="elbow_joint">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="elbow_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="wrist_1_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wrist_1_joint">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wrist_1_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="wrist_2_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wrist_2_joint">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wrist_2_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="wrist_3_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wrist_3_joint">
+      <hardwareInterface>PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wrist_3_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <!-- nothing to do here at the moment -->
+  <!-- ROS base_link to UR 'Base' Coordinates transform -->
+  <link name="base"/>
+  <joint name="base_link-base_fixed_joint" type="fixed">
+    <!-- NOTE: this rotation is only needed as long as base_link itself is
+                 not corrected wrt the real robot (ie: rotated over 180
+                 degrees)
+      -->
+    <origin rpy="0 0 -3.14159265" xyz="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="base"/>
+  </joint>
+  <!-- Frame coincident with all-zeros TCP on UR controller -->
+  <link name="tool0"/>
+  <joint name="wrist_3_link-tool0_fixed_joint" type="fixed">
+    <origin rpy="-1.570796325 0 0" xyz="0 0.0823 0"/>
+    <parent link="wrist_3_link"/>
+    <child link="tool0"/>
+  </joint>
+  <link name="world"/>
+  <joint name="world_joint" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+  </joint>
+</robot>
+
