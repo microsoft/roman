@@ -283,11 +283,11 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
   </joint>
 
 <!-- Copy/pasted from https://github.com/ros-industrial/robotiq/tree/kinetic-devel/robotiq_3f_gripper_visualization/meshes -->
-<link name="finger_1_link_0">
+  <link name="finger_1_link_0">
     <visual>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_0.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_0.dae"/>
       </geometry>
       <material name="green">
         <color rgba="0 1 0 1"/>
@@ -312,7 +312,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <visual>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_1.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_1.dae"/>
       </geometry>
       <material name="green"/>
     </visual>
@@ -338,7 +338,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_2.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_2.dae"/>
       </geometry>
       <material name="green"/>
     </visual>
@@ -359,7 +359,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <visual>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_3.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_3.dae"/>
       </geometry>
       <material name="green"/>
     </visual>
@@ -401,7 +401,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <visual>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_0.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_0.dae"/>
       </geometry>
       <material name="green">
         <color rgba="0 1 0 1"/>
@@ -426,7 +426,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <visual>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_1.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_1.dae"/>
       </geometry>
       <material name="green"/>
     </visual>
@@ -452,7 +452,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_2.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_2.dae"/>
       </geometry>
       <material name="green"/>
     </visual>
@@ -473,7 +473,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <visual>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_3.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_3.dae"/>
       </geometry>
       <material name="green"/>
     </visual>
@@ -515,7 +515,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <visual>
       <origin rpy="0 0 0" xyz="0.020 0 0"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_0.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_0.dae"/>
       </geometry>
       <material name="green">
         <color rgba="0 1 0 1"/>
@@ -540,7 +540,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <visual>
       <origin rpy="0 0 -0.52" xyz="0.050 -.028 0"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_1.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_1.dae"/>
       </geometry>
       <material name="green"/>
     </visual>
@@ -566,7 +566,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <visual>
       <origin rpy="0 0 0" xyz="0.039 0 0.0075"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_2.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_2.dae"/>
       </geometry>
       <material name="green"/>
     </visual>
@@ -587,7 +587,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <visual>
       <origin rpy="0 0 0.52" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_3.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/link_3.dae"/>
       </geometry>
       <material name="green"/>
     </visual>
@@ -628,7 +628,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
   <link name="palm">
     <visual>
       <geometry>
-        <mesh filename="package://meshes/robotiq-3f-gripper/visual/palm.DAE"/>
+        <mesh filename="package://meshes/robotiq-3f-gripper/visual/palm.dae"/>
       </geometry>
       <material name="green">
         <color rgba="0 1 0 1"/>
