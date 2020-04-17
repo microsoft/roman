@@ -3,16 +3,14 @@
 ## Keeps track of the time elapsed since program start.
 ## The value is accessible through the global variable ur_time.
 ################################################################
-def timer():    
-    # global
-    ur_time = 0.0
-        
-    # start our timer thread
-    thread timer_thread_fn():
-        while True:
-            ur_time = ur_time + 0.008
-            sync()
-        end
+# global
+ur_time = 0.0
+    
+# start our timer thread
+thread timer_thread_fn():
+    while True:
+        ur_time = ur_time + 0.008
+        sync()
     end
-    timer_thread = run timer_thread_fn() 
-end # timer.script
+end
+timer_thread = run timer_thread_fn() 
