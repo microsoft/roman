@@ -13,6 +13,7 @@ import time
 from robot import utils
 import math
 from enum import Enum
+import os
 
 # known poses
 class KnownPose(object):
@@ -79,6 +80,12 @@ class UR5Arm(object):
     def __exit__(self,exc_type, exc_val, exc_tb):
         self.disconnect()
 
+    def generate_urscript(self):
+        constants = [f"COM_CLIENT_IP=\"{self.local_ip}\"", f"COM_CLIENT_PORT={self.local_port}"]
+        script_folder = os.path.join(os.path.dirname(__file__), 'urscripts')
+        script = utils.load_script(script_folder, "communication", defs=constants) 
+        return script
+
     def connect(self):
         # create and connect the real-time channel
         rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -86,8 +93,8 @@ class UR5Arm(object):
         print('Connected to robot.')
             
         # upload our script, which will attempt to connect back to us
-        script = utils.load_script("robot\\urscripts", "communication.script") 
-        utils.socket_send_retry(rt_socket, script.encode('ascii'))
+        script = self.generate_urscript().encode('ascii')
+        utils.socket_send_retry(rt_socket, script)
         print('Script uploaded.')
 
         # now create the control channel and accept the connection from the script now running on the robot

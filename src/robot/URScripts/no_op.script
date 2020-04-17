@@ -1,3 +1,7 @@
-def no_op():
-    sleep(0.0)
-end
+
+################################################################
+## no_op.script
+## Empty script used to stop and unload any running script, 
+## thus returning control to the pendant.
+################################################################
+sleep(0.0)

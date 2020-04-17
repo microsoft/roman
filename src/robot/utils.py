@@ -1,34 +1,37 @@
 ################################################################
-## robot.py
-## Works by loading a script onto the robot and communicating with it over sockets.
-## The script implements interruptable motion primitives and sends back state info from the hand and F/T sensor.
-## In this version, the arm state is part of the response and the RT interface is not used.
-## This simplifies staying in sync with the controller (or detecting when we are out of sync) 
+## utils.py
+## Implements UR script loading and reliable socket operations.
 ################################################################
 import socket
 import numpy as np
 import timeit
 import struct
 import time
+import os
 
 ################################################################
-## script loader
+## UR script loader
+## The top-level script is wrapped in a function (UR requirement).
+## Any definitions (e.g. constants) are added at the begining of main.
 ################################################################
-def load_script(dir, scriptfile, is_include=False, imports=[]):
+def load_script(dir, module, is_include=False, imports=[], defs = []):
     """Loads a .script file line by line, replacing import statements with the correspondig file, assumed to be in the same folder"""
-    script = ""
-    with open(dir + "\\" + scriptfile) as lines:
+    script = f"def {module}():\n" if not is_include else ""
+    for line in defs:
+        script += "\t" + line + "\n"
+         
+    filename = os.path.join(dir, f"{module}.script")
+    with open(filename) as lines:
         for line in lines:
-            if is_include and (line.startswith("def") or line.startswith("end")): # strip the top-level "def" or "end" in included file
-                #script += "#" + line 
-                continue
             if line.strip().startswith("import"):
                 line = line.strip()[7:]
                 if line not in imports:
-                    script += load_script(dir, line, True)
                     imports.append(line)
+                    script += load_script(dir, line, True, imports)
             else:
-                script += line
+                script += "\t" + line
+    if not is_include:
+        script += "\nend"
     return script
 
 ################################################################
