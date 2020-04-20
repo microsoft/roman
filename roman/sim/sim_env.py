@@ -8,13 +8,11 @@ import time
 import pybullet as p
 import pybullet_data
 import random
-import sim_arm
+from roman.sim import sim_arm
 
 
 class UR5Env(gym.Env):
-  def __init__(self,
-               urdfRoot=pybullet_data.getDataPath(),
-               show_gui=False):
+  def __init__(self, urdfRoot=pybullet_data.getDataPath(), show_gui=False):
                
     self._urdfRoot = urdfRoot
     self._timeStep = 1. / 240.
@@ -44,6 +42,9 @@ class UR5Env(gym.Env):
                                         dtype=np.uint8)
     self.viewer = None
 
+  def __del__(self):
+    p.disconnect()
+
   def reset(self):
     self.terminated = 0
     p.resetSimulation()
@@ -66,9 +67,6 @@ class UR5Env(gym.Env):
     p.stepSimulation()
     self._observation = self.getExtendedObservation()
     return np.array(self._observation)
-
-  def __del__(self):
-    p.disconnect()
 
   def seed(self, seed=None):
     self.np_random, seed = seeding.np_random(seed)
@@ -114,3 +112,14 @@ class UR5Env(gym.Env):
     done = self._envStepCounter > 1000
     reward = 0
     return np.array(self._observation), reward, done, {}
+
+  def render(self, mode='human'):
+    pass
+
+
+if __name__ == '__main__':
+    env = UR5Env(show_gui=True)
+    env.reset()
+    obs, reward, done, _ = env.step(env.action_space.sample())
+    while not done:
+      obs, reward, done, _ = env.step(env.action_space.sample())

@@ -2,8 +2,8 @@ import os
 import numpy
 import threading
 import time
-from robot.rq_gripper import Robotiq3FGripper, GraspMode, Finger
-from robot.ur_arm import UR5Arm
+from roman.robot.rq_gripper import Robotiq3FGripper, GraspMode, Finger
+from roman.robot.ur_arm import UR5Arm
 
 class Manipulator(object):
     '''

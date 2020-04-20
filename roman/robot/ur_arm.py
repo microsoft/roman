@@ -10,10 +10,12 @@ import numpy as np
 import timeit
 import struct
 import time
-from robot import utils
+
 import math
 from enum import Enum
 import os
+
+import roman.robot.utils
 
 # known poses
 class KnownPose(object):

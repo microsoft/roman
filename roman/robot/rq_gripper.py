@@ -7,9 +7,11 @@ import numpy as np
 import timeit
 import struct
 import time
-from robot import utils
-from enum import Enum
+
+import roman.robot.utils
 import random
+
+from enum import Enum
 
 class GraspMode(object):
     BASIC = 0

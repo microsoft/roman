@@ -7,6 +7,8 @@ import math
 class UR5Arm(object):
     def __init__(self):
         urdfFile = os.path.join(os.path.dirname(__file__), 'roman.urdf')
+        p.connect(p.DIRECT)
+
         self._uid = p.loadURDF(urdfFile)
         self._baseid = 1
         self._toolid = self._baseid + 5
