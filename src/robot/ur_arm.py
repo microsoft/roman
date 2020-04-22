@@ -80,10 +80,10 @@ class UR5Arm(object):
     def __exit__(self,exc_type, exc_val, exc_tb):
         self.disconnect()
 
-    def generate_urscript(self):
+    def __generate_urscript(self):
         constants = [f"COM_CLIENT_IP=\"{self.local_ip}\"", f"COM_CLIENT_PORT={self.local_port}"]
         script_folder = os.path.join(os.path.dirname(__file__), 'urscripts')
-        script = utils.load_script(script_folder, "communication", defs=constants) 
+        script = utils.load_script(script_folder, "main", defs=constants) 
         return script
 
     def connect(self):

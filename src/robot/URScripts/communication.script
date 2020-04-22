@@ -1,16 +1,11 @@
 import timer
 import sensor
-import arm
+import drive
 
 ################################################################
 ## communication.script
 ## Implements the communication protocol with a client (master) machine.
 ################################################################
-
-# make sure these are defined by the time the script is loaded using utils.load_script
-# or uncomment them below
-#COM_CLIENT_IP = "192.168.1.10"
-#COM_CLIENT_PORT = 50003
 
 # parse and execute a command
 def com_execute_cmd(cmd):
@@ -61,7 +56,7 @@ end
 # sends the response packet containing arm status
 def com_send_response(cmd_time):
     # ur_get_state needs to be called first, as it might take more than one cycle to complete
-    cmd_state = ur_get_state(cmd_time) # returns [cmd time, status, corrected force vec3]
+    s = ur_get_state(cmd_time) # returns [cmd time, status, corrected force vec3]
     q = get_actual_joint_positions()
     qd = get_actual_joint_speeds()
     tp = get_actual_tcp_pose()
@@ -92,40 +87,10 @@ def com_send_response(cmd_time):
                         f[0], f[1], f[2], f[3], f[4], f[5], 
                         ft[0], ft[1], ft[2], ft[3], ft[4], ft[5], 
                         a[0], a[1], a[2], 
-                        cmd_state[2], cmd_state[3],cmd_state[4], cmd_state[5], cmd_state[6],cmd_state[7],
-          cmd_state[0], # cmd time
-                        cmd_state[1]	 # status (-1 = force limited, 0 = done, 1 = moving)
+                        s[2], s[3], s[4], s[5], s[6],s[7], # external force 
+                        s[0], # cmd time
+                        s[1],  # state flags: bit 0: moving, bit 1: contact 
                         ], 
                         "ctrl")
 end
 
-popup("roman is active")
-
-# connect with the client
-com_connected = False
-while not com_connected:
-    com_connected = socket_open(COM_CLIENT_IP,COM_CLIENT_PORT,"ctrl")
-end
-
-# forever, read commands and write responses
-CMD_ENTRIES_COUNT = 22
-while True:    
-    cmd = socket_read_ascii_float(CMD_ENTRIES_COUNT, "ctrl") 
-    #acquire the critical section as early as possible, to preempt the drive thread. This ensures everything takes place in one timestep.
-    enter_critical
-    if CMD_ENTRIES_COUNT == cmd[0]:
-        #textmsg("received data ", ur_time)
-        cmd_time = com_execute_cmd(cmd)
-    end
-    exit_critical
-    if cmd[0] == 0:
-        continue
-    end
-    if CMD_ENTRIES_COUNT != cmd[0]:
-        textmsg("invalid request ", cmd)
-        break
-    end
-    com_send_response(cmd_time)
-    #textmsg("response sent ", cmd_time)
-end
-popup("script exited")

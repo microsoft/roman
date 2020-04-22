@@ -69,9 +69,6 @@ thread ft_read_fn():
     end
 end
 
-
-ft_read_thread = run ft_read_fn()
-
 def ft_debug():
     ft_set_zero()
     while True:

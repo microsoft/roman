@@ -4,69 +4,42 @@ import timer
 
 ################################################################
 ## arm.script
-## Implements the UR arm position controller
-## The function ur_drive() is the main entry point.
-## It allows changing the target (pose and speed) during the move without jerking the arm.
-## The ur_drive() function implements a deadman switch, so it needs to be called in a loop at 5Hz or more.
 ################################################################
 
-# constants
-UR_ZERO = [0.0,0.0,0.0,0.0,0.0,0.0]
-UR_ZEROP = p[0.0,0.0,0.0,0.0,0.0,0.0]
-UR_ROBOTIQ_MASS = 3.125 #kg
-
-# external parameters (passed from external callers to the drive thread)
-ur_stop_param = False
-ur_pos_target_param = get_actual_joint_positions()
-ur_speed_target_param = UR_ZERO
-ur_max_speed_param = 0.2
-ur_max_acc_param = 0.1
-ur_move_tool_linear_param = False
-ur_max_force_param = [20, 20, 20, 0.5, 0.5, 0.5] # arm stops and/or retracts when the external force is greater than this
-ur_cmd_time_param = 0.0
-
-# externally-visible state (passed from the drive thread back to external callers)
-ur_state = [0, 0, 0, 0, 0, 0, 0, 0] # cmd time, moving/stopped, external force vec3
-
-# internal parameters (passed from the drive thread to the command thread)
-ur_speed_cmd = UR_ZERO
-ur_pos_target = ur_pos_target_param   
-ur_speed_target = ur_speed_target_param
-ur_max_speed = ur_max_speed_param
-ur_max_acc = ur_max_acc_param
-ur_move_tool_linear = ur_move_tool_linear_param
-ur_cmd_time = ur_cmd_time_param
-
-# internal calibration
-ur_acc_bias = [0,0,0]
-ur_force_sensor_bias = [0, 0, 0, 0, 0, 0]
+# Computes the speed required to comply with the external force
+def ur_force_control(external_force):
+    return [0,0,0,0,0,0]
+end
 
 # generates a trapezoidal speed profile for one joint 
-def ur_speed_from_joint_position(current_pos, current_speed, target_pos, target_speed, acc):
+def ur_speed_from_joint_position(current_pos, current_speed, target_pos, max_speed, acc):
     distance = target_pos - current_pos
-    lim = 0.5*(target_speed*target_speed - current_speed*current_speed)/acc
-    if math_abs(distance)>math_abs(lim) + 0.001:
+    lim = -1
+    if (distance * current_speed) > 0: # is the joint rotating in the right direction?
+        lim = 0.5*current_speed*current_speed/acc
+    if math_abs(distance)>lim + 0.001:
         if distance<0: 
-            return -1.0
+            return -max_speed
         end
-        return 1.0
+        return max_speed
     end
     return 0.0
 end
 
-# Updates the state vector. Must be called from within a critical section.
-def ur_update_state(goal_reached, force_limit_reached, external_force, cmd_time):
-    # set the output state 
-    status = 1 #moving
-    if goal_reached: 
-        status = 0
-    elif force_limit_reached:
-        status = -1
-    end
-    #enter_critical
-    ur_state = [cmd_time, status, external_force[0], external_force[1], external_force[2], external_force[3], external_force[4], external_force[5]]
-    #exit_critical
+# generates a trapezoidal speed profile for each joint, independent of each other 
+def ur_position_control(target_position, max_speed, max_acc):
+    joint_positions = get_actual_joint_positions()
+    joint_speeds = get_actual_joint_speeds()
+    return [
+        ur_speed_from_joint_position(joint_positions[0], joint_speeds[0], target_position[0], max_speed, max_acc),
+        ur_speed_from_joint_position(joint_positions[1], joint_speeds[1], target_position[1], max_speed, max_acc),
+        ur_speed_from_joint_position(joint_positions[2], joint_speeds[2], target_position[2], max_speed, max_acc),
+        ur_speed_from_joint_position(joint_positions[3], joint_speeds[3], target_position[3], max_speed, max_acc),
+        ur_speed_from_joint_position(joint_positions[4], joint_speeds[4], target_position[4], max_speed, max_acc),
+        ur_speed_from_joint_position(joint_positions[5], joint_speeds[5], target_position[5], max_speed, max_acc)
+    ]
 end
+
 
 # rotates a force vector from tool coordinate system to base coordinate system
 def ur_rotate_from_tool_to_base(vec3):
@@ -86,12 +59,6 @@ def ur_rotate_from_base_to_tool(vec3):
     return [vec3_T[0], vec3_T[1], vec3_T[2]]
 end
 
-# returns the accelerometer reading in tool coordinates, corrected for bias and flipped axes 
-def ur_get_tool_accelerometer_reading():
-    a = get_tool_accelerometer_reading() 
-    return [a[1]+ ur_acc_bias[0], a[0]+ur_acc_bias[1], a[2]+ur_acc_bias[2]] # accelerometer x and y axes are reversed - UR bug
-end
-
 # returns the accelerometer reading in robot base coordinates, excluding gravity
 def ur_get_tcp_acceleration():
     a = ur_get_tool_accelerometer_reading()
@@ -99,24 +66,12 @@ def ur_get_tcp_acceleration():
     return [a_base[0], a_base[1], a_base[2]+9.8]
 end
 
-# returns the FT sensor reading in robot base coordinates, excluding the hand weight
+# returns the FT sensor reading in robot base coordinates, excluding the hand weight (assumes the FT sensor was pre-calibrated to account for the weight)
 def ur_get_tcp_sensor_force(critical_section_already_acquired = False):
     ft = ft_get(critical_section_already_acquired)
     ft_force = ur_rotate_from_tool_to_base([ft[0], ft[1], ft[2]])
     ft_torque = ur_rotate_from_tool_to_base([ft[3], ft[4], ft[5]])
     return [ft_force[0], ft_force[1], ft_force[2], ft_torque[0], ft_torque[1], ft_torque[2]]
-end
-
-# computes the external force based on a rolling average.
-def ur_get_external_force(can_recalibrate_forces):
-    ft = ur_get_tcp_sensor_force(True)
-    force = math_sub_vec6(ft, ur_force_sensor_bias)
-    # Updating the bias has to account for:
-    # 1. prolonged contact with pressure (e.g. detect contact and stop)
-    # 2. slow increase in pressure (e.g. pressing on a baloon) 
-    # Rather than attempting to infer these conditions, we let the caller be explicit about it through ur_calib()
-    
-    return force
 end
 
 # is the sample greater than the threshold?
@@ -141,280 +96,21 @@ def ur_calibrate_accelerometer():
     return [expected[0] - actual[0], expected[1] - actual[1], expected[2] - actual[2]]
 end
 
+# calibrate accelerometer once
+ur_acc_bias = ur_calibrate_accelerometer()
 
-# the one thread allowed to send direct drive commands to the arm
-thread ur_command_thread_fn():
-    #textmsg("executing ", ur_cmd_time)
-    # no critical section needed, since the globals used here are only changed by the drive thread after killing this thread
-    if ur_move_tool_linear:
-        # Move to goal position, linear in tool space
-        # The call doesn't return until the position is reached
-        # This is not interruptible. Killing the thread when executing movel will cause jerking motions.
-        movel(ur_pos_target, ur_max_acc, ur_max_speed)
-        return 0
-    end
-        
-    # Set the joint speed together with acceleration and time limits. 
-    # The call to speedj doesn't return until the speed is reached and the time elapsed. 
-    # To change (or maintain) the speed, kill and restart the thread. 
-    # Without any intervention, the move stops after 0.2 seconds or after the speed is reached, whichever is greatest.
-    speedj(ur_speed_cmd, ur_max_acc, 0.2)
-
-    # If we got here, it's either because the linear move ended, or because no-one updated the speed. Break.
-    stopj(2.0)
+# returns the accelerometer reading in tool coordinates, corrected for bias and flipped axes 
+def ur_get_tool_accelerometer_reading():
+    a = get_tool_accelerometer_reading() 
+    return [a[1]+ ur_acc_bias[0], a[0]+ur_acc_bias[1], a[2]+ur_acc_bias[2]] # accelerometer x and y axes are reversed - UR bug
 end
 
-def kill_reset_command(cmd_thread):
-    # kill the command thread and set the command thread params to their default values (good for stopping)
-    # since this is called by the drive thread, there's no need to use a critical section
-    kill cmd_thread
-    ur_move_tool_linear = False
-    ur_max_speed = 0
-    ur_max_acc = 0
-    ur_speed_cmd = UR_ZERO
+# verifies that the control loop runs fast enough. Depends on the timer module for ur_time.
+def ur_check_loop_delay(loop_time):
+    delay = ur_time - loop_time
+    if delay >= 0.016:
+        textmsg("drive loop delayed: ", delay)
+    end
+    return ur_time
 end
 
-# The control thread issuing drive commands based on target joint pose and final speed.
-# On every iteration of the infinite loop, check the external force constraints and stop the motion as needed.
-# In speed mode, also recalculates the target speed and kills/restarts the command thread.
-thread ur_drive_thread_fn():    
-    cmd_thread = run ur_command_thread_fn()
-
-    # one-time accelerometer calibration
-    ur_acc_bias = ur_calibrate_accelerometer()
-
-    # initialize variables
-    deadman_timer = 5
-    goal_reached = False
-    force_limit_reached = False
-    external_force = [0,0,0]
-    cmd_time = 0
-    pos_target = ur_pos_target
-    linear_motion_started = False
-    last_loop_time = ur_time
-
-    # run forever, checking forces and updating targets
-    while True:
-        loop_time = ur_time
-        delay = loop_time - last_loop_time
-        if delay >= 0.016 and deadman_timer != 0:
-            textmsg("drive loop delayed: ", delay)
-        end
-        last_loop_time = loop_time
-        old_pos_target = pos_target 
-        last_cmd_time = cmd_time
-        if not linear_motion_started:
-            #textmsg("killing cmd thread ", cmd_time)
-            # note that the kill call suspends the current thread (yields the remaining time), so the next statement executes after 8ms
-            kill_reset_command(cmd_thread)
-            #textmsg("cmd thread killed ", cmd_time)
-        end
-
-        #************************** start critical section *************
-        enter_critical 
-        
-        # collect the external parameters
-        stop = ur_stop_param
-        pos_target = ur_pos_target_param
-        speed_target = ur_speed_target_param
-        max_speed = ur_max_speed_param
-        max_acc = ur_max_acc_param
-        max_force = ur_max_force_param
-        move_tool_linear = ur_move_tool_linear_param
-        cmd_time = ur_cmd_time_param
-        #textmsg("processing ", cmd_time)
-
-        # update internal state
-        is_new_cmd = (last_cmd_time < cmd_time)
-        is_new_goal = not math_equal_vec(pos_target, old_pos_target)
-
-        # asses whether we reached the goal
-        current_pos = get_actual_joint_positions() 
-        goal_reached = (goal_reached and not is_new_goal) or math_almost_equal_vec(current_pos, pos_target, speed_target, 125, 0.005) #0.005 rad
-
-        # get the current joint speed
-        current_speed = get_actual_joint_speeds() 
-        is_stopped = math_almost_zero_vec6(current_speed, 0.02)
-        
-        # check contact forces
-        can_recalibrate_forces = is_stopped and not force_limit_reached
-        external_force = ur_get_external_force(can_recalibrate_forces)
-        force_limit_currently_reached = ur_force_limit_exceeded(external_force, max_force) 
-        force_limit_reached = force_limit_currently_reached or (force_limit_reached and not is_new_cmd)
-        
-        # publish state
-        ur_update_state(goal_reached, force_limit_reached, external_force, cmd_time)
-
-        exit_critical
-        #************************** end critical section *************
-
-        # check the FT constraints. 
-        #textmsg("Contact: ", external_force)
-        if force_limit_currently_reached:
-            textmsg("Contact detected: ", external_force)
-            deadman_timer = 0
-
-            if linear_motion_started:
-                linear_motion_started = False
-                kill_reset_command(cmd_thread)
-            end
-
-            stopj(2)
-            continue
-
-            # compute a goal away from the contact and move there with no further checks
-            #pose = get_actual_tcp_pose()
-            #pose = p[pose[0] + external_force[0]/1000, pose[1] + external_force[1]/1000, pose[2] + external_force[2]/1000, pose[3], pose[4], pose[5]]
-            #ur_pos_target = get_inverse_kin(pose)
-        end
-        
-
-        
-        # check the deadman switch
-        if stop:
-            deadman_timer = 1
-        elif is_new_cmd:
-            deadman_timer = 5
-        elif deadman_timer > 0:
-            deadman_timer = deadman_timer - 1
-        end
-        
-        if deadman_timer == 0:
-            sync()
-            continue
-        elif deadman_timer == 1:
-            if linear_motion_started:
-                linear_motion_started = False
-                kill_reset_command(cmd_thread)
-            end
-            # stop
-            textmsg("deadman stop!")
-            stopj(max_acc)
-            goal_reached = True
-            deadman_timer = 0
-            continue
-        end
-        
-        # linear motion?
-        if move_tool_linear:
-            if force_limit_currently_reached:
-                kill_reset_command(cmd_thread)
-            else:
-                linear_motion_started = linear_motion_started and not goal_reached # flip back to false once we reach the goal
-                if (not linear_motion_started) and (not goal_reached):
-                    # Move to goal position, linear in tool space. In this case, the motion thread cannot be interrupted (except to stop the motion).
-                    ur_move_tool_linear = True
-                    ur_pos_target = pos_target                    
-                    ur_max_speed = max_speed
-                    ur_max_acc = max_acc
-                    ur_cmd_time = cmd_time
-                    cmd_thread = run ur_command_thread_fn()  
-                    linear_motion_started = True
-                end
-            
-                sync()
-                continue
-            end
-        end
-
-        # if we got here, motion is in joint space. 
-        
-        # if we didn't reach the goal, compute the required speed, otherwise set to zero
-        if goal_reached:
-            ur_speed_cmd = speed_target
-        else: 
-            # update the current speed based on target position and speed
-            b = ur_speed_from_joint_position(current_pos[0], current_speed[0], pos_target[0], speed_target[0], max_acc) * max_speed
-            s = ur_speed_from_joint_position(current_pos[1], current_speed[1], pos_target[1], speed_target[1], max_acc) * max_speed
-            e = ur_speed_from_joint_position(current_pos[2], current_speed[2], pos_target[2], speed_target[2], max_acc) * max_speed
-            w1 = ur_speed_from_joint_position(current_pos[3], current_speed[3], pos_target[3], speed_target[3], max_acc) * max_speed
-            w2 = ur_speed_from_joint_position(current_pos[4], current_speed[4], pos_target[4], speed_target[4], max_acc) * max_speed
-            w3 = ur_speed_from_joint_position(current_pos[5], current_speed[5], pos_target[5], speed_target[5], max_acc) * max_speed
-            ur_speed_cmd = [b,s,e,w1,w2,w3]   
-        end
-        
-        # restart the command thread 
-        ur_max_speed = max_speed
-        ur_max_acc = max_acc
-        ur_move_tool_linear = False
-        ur_cmd_time = cmd_time
-
-        #textmsg("starting cmd thread ", cmd_time)
-        cmd_thread = run ur_command_thread_fn()  
-        #textmsg("cmd thread started", cmd_time)
-        #sync() # it seems that on this branch sync sometimes pushes it to two cycles
-    end
-end     
-
-# start the threads to initialize the vars to the proper type
-ur_drive_thread = run ur_drive_thread_fn()   
-
-# call this in a loop to move the arm to a (potentially changing) target pose and speed
-def ur_drive(cmd_time, pos, speed, max_speed, acc, is_tool_pose, movej, max_force):    
-    #textmsg("command received ", cmd_time)
-    if max_speed > 2:
-        max_speed=2
-    end
-    if acc > 2:
-        acc=2
-    end
-
-    if is_tool_pose:
-        tcp_target = p[pos[0], pos[1], pos[2], pos[3], pos[4], pos[5]]
-        pos = get_inverse_kin(tcp_target)
-        speed = UR_ZERO
-    end
-
-    #enter_critical
-    ur_stop_param = False
-    ur_pos_target_param = pos
-    ur_speed_target_param = speed
-    ur_max_speed_param = max_speed
-    ur_max_acc_param = acc
-    ur_max_force_param = max_force
-    ur_move_tool_linear_param = not movej
-    ur_cmd_time_param = cmd_time
-    #exit_critical
-    #textmsg("command scheduled ", cmd_time)
-end
-
-def ur_stop(cmd_time, acc = 1, immediate = False):
-    #enter_critical
-    ur_stop_param = True
-    ur_speed_target_param = UR_ZERO
-    ur_max_speed_param = 0
-    ur_max_acc_param = acc
-    if immediate:
-        # setting the max force to 0 will trigger an immediate stop 
-        ur_max_force_param = [0,0,0]
-    end
-    ur_move_tool_linear_param = False
-    ur_cmd_time_param = cmd_time
-    #exit_critical
-end
-
-def ur_get_state(cmd_time):
-    #textmsg("state requested ", cmd_time)
-    while True:
-        #enter_critical
-        state = ur_state
-        #exit_critical
-        if state[0] >= cmd_time:
-            # the command was executed and the current state reflects it
-            #textmsg("state obtained ", cmd_time)
-            break
-        end
-        sync()
-    end
-    return state
-end
-
-# Updates the FT  bias
-def ur_calib(cmd_time):
-    #enter_critical
-    force = [ur_state[2], ur_state[3], ur_state[4], ur_state[5], ur_state[6], ur_state[7]]
-    delta = math_scale_vec6(force, 0.1)
-    ur_force_sensor_bias = math_add_vec6(ur_force_sensor_bias, delta)
-    textmsg("recalibrated bias: ",ur_force_sensor_bias)
-    #exit_critical
-end

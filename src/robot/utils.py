@@ -18,7 +18,7 @@ def load_script(dir, module, is_include=False, imports=[], defs = []):
     """Loads a .script file line by line, replacing import statements with the correspondig file, assumed to be in the same folder"""
     script = f"def {module}():\n" if not is_include else ""
     for line in defs:
-        script += "\t" + line + "\n"
+        script += "    " + line + "\n"
          
     filename = os.path.join(dir, f"{module}.script")
     with open(filename) as lines:
@@ -29,7 +29,7 @@ def load_script(dir, module, is_include=False, imports=[], defs = []):
                     imports.append(line)
                     script += load_script(dir, line, True, imports)
             else:
-                script += "\t" + line
+                script += "    " + line
     if not is_include:
         script += "\nend"
     return script
