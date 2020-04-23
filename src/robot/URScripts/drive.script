@@ -20,35 +20,28 @@ UR_ZERO = [0.0,0.0,0.0,0.0,0.0,0.0]
 UR_ZEROP = p[0.0,0.0,0.0,0.0,0.0,0.0]
 UR_DEADMAN_SWITCH_LIMIT = 0.1 # seconds
 UR_DEFAULT_FORCE_LIMIT = [20.0, 20.0, 20.0, 2.0, 2.0, 2.0] # FT sensor absolute force limit
-UR_DEFAULT_JOINT_SPEED = 0.1
-UR_DEFAULT_JOINT_ACCELERATION = 0.1
 UR_FAST_STOP_ACCELERATION = 2.0
 UR_SPEED_ALMOST_ZERO = 0.02
 
 # cmd type enum
-UR_CMD_TYPE_SPEED = 0 # pure servo mode 
-UR_CMD_TYPE_POSITION = 1 # move towards a goal position, linear in joint space
-UR_CMD_TYPE_POSITION_WITH_LINEAR_MOTION = 2 # move towards a goal position, linear in tool space
+UR_CMD_TYPE_SPEED = 0 # accelerate to and maintain the specified speed 
+UR_CMD_TYPE_POSITION = 1 # move towards an absolute goal position, linear in joint space
 
 # external parameters (set by the ur_drive_xxx entrypoint fn and read by the drive thread)
 ur_cmd_param = UR_ZERO # can be either joint pose or joint speed
-ur_cmd_type_param = UR_CMD_TYPE_SPEED # the type of command to execute
 ur_max_speed_param = 0
 ur_max_acc_param = 0
 ur_expected_force_param = [0,0,0,0,0,0] # the force the FT sensor is expected to measure during the move, due to the move itself
 ur_max_force_param = UR_DEFAULT_FORCE_LIMIT # arm reacts when the external force exceeds this limit
+ur_cmd_type_param = UR_CMD_TYPE_SPEED # the type of command to execute
 ur_cmd_time_param = 0.0 # time of last command 
-ur_cmd_changed_time_param = 0.0 # the time when the command parameters last changed (the last time a new command was issued, as opposed to a repeating one)   
 
 # externally-visible state (passed from the drive thread back to external callers)
 ur_state = [0, 0, 0, 0, 0, 0, 0, 0] # cmd time, is_moving, is_contact, external force and torque (vec6)
 
-# internal parameters (set by the drive thread and read by the command thread)
-ur_cmd = UR_ZERO 
-ur_max_speed = 0
+# internal parameters (passed from the drive thread to the command thread)
+ur_speed_cmd = UR_ZERO
 ur_max_acc = 0
-ur_cmd_type = UR_CMD_TYPE_SPEED
-ur_is_new_goal = False
 
 ################################################################################################################################
 ## Entry points (functions called by the communication layer)
@@ -59,11 +52,6 @@ ur_is_new_goal = False
 def ur_drive(cmd_time, cmd_type, target, max_speed, max_acc, expected_force, max_force, is_tool_pose):    
     if is_tool_pose:
         target = get_inverse_kin(p[target[0], target[1], target[2], target[3], target[4], target[5]])
-    end
-
-    if (ur_cmd_type_param != cmd_type) or not math_equal_vec6(target, ur_cmd_param):
-        ur_cmd_changed_time_param = cmd_time
-        textmsg(ur_cmd_changed_time_param, cmd_type)
     end
 
     ur_cmd_param = target
@@ -85,51 +73,24 @@ def ur_get_state(cmd_time):
     return ur_state
 end
 
-
 ################################################################################################################################
-## Motion thread functions.
-## These functions are allowed to call UR motion primitives (speedj, movel, movej)
-## By calling blocking motion comamnds on a separate command thread, the main thread is free to check forces from the FT sensor
+## Motion thread function.
+## This function is allowed to call UR motion primitives (speedj)
+## By calling blocking motion commands on a separate command thread, the main thread is free to check forces from the FT sensor
 ## and interrupt the motion if needed, by killing the command thread.    
 ## Note that only speedj is trully interruptible (that is, it won't cause jerky motion).
 ################################################################################################################################
 # Joint speed command. Accelerates linearly in joint space to the given joint speeds. 
 # This is the default control mode, as it is smoothly interruptible.
 thread ur_speed_command_thread_fn():
-    # Set the joint speed together with max acceleration. 
-    # The call to speedj doesn't return until the speed is reached or the time elapsed. 
-    # To change the speed, kill and restart the thread. 
-    enter_critical 
-    cmd = ur_cmd
-    max_acc = ur_max_acc
-    exit_critical
-
-    textmsg("speedj ", ur_time)
-    speedj(cmd, max_acc, 0.008)
-end
-
-# Move to position, linear in joint-space or linear in tool-space, depending on ur_cmd_type
-thread ur_position_command_thread_fn():
-    enter_critical 
-    is_new_goal = ur_is_new_goal
-    cmd_type = ur_cmd_type
-    cmd = ur_cmd
-    max_speed = ur_max_speed
-    max_acc = ur_max_acc
-    exit_critical
-
-    # textmsg("stopj", ur_time)
-    # if is_new_goal:
-    #     stopj(UR_FAST_STOP_ACCELERATION)
-    # end
-
-    if cmd_type == UR_CMD_TYPE_POSITION:
-        textmsg("movej", ur_time)
-        movej(cmd, max_speed, max_acc)
-    else: # UR_CMD_TYPE_POSITION_WITH_LINEAR_MOTION
-        textmsg("movel", ur_time)
-        movel(cmd, max_speed, max_acc)
-    end
+  # Set the joint speed together with max acceleration. 
+  # Attention: the call to speedj doesn't return until the speed is reached AND the time elapsed. 
+  # To change the speed, kill and restart the thread. 
+  # Note: a critical section is not needed, since the globals used here are only changed by the drive thread after killing this thread
+  # Moreover, the speedj call needs to be the first instruction, otherwise the thread might be killed before the motion starts, 
+  # leading to "infinite loop detected" errors. 
+  # Adding a sync() call in the control thread would fix that, it would also make the control loop take 2 cycles instead of 1
+  speedj(ur_speed_cmd, ur_max_acc, 0.008)
 end
 
 ################################################################################################################################
@@ -137,49 +98,39 @@ end
 ################################################################################################################################
 # The control thread issuing drive commands based on target joint speeds
 # On every iteration of the infinite loop:
-# - kill the cmd thread
 # - check external forces
 # - update state (ur_state variable)
 # - ingest new command parameters (from ur_drive fn) 
 # - compute new target speed
-# - restart the cmd thread.
+# - execute speed command
 thread ur_drive_thread_fn():    
-    cmd_thread = run ur_speed_command_thread_fn()
-
-    # initialize variables
+    # initialize locals
     loop_time = 0
     cmd_time = 0
     is_contact = False
+    is_moving = False
     force_limit = UR_DEFAULT_FORCE_LIMIT
     force_expected = [0,0,0,0,0,0]
+    cmd_thread = run ur_speed_command_thread_fn()
     
     # run forever, checking forces and updating targets
     while True:
+        #textmsg("killing cmd thread ", cmd_time)
+        # note that the kill call suspends the current thread (yields the remaining time), so the next statement executes after 8ms
+        kill cmd_thread
+        #textmsg("cmd thread killed ", cmd_time)
+
         #************************** start critical section *************
         enter_critical 
-
         # verify we are not running behind
         loop_time = ur_check_loop_delay(loop_time) 
-       
-        # determine external forces and motion status (current cycle)
-        current_speed = get_actual_joint_speeds() 
-        is_moving = not math_almost_zero_vec6(current_speed, UR_SPEED_ALMOST_ZERO)
+
+        # determine external forces and motion status 
         ft = ur_get_tcp_sensor_force(True)
-        external_force = math_sub_vec6(ft, force_expected)
-        force_limit_reached = ur_force_limit_exceeded(external_force, force_limit) 
-       
-        # set local variables from external parameters
-        is_new_cmd = (ur_cmd_time_param > cmd_time)
-        ur_is_new_goal = (ur_cmd_changed_time_param > cmd_time)
-        cmd_age = ur_time - ur_cmd_time_param
-        ur_cmd = ur_cmd_param
-        ur_cmd_type = ur_cmd_type_param
-        ur_max_speed = ur_max_speed_param
-        ur_max_acc = ur_max_acc_param
-        force_limit = ur_max_force_param
-        force_expected = ur_expected_force_param
-        is_contact = force_limit_reached or (is_contact and not is_new_cmd)
-   
+        external_force = math_sub_vec6(ft, ur_expected_force_param)
+        force_limit_reached = ur_force_limit_exceeded(external_force, ur_max_force_param) 
+        is_contact = force_limit_reached or (is_contact and (ur_cmd_time_param == cmd_time)) # only flip is_contact back to false when we receive a new command 
+        
         # update state
         ur_state = [cmd_time, 0 + is_moving + 2*is_contact, external_force[0], external_force[1], external_force[2], external_force[3], external_force[4], external_force[5]]
         cmd_time = ur_cmd_time_param
@@ -187,36 +138,24 @@ thread ur_drive_thread_fn():
         # determine desired speed (next cycle)
         if force_limit_reached: 
             textmsg("Contact detected: ", external_force)
-            ur_cmd = UR_ZERO #ur_force_control(external_force)
+            ur_speed_cmd = ur_force_control(external_force)
             ur_max_acc = UR_FAST_STOP_ACCELERATION
-            ur_cmd_type = UR_CMD_TYPE_SPEED
-            ur_is_new_goal = True
-        elif cmd_age > UR_DEADMAN_SWITCH_LIMIT:
-            ur_cmd = UR_ZERO
+        elif (ur_time - ur_cmd_time_param) > UR_DEADMAN_SWITCH_LIMIT:
+            ur_speed_cmd = UR_ZERO
             ur_max_acc = UR_FAST_STOP_ACCELERATION
-            ur_cmd_type = UR_CMD_TYPE_SPEED
-            ur_is_new_goal = True
+        elif ur_cmd_type_param == UR_CMD_TYPE_SPEED:
+            ur_speed_cmd = ur_cmd_param
+            ur_max_acc = ur_max_acc_param
+        else: # UR_CMD_TYPE_POSITION
+            ur_speed_cmd = ur_position_control(ur_cmd_param, ur_max_speed_param, ur_max_acc_param)
+            ur_max_acc = ur_max_acc_param
         end
         exit_critical
         #************************** end critical section *************
-        if ur_cmd_type == UR_CMD_TYPE_SPEED:
-          textmsg("killing at ", ur_time)
-          kill cmd_thread
-          cmd_thread = run ur_speed_command_thread_fn()  
-        else:
-          if ur_is_new_goal:
-            kill cmd_thread
-            cmd_thread = run ur_position_command_thread_fn()  
-          else:
-            sync()
-          end
-        end
 
-        # Yield remaining time if we are still in the same time step.
-        # This can happen when kill above was either not executed or was a no-op because the command thread already finished.
-        # if loop_time == ur_time:
-        #   sync()
-        # end
+        # now we move
+        is_moving = (norm(ur_speed_cmd) > UR_SPEED_ALMOST_ZERO) or (norm(get_actual_joint_speeds()) > UR_SPEED_ALMOST_ZERO)
+        cmd_thread = run ur_speed_command_thread_fn()
     end
 end     
 

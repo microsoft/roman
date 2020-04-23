@@ -17,7 +17,7 @@ end
 # generates a trapezoidal speed profile for one joint 
 def ur_speed_from_joint_position(current_pos, current_speed, target_pos, max_speed, acc):
     distance = target_pos - current_pos
-    lim = -1
+    lim = 0
     if (distance * current_speed) > 0: # is the joint rotating in the right direction?
         lim = 0.5*current_speed*current_speed/acc
     end

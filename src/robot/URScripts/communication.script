@@ -43,8 +43,11 @@ def com_execute_cmd(cmd):
         cmd_type = UR_CMD_TYPE_POSITION
         is_tool_pose = True
     elif cmd_id == 4: #CMD_MOVE
-        cmd_type = UR_CMD_TYPE_POSITION_WITH_LINEAR_MOTION
+        cmd_type = UR_CMD_TYPE_POSITION
         is_tool_pose = True
+    elif cmd_id == 5: #CMD_SPEED
+        cmd_type = UR_CMD_TYPE_SPEED
+        is_tool_pose = False
     end
     target_pose = [cmd[3], cmd[4], cmd[5], cmd[6], cmd[7], cmd[8]]
     max_acc = cmd[9]
