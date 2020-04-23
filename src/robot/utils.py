@@ -31,7 +31,7 @@ def load_script(dir, module, is_include=False, imports=[], defs = []):
             else:
                 script += "    " + line
     if not is_include:
-        script += "\nend"
+        script += "\nend\n"
     return script
 
 ################################################################

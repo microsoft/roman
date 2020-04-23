@@ -1,11 +1,15 @@
 import timer
 import sensor
+import arm
 import drive
 
 ################################################################
 ## communication.script
 ## Implements the communication protocol with a client (master) machine.
 ################################################################
+
+# constants
+CMD_ENTRIES_COUNT = 22 # this is how many floats we expect with each command
 
 # parse and execute a command
 def com_execute_cmd(cmd):
@@ -14,49 +18,47 @@ def com_execute_cmd(cmd):
     # We expect a vector of 23 values (UR requires that the total must stay under 30)
     # The first value is the count,
     # the other 22 values depend on command:
-    #CMD_STOP/CMD_READ: last response time, cmd code
+    #CMD_READ: last response time, cmd code
     #CMD_MOVE/CMD_MOVEJ: last response time, cmd code, target pose (vec6), max speed, max acc, target speed (vec6), tcp force limits (vec6).
     #CMD_CONFIG: last response time, cmd code, payload (kg), tool center of gravity (vec3), tool tip (vec6), reset F/T sensor
-    #CMD_CALIB: last response time, cmd code, payload (kg), tool center of gravity (vec3), tool tip (vec6), reset F/T sensor
     cmd_time_prev = cmd[1] #last response time, cmd code
     cmd_id = cmd[2]
     
-    if cmd_id == 0: #CMD_STOP
-        ur_stop(cmd_time)
-        return cmd_time
-    end
-    if cmd_id == 1: #CMD_READ
-        return 0
-    end
-
-    if cmd_id == 10: #CMD_CONFIG
+    if cmd_id == 0: #CMD_CONFIG
         set_tcp(p[cmd[7], cmd[8], cmd[9], cmd[10], cmd[11], cmd[12]]) 
         set_payload(cmd[3], [cmd[4], cmd[5], cmd[6]])
         #ft_set_zero()
         return 0
     end
 
-    if cmd_id == 11: #CMD_CALIB
-        ur_calib(cmd_time)
+    if cmd_id == 1: #CMD_READ
         return 0
     end
 
     # the rest of the commands are move commands
-    is_tool_pose = (cmd_id == 3) or (cmd_id == 4) #CMD_MOVEP or CMD_MOVE
-    movej = (cmd_id == 2) or (cmd_id == 3) #CMD_MOVEJ or CMD_MOVEP
+    if cmd_id == 2: #CMD_MOVEJ
+        cmd_type = UR_CMD_TYPE_POSITION
+        is_tool_pose = False
+    elif cmd_id == 3: #CMD_MOVEP
+        cmd_type = UR_CMD_TYPE_POSITION
+        is_tool_pose = True
+    elif cmd_id == 4: #CMD_MOVE
+        cmd_type = UR_CMD_TYPE_POSITION_WITH_LINEAR_MOTION
+        is_tool_pose = True
+    end
     target_pose = [cmd[3], cmd[4], cmd[5], cmd[6], cmd[7], cmd[8]]
-    acc = cmd[9]
+    max_acc = cmd[9]
     max_speed = cmd[10]
-    max_force = [cmd[11], cmd[12], cmd[13], cmd[14], cmd[15], cmd[16]]
-    target_speed = [cmd[17], cmd[18], cmd[19], cmd[20], cmd[21], cmd[22]]
-    ur_drive(cmd_time, target_pose, target_speed, max_speed, acc, is_tool_pose, movej, max_force)
+    expected_force = [cmd[11], cmd[12], cmd[13], cmd[14], cmd[15], cmd[16]]
+    max_force = [cmd[17], cmd[18], cmd[19], cmd[20], cmd[21], cmd[22]]
+    ur_drive(cmd_time, cmd_type, target_pose, max_speed, max_acc, expected_force, max_force, is_tool_pose)
     return cmd_time
 end
 
 # sends the response packet containing arm status
 def com_send_response(cmd_time):
     # ur_get_state needs to be called first, as it might take more than one cycle to complete
-    s = ur_get_state(cmd_time) # returns [cmd time, status, corrected force vec3]
+    s = ur_get_state(cmd_time) # returns [cmd time, moving & contact, contact force vec6]
     q = get_actual_joint_positions()
     qd = get_actual_joint_speeds()
     tp = get_actual_tcp_pose()
@@ -89,7 +91,7 @@ def com_send_response(cmd_time):
                         a[0], a[1], a[2], 
                         s[2], s[3], s[4], s[5], s[6],s[7], # external force 
                         s[0], # cmd time
-                        s[1],  # state flags: bit 0: moving, bit 1: contact 
+                        s[1]  # state flags: bit 0: moving, bit 1: contact 
                         ], 
                         "ctrl")
 end

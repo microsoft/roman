@@ -14,42 +14,49 @@ import communication
 #COM_CLIENT_IP = "192.168.1.10"
 #COM_CLIENT_PORT = 50003
 
-popup("roman is active")
+def start():
+    popup("roman is active")
 
-# connect with the client
-__connected = False
-while not __connected:
-    __connected = socket_open(COM_CLIENT_IP,COM_CLIENT_PORT,"ctrl")
+    # connect with the client
+    connected = False
+    while not connected:
+        connected = socket_open(COM_CLIENT_IP, COM_CLIENT_PORT, "ctrl")
+    end
+
+    # calibrate the accelerometer once
+    ur_calibrate_accelerometer()
+
+    # start the timer thread
+    timer_thread = run timer_thread_fn() 
+
+    # start the FT sensor thread
+    ft_read_thread = run ft_read_fn()
+
+    # # start the drive thread
+    ur_drive_thread = run ur_drive_thread_fn()   
+
+    # forever, read commands and write responses    
+    while True:    
+        cmd = socket_read_ascii_float(CMD_ENTRIES_COUNT, "ctrl") 
+        #acquire the critical section as early as possible, to preempt the drive thread. This ensures everything takes place in one timestep.
+        enter_critical
+        if CMD_ENTRIES_COUNT == cmd[0]:
+            #textmsg("received data ", ur_time)
+            cmd_time = com_execute_cmd(cmd)
+        end
+        exit_critical
+        if cmd[0] == 0:
+            continue
+        end
+        if CMD_ENTRIES_COUNT != cmd[0]:
+            textmsg("invalid request ", cmd)
+            break
+        end
+        com_send_response(cmd_time)
+        #textmsg("response sent ", cmd_time)
+    end
+    popup("script exited")
 end
 
-# start the timer thread
-timer_thread = run timer_thread_fn() 
+start()
 
-# start the FT sensor thread
-ft_read_thread = run ft_read_fn()
-
-# start the drive thread
-ur_drive_thread = run ur_drive_thread_fn()   
-
-# forever, read commands and write responses
-CMD_ENTRIES_COUNT = 22
-while True:    
-    cmd = socket_read_ascii_float(CMD_ENTRIES_COUNT, "ctrl") 
-    #acquire the critical section as early as possible, to preempt the drive thread. This ensures everything takes place in one timestep.
-    enter_critical
-    if CMD_ENTRIES_COUNT == cmd[0]:
-        #textmsg("received data ", ur_time)
-        cmd_time = com_execute_cmd(cmd)
-    end
-    exit_critical
-    if cmd[0] == 0:
-        continue
-    end
-    if CMD_ENTRIES_COUNT != cmd[0]:
-        textmsg("invalid request ", cmd)
-        break
-    end
-    com_send_response(cmd_time)
-    #textmsg("response sent ", cmd_time)
-end
-popup("script exited")

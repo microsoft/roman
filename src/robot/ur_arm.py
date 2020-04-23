@@ -52,13 +52,11 @@ class UR5Arm(object):
     __VERSION = 1.0
 
     # messages
-    __CMD_STOP = 0
+    __CMD_CONFIG = 0
     __CMD_READ = 1
     __CMD_MOVEJ = 2
     __CMD_MOVEP = 3
     __CMD_MOVE = 4
-    __CMD_CONFIG = 10
-    __CMD_CALIB = 11
    
     def __init__(self, robot_ip=DEFAULT_ROBOT_IP, local_ip=DEFAULT_LOCAL_IP, local_port = LOCAL_PORT, file = None):
         self.robot_ip = robot_ip
@@ -93,7 +91,7 @@ class UR5Arm(object):
         print('Connected to robot.')
             
         # upload our script, which will attempt to connect back to us
-        script = self.generate_urscript().encode('ascii')
+        script = self.__generate_urscript().encode('ascii')
         utils.socket_send_retry(rt_socket, script)
         print('Script uploaded.')
 
@@ -118,7 +116,8 @@ class UR5Arm(object):
 
         rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         rt_socket.connect((self.robot_ip, self.__RT_PORT))
-        script = utils.load_script("robot\\urscripts", "no_op.script")
+        script_folder = os.path.join(os.path.dirname(__file__), 'urscripts')
+        script = utils.load_script(script_folder, "no_op")
         utils.socket_send_retry(rt_socket, script.encode('ascii'))
 
     def __update(self):
@@ -138,10 +137,8 @@ class UR5Arm(object):
         """Private. Encodes and sends the command to the robot. Must be followed by a call to __receive_state,
         cmd:
             __CMD_READ: cmd time, cmd code
-            __CMD_STOP: cmd time, cmd code, acceleration
             __CMD_MOVE/__CMD_MOVEJ/__CMD_MOVEP: cmd time, cmd code, target pose (vec6), acc, max speed, tcp force limits (vec3), tcp torque limits (vec3), target speed (vec6)
             __CMD_CONFIG: cmd time, cmd code, payload (kg), tool center of gravity (vec3), tool tip (vec3)
-            __CMD_CALIB: cmd time, cmd code
         """
         i = 0
         self.__raw_cmd[0]=ord('(')
@@ -197,110 +194,114 @@ class UR5Arm(object):
         return self.__state[0]
     def joint_positions(self): 
         '''The current actual joint angular position vector in rad : [Base, Shoulder, Elbow, Wrist1, Wrist2, Wrist3]'''
-        return self.__state[1:7]
+        return np.array(self.__state[1:7])
     def joint_speeds(self): 
         '''The current actual joint angular velocity vector in rad/s: [Base, Shoulder, Elbow, Wrist1, Wrist2, Wrist3]'''
-        return self.__state[7:13]
+        return np.array(self.__state[7:13])
     def tool_pose(self): 
         '''The current actual TCP vector : ([X, Y, Z, Rx, Ry, Rz])'''
-        return self.__state[13:19]
+        return np.array(self.__state[13:19])
     def tool_speed(self): 
         '''The current actual TCP velocity vector; ([X, Y, Z, Rx, Ry, Rz])'''
-        return self.__state[19:25]
+        return np.array(self.__state[19:25])
     def target_joint_positions(self): 
         '''The current target joint angular position vector in rad: [Base, Shoulder, Elbow, Wrist1, Wrist2, Wrist3]'''
-        return self.__state[25:31]
+        return np.array(self.__state[25:31])
     def target_joint_speeds(self): 
         '''The current target joint angular velocity vector in rad/s: [Base, Shoulder, Elbow, Wrist1, Wrist2, Wrist3]'''
-        return self.__state[31:37]
+        return np.array(self.__state[31:37])
     def target_tool_pose(self): 
         '''The current target TCP vector; ([X, Y, Z, Rx, Ry, Rz])'''
-        return self.__state[37:43]
+        return np.array(self.__state[37:43])
     def target_tool_speed(self): 
         '''The TCP speed. The ﬁrst three values are the cartesian speeds along x,y,z, and the last three deﬁne the current rotation axis, rx,ry,rz, and the length|rz,ry,rz|deﬁnes the angular velocity in radians/s'''
-        return self.__state[43:49]
+        return np.array(self.__state[43:49])
     def tool_force(self):
        '''Returns the wrench (Force/Torque vector) at the TCP.
         The external wrench is computed based on the error between the joint torques required to stay on the trajectory and the expected joint torques. 
         The function returns ”p[Fx (N), Fy(N), Fz(N), TRx (Nm), TRy (Nm), TRz (Nm)]”,
         where Fx, Fy, and Fx are the forces in the axes of the robot base coordinate system measured in Newtons, and TRx, TRy, and TRz are the torques around these axes measyred in Newton times Meters. '''
-       return self.__state[49:55]
+       return np.array(self.__state[49:55])
     def joint_torques(self): 
         '''The torque on the joints, corrected by the torque needed to move the robot itself (gravity, friction, etc.), returned as a vector of length 6.'''
-        return self.__state[55:61]
+        return np.array(self.__state[55:61])
     def sensor_force(self): 
         '''The forces and moments reported by the Force/Torque sensor mounted on the wrist'''
-        return self.__state[61:67]
+        return np.array(self.__state[61:67])
     def tool_acceleration(self): 
         '''The accelerometer reading'''
-        return self.__state[67:70] 
+        return np.array(self.__state[67:70])
     def external_force(self): 
         '''The forces reported by the Force/Torque sensor mounted on the wrist, corrected by the accelerometer readings'''
-        return self.__state[70:76] 
+        return np.array(self.__state[70:76])
     def cmd_time(self): 
         '''The time of the last drive command, in robot time'''
         return self.__state[76]
     def cmd_state(self): 
-        '''The status of the last command'''
+        '''
+        The status of the last command. 
+        Bit 1 set indicates the arm is moving, bit 2 set indicates the arm is experiencing a force greater than the current threshold.
+        '''
         return self.__state[77]
 
 ################################################################
 ## commands
 ################################################################
-    def async_move(self, pose, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE):
+    def async_move(self, pose, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE, expected_force = [0,0,0,0,0,0]):
         '''Start moving to tool pose, linear in tool space. The function needs to be called in a tight loop, otherwise the motion stops as a security measure.'''
         self.__cmd[1] = self.__CMD_MOVE
         self.__cmd[2:8] = pose
         self.__cmd[8]=acc
         self.__cmd[9]=max_speed
-        self.__cmd[10:16]=max_force
-        self.__cmd[16:]=0
+        self.__cmd[10:16]=expected_force
+        self.__cmd[16:22]=max_force
+
         self.__update()
         return self.cmd_state()
 
-    def move(self, pose, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE, stop_condition = None):
+    def move(self, pose, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE, expected_force = [0,0,0,0,0,0], stop_condition = None):
         '''Moves to tool pose, linear in tool space. By default, stops when the pose is reached or an external force is detected.'''
         done = False
         while not done:
-            self.async_move(pose, acc, max_speed, max_force)
+            self.async_move(pose, acc, max_speed, max_force, expected_force)
             done =  self.cmd_state() == 0 if stop_condition is None else stop_condition(self)
         return self.cmd_state()
 
-    def async_movej(self, position, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE):
+    def async_movej(self, position, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE, expected_force = [0,0,0,0,0,0]):
         '''Start moving to joint position, linear in joint-space. The function needs to be called in a tight loop, otherwise the motion stops as a security measure.'''
         self.__cmd[1] = self.__CMD_MOVEJ
         self.__cmd[2:8] = position
         self.__cmd[8]=acc
         self.__cmd[9]=max_speed
-        self.__cmd[10:16]=max_force
-        self.__cmd[16:]=0
+        self.__cmd[10:16]=expected_force
+        self.__cmd[16:22]=max_force
         self.__update()
         return self.cmd_state()
 
-    def movej(self, position, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE, stop_condition = None):
+    def movej(self, position, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE, expected_force = [0,0,0,0,0,0], stop_condition = None):
         '''Moves to joint position, linear in joint-space. By default, stops when the pose is reached or an external force is detected.'''
         done = False
         while not done:
-            self.async_movej(position, acc, max_speed, max_force)
+            self.async_movej(position, acc, max_speed, max_force, expected_force)
             done =  self.cmd_state() == 0 if stop_condition is None else stop_condition(self)
         return self.cmd_state()
 
-    def async_movep(self, pose, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE):
+    def async_movep(self, pose, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE, expected_force = [0,0,0,0,0,0]):
         '''Start moving to tool pose, linear in joint-space. The function needs to be called in a tight loop, otherwise the motion stops as a security measure.'''
         self.__cmd[1] = self.__CMD_MOVEP
         self.__cmd[2:8] = pose
         self.__cmd[8]=acc
         self.__cmd[9]=max_speed
-        self.__cmd[10:16]=max_force
-        self.__cmd[16:]=0
+        self.__cmd[10:16]=expected_force
+        self.__cmd[16:22]=max_force
         self.__update()
         return self.cmd_state()
 
-    def movep(self, pose, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE, stop_condition = None):
+    def movep(self, pose, acc = DEFAULT_ACCELERATION, max_speed = DEFAULT_MAX_SPEED, max_force = DEFAULT_MAX_FORCE, expected_force = [0,0,0,0,0,0], stop_condition = None):
         '''Moves to tool pose, linear in joint-space. By default, stops when the pose is reached or an external force is detected.'''
         done = False
         while not done:
-            self.async_movep(pose, acc, max_speed, max_force)
+            self.async_movep(pose, acc, max_speed, max_force, expected_force)
             done =  self.cmd_state() == 0 if stop_condition is None else stop_condition(self)
         return self.cmd_state()
 
@@ -309,24 +310,14 @@ class UR5Arm(object):
         self.__cmd[1] =self.__CMD_READ
         self.__cmd[2:]=0
         self.__update()
-        
-    def recalibrate(self):
-        '''Allows the robot to recalibrate the force sensing.'''
-        self.__cmd[1] =self.__CMD_CALIB
-        self.__cmd[2:]=0
-        self.__update()
     
     def async_stop(self, acc = 1):
         '''Stops the current motion.'''
-        self.__cmd[1] =self.__CMD_STOP
-        self.__cmd[2]=acc
-        self.__cmd[3:]=0
-        self.__update()
+        raise NotImplementedError()
 
     def stop(self, acc = 1):
         '''Stops the current motion and waits for the motion to complete.'''
-        while self.cmd_state() != 0:
-            self.async_stop(acc)
+        raise NotImplementedError()
 
     # needs work
     # The FT sensor is internally calibrated to account for the 3.2kg hand payload (using robotiq_FT_sensor_demo.exe or the UR script)
@@ -339,7 +330,6 @@ class UR5Arm(object):
         self.__cmd[6:12] = tcp
         self.__cmd[12:]= 0
         self.__update()
-        raise Exception("NYI")
 
     def touch(self, pose, force = [3.0, 3.0, 3.0, 0.5, 0.5, 0.5]):
         ''' 
