@@ -8,7 +8,7 @@
             "name": "sim_env",
             "type": "python",
             "request": "launch",
-            "cwd": "${workspaceFolder}\\src\\sim",
+            "cwd": "${workspaceFolder}\\roman\\sim",
             "program": "sim_env.py",
             "console": "integratedTerminal"
         }        
@@ -16,7 +16,7 @@
             "name": "sim_test",
             "type": "python",
             "request": "launch",
-            "cwd": "${workspaceFolder}\\src\\sim",
+            "cwd": "${workspaceFolder}\\roman\\sim",
             "program": "sim_test.py",
             "console": "integratedTerminal"
         }
