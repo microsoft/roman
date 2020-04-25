@@ -12,15 +12,15 @@ from roman.sim import sim_arm
 
 
 class UR5Env(gym.Env):
-  def __init__(self, urdfRoot=pybullet_data.getDataPath(), show_gui=False):
+  def __init__(self, urdfRoot=pybullet_data.getDataPath(), show_gui=False, width=224, height=224):
                
     self._urdfRoot = urdfRoot
     self._timeStep = 1. / 240.
     self._observation = []
     self._envStepCounter = 0
     self._renders = show_gui
-    self._width = 224
-    self._height = 224
+    self._width = width
+    self._height = height
     self.terminated = 0
     if self._renders:
       p.connect(p.GUI)
