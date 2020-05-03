@@ -2,12 +2,13 @@
 ## utils.py
 ## Implements UR script loading and reliable socket operations.
 ################################################################
-import socket
-import numpy as np
-import timeit
-import struct
-import time
 import os
+import socket
+import struct
+import timeit
+import time
+
+import numpy as np
 
 ################################################################
 ## UR script loader

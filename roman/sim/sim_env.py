@@ -1,19 +1,29 @@
 import os
 import math
+import time
+
 import gym
 from gym import spaces
 from gym.utils import seeding
 import numpy as np
-import time
 import pybullet as p
 import pybullet_data
 import random
-from roman.sim import sim_arm
+
+import sim_arm
 
 
 class UR5Env(gym.Env):
-  def __init__(self, urdfRoot=pybullet_data.getDataPath(), show_gui=False, width=224, height=224):
-               
+  @staticmethod
+  def get_observation_space(height=224, width=224):
+    return spaces.Box(low=0, high=255, shape=(height, width, 4), dtype=np.uint8)   
+
+  @staticmethod
+  def get_action_space(act_bound=1, act_dim=3):
+    action_high = np.array([act_bound] * act_dim)
+    return spaces.Box(-action_high, action_high, dtype=np.float32)
+
+  def __init__(self, urdfRoot=pybullet_data.getDataPath(), show_gui=False, height=224, width=224, action_bound=1, action_dim=3):
     self._urdfRoot = urdfRoot
     self._timeStep = 1. / 240.
     self._observation = []
@@ -22,6 +32,7 @@ class UR5Env(gym.Env):
     self._width = width
     self._height = height
     self.terminated = 0
+
     if self._renders:
       p.connect(p.GUI)
       p.resetDebugVisualizerCamera(1.3, 180, -41, [0.52, -0.2, -0.33])
@@ -32,14 +43,8 @@ class UR5Env(gym.Env):
     self.reset()
     observationDim = len(self.getExtendedObservation())
     
-    action_dim = 3
-    self._action_bound = 1
-    action_high = np.array([self._action_bound] * action_dim)
-    self.action_space = spaces.Box(-action_high, action_high, dtype=np.float32)
-    self.observation_space = spaces.Box(low=0,
-                                        high=255,
-                                        shape=(self._height, self._width, 4),
-                                        dtype=np.uint8)
+    self.action_space = UR5Env.get_action_space(act_bound=action_bound, act_dim=action_dim)
+    self.observation_space = UR5Env.get_observation_space(height=self._height, width=self._width)
     self.viewer = None
 
   def __del__(self):

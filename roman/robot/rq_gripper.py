@@ -8,10 +8,11 @@ import timeit
 import struct
 import time
 
-import roman.robot.utils
 import random
 
 from enum import Enum
+import utils
+
 
 class GraspMode(object):
     BASIC = 0

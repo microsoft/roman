@@ -4,10 +4,12 @@
 ## Does not need a script running on the robot and can be used with the pendant.
 ################################################################
 import socket
-import numpy as np
-import timeit
 import struct
+import timeit
 import time
+
+import numpy as np
+
 
 RT_PORT = 30003 # real-time UR interface (RT)
 RT_PACKET_SIZE = 812

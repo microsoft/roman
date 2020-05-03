@@ -5,17 +5,18 @@
 ## In this version, the arm state is part of the response and the RT interface is not used.
 ## This simplifies staying in sync with the controller (or detecting when we are out of sync) 
 ################################################################
+import os
+import math
+
 import socket
-import numpy as np
-import timeit
 import struct
+import timeit
 import time
 
-import math
 from enum import Enum
-import os
+import numpy as np
 
-import roman.robot.utils
+import utils
 
 # known poses
 class KnownPose(object):
