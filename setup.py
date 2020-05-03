@@ -11,7 +11,7 @@ with open('requirements.txt') as req_file:
 
 setuptools.setup(
     name="msr-roman",
-    version="0.2",
+    version="0.3",
     author = "The Microsoft Research Robotics Team",
     author_email="msrobotics@microsoft.com",
     url = "https://github.com/microsoft/roman",
