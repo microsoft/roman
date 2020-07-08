@@ -1,26 +1,24 @@
-import timer
-import sensor
-import arm
-import drive
-import communication
+from constants import *
+from sensor import *
+from urlib import *
+from drive import *
+from interface import *
 
 ################################################################
-## main.script
+## main.py
 ## Starts the background threads and runs the communication loop.
 ################################################################
 
-# make sure these constants are defined by the time the script is loaded using utils.load_script
-# or uncomment them below
-#COM_CLIENT_IP = "192.168.1.10"
-#COM_CLIENT_PORT = 50003
-
+# Main loop.
+# Reads commands from the com channel and executes them.
+# Sends back a response for each command received. 
 def start():
     popup("roman is active")
 
     # connect with the client
     connected = False
     while not connected:
-        connected = socket_open(COM_CLIENT_IP, COM_CLIENT_PORT, "ctrl")
+        connected = socket_open(UR_CLIENT_IP, UR_CLIENT_PORT, "ctrl")
     end
 
     # calibrate the accelerometer once
@@ -40,9 +38,11 @@ def start():
         cmd = socket_read_ascii_float(CMD_ENTRIES_COUNT, "ctrl") 
         #acquire the critical section as early as possible, to preempt the drive thread. This ensures everything takes place in one timestep.
         enter_critical
+        # We expect a vector of UR_CMD_ENTRIES_COUNT+1=31 values (UR requires that the total must stay under 30)
+        # The first value is the count, followed by command code
         if CMD_ENTRIES_COUNT == cmd[0]:
-            #textmsg("received data ", ur_time)
-            cmd_time = com_execute_cmd(cmd)
+            #textmsg("received data ", ur_time)      
+            response = execute_arm_command(cmd, 1) 
         end
         exit_critical
         if cmd[0] == 0:
@@ -52,7 +52,12 @@ def start():
             textmsg("invalid request ", cmd)
             break
         end
-        com_send_response(cmd_time)
+
+        # Note: the response below has been generated before the drive command was actually executed, 
+        # and thus the returned state does not reflect the command. 
+        # However, the response time and command time fields should properly reflect the discrepancy (cmd time < response time)
+        # To get the result of the command, the client can send a READ request immediately after sending the command.
+        socket_send_string(response, , "ctrl")
         #textmsg("response sent ", cmd_time)
     end
     popup("script exited")

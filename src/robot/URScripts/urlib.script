@@ -1,0 +1,119 @@
+from math import *
+from sensor import *
+
+################################################################
+## arm.script
+## Contains all UR-specific functions. 
+################################################################
+
+################################################################
+## Time-related functionality
+################################################################
+
+# The timer thread that keeps track of the time elapsed since program start
+# The thread needs to be started explicitly.
+ur_time = 0.0
+thread timer_thread_fn():
+    while True:
+        ur_time = ur_time + 0.008
+        sync()
+    end
+end
+
+# returns the time since program start
+def ur_get_time():
+  return ur_time
+end
+
+################################################################
+## Coordinate transforms and kinematics
+################################################################
+# rotates a force vector from tool coordinate system to base coordinate system
+def ur_rotate_from_tool_to_base(vec3):
+    vec3_T = p[ vec3[0], vec3[1], vec3[2], 0, 0, 0 ]
+    tcp = get_actual_tcp_pose()
+    rotation = p[ 0, 0, 0, tcp[3], tcp[4], tcp[5] ]
+    vec3_B = pose_trans(rotation, vec3_T )
+    return [vec3_B[0], vec3_B[1], vec3_B[2]]
+end
+
+# rotates a force vector from base coordinate system to tool coordinate system
+def ur_rotate_from_base_to_tool(vec3):
+    vec3_B = p[ vec3[0], vec3[1], vec3[2], 0, 0, 0 ]
+    tcp = get_actual_tcp_pose()
+    rotation = p[ 0, 0, 0, -tcp[3], -tcp[4], -tcp[5] ]
+    vec3_T = pose_trans(rotation, vec3_B )
+    return [vec3_T[0], vec3_T[1], vec3_T[2]]
+end
+
+# transforms a vector into a pose vector
+def ur_pose(v):
+    return p[v[0], v[1], v[2], v[3], v[4], v[5]]
+end
+
+
+################################################################
+## Accelerometer functions
+################################################################
+# determine accelerometer bias (assumes arm is stopped)
+ur_acc_bias = [0,0,0]
+def ur_calibrate_accelerometer():
+  i = 0
+  actual = [0,0,0]
+  while i < 125:
+      acc = get_tool_accelerometer_reading() 
+      actual = [actual[0] + acc[1], actual[1] + acc[0], actual[2] + acc[2]] # accelerometer x and y axes are reversed - UR bug
+      i = i+1
+      sync()
+  end
+  actual = [actual[0]/i, actual[1]/i, actual[2]/i]
+  expected = ur_rotate_from_base_to_tool([0,0,-9.8])
+  ur_acc_bias = [expected[0] - actual[0], expected[1] - actual[1], expected[2] - actual[2]]
+end
+
+# returns the accelerometer reading in tool coordinates, corrected for bias and flipped axes 
+def ur_get_tool_accelerometer_reading():
+    a = get_tool_accelerometer_reading() 
+    return [a[1]+ ur_acc_bias[0], a[0]+ur_acc_bias[1], a[2]+ur_acc_bias[2]] # accelerometer x and y axes are reversed - UR bug
+end
+
+# returns the accelerometer reading in robot base coordinates, excluding gravity
+def ur_get_tcp_acceleration():
+    a = ur_get_tool_accelerometer_reading()
+    a_base = ur_rotate_from_tool_to_base(a) 
+    return [a_base[0], a_base[1], a_base[2]+9.8]
+end
+
+
+################################################################
+## Force/Torque sensor functions
+################################################################
+# Returns the FT sensor reading in robot base coordinates, excluding the hand weight 
+# Assumes the FT sensor was pre-calibrated to account for the weight.
+def ur_get_tcp_sensor_force(critical_section_already_acquired = False):
+    ft = ft_get(critical_section_already_acquired)
+    ft_force = ur_rotate_from_tool_to_base([ft[0], ft[1], ft[2]])
+    ft_torque = ur_rotate_from_tool_to_base([ft[3], ft[4], ft[5]])
+    return [ft_force[0], ft_force[1], ft_force[2], ft_torque[0], ft_torque[1], ft_torque[2]]
+end
+
+# is the current force greater than the threshold?
+def ur_force_limit_exceeded(low_bound, high_bound):
+    ft = ur_get_tcp_sensor_force(True)
+    exceeded =  
+        (low_bound[0] > ft[0]) or 
+        (low_bound[1] > ft[1]) or 
+        (low_bound[2] > ft[2]) or 
+        (low_bound[3] > ft[3]) or 
+        (low_bound[4] > ft[4]) or 
+        (low_bound[5] > ft[5]) or 
+        (high_bound[0] < ft[0]) or 
+        (high_bound[1] < ft[1]) or 
+        (high_bound[2] < ft[2]) or 
+        (high_bound[3] < ft[3]) or 
+        (high_bound[4] < ft[4]) or 
+        (high_bound[5] < ft[5])
+
+    return exceeded
+end
+

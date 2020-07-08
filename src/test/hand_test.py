@@ -17,4 +17,10 @@ def basic_com_test():
     hand.close()
     hand.disconnect()
 
-basic_com_test()
+   
+def run():
+    basic_com_test()
+   
+#env_test()
+if __name__ == '__main__':
+    run()

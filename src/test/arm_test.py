@@ -10,6 +10,10 @@ os.sys.path.insert(0, rootdir)
 print(rootdir)
 import robot
 
+def vec_test():
+    p = robot.tool_vec(0,0,0,0,0,0)
+    print(p)
+
 def start_arm():
     arm = robot.UR5Arm()
     arm.connect()
@@ -45,7 +49,20 @@ def move_test():
         print(i)
     arm.disconnect()
 
-#start_arm()
-#basic_com_test()
-#move_to_ready_test()
-move_test()
+def sim_arm():
+    arm = robot.SimArm()
+    print(arm.joint_positions())
+    print(arm.joint_speeds())
+    arm.connect()
+
+def run():
+    start_arm()
+    basic_com_test()
+    move_to_ready_test()
+    move_test()
+    vec_test()
+    sim_arm()
+   
+#env_test()
+if __name__ == '__main__':
+    run()

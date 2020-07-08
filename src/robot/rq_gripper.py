@@ -137,6 +137,7 @@ class Robotiq3FGripper(object):
     def is_ready(self): return self.__read_registers[0] & 0x31 == 0x31 and not self.is_inconsistent()
     def is_faulted(self): return self.__read_registers[2] != 0
     def is_moving(self): return self.__read_registers[0] & 0xC8 == 0x08  
+    def is_done(self): return self.is_ready() and not self.is_moving()
     def object_detected(self): return self.is_ready() and self.__read_registers[1] != 0xFF
     def finger_status(self, finger): pass #TBD
     def mode(self): return self.__read_registers[0] & 0xF9
@@ -235,7 +236,7 @@ class Robotiq3FGripper(object):
         self.move(0, speed, 0)
 
     def ready_wait(self):
-        while not self.is_ready() or self.is_moving():
+        while not self.is_done():
             time.sleep(0.01)
             self.read()
 

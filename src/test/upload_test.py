@@ -9,11 +9,10 @@ rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
 print(rootdir)
 
-import robot
+from robot.ur_connection import *
 
 def generate_script():
-    arm = robot.UR5Arm()
-    script = arm._UR5Arm__generate_urscript()
+    script = URConnection()._URConnection__generate_urscript()
     # outF = open("complete.script", "w")
     # outF.writelines(script)
     # outF.close()
@@ -43,7 +42,11 @@ def test_script():
     rt_socket.close()
 
 
-# run the tests
-#generate_script()
-validate_script_syntax()
-
+def run():
+    # run the tests
+    generate_script()
+    #validate_script_syntax()
+   
+#env_test()
+if __name__ == '__main__':
+    run()

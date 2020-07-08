@@ -2,50 +2,45 @@ import os
 import numpy
 import threading
 import time
+from multiprocessing import Process, Pipe
 from robot.rq_gripper import Robotiq3FGripper, GraspMode, Finger
-from robot.ur_arm import UR5Arm
+from robot.types import *
+import robot.manipulation_server
 
 class Manipulator(object):
+    STOP_CMD = Command()
+    READ_CMD = Command.make_read_cmd()
     '''
-    Unifies the arm, hand and sensors into a single entity that supports synchronous commands.
-    Logs all arm/hand/sensor states while executing a command (including wait) if configured with a log file.
- 
+    Combines the manipulator components (arm, hand, FT and tactile sensors).
     '''
-    def __init__(self, hand_ip='192.168.1.11'):
-        self.arm = None
-        self.hand = None
+    def __init__(self):
+        self.arm_state = State()
 
-    def connect(self):
-        '''Initializes the arm and gripper'''
-        self.arm = UR5Arm()
-        self.arm.connect()
-        self.hand = Robotiq3FGripper()
-        self.hand.connect()
-        self.hand.close()
-        self.sleep(0.5) # arm FT calibration
+    def connect(self, arm_config={}, hand_config={}):
+        self.__server, client = Pipe(duplex=True)
+        self.__process = Process(target=robot.manipulation_server.server_loop, args=(client, arm_config, hand_config))
+        self.__process.start()
 
     def disconnect(self):
-        '''Disconnects the arm and gripper.'''
-        self.arm.stop(0.5)
-        self.arm.disconnect()
-        self.arm = None
-        self.hand.disconnect()
-        self.hand = None
+        self.__process.terminate()
 
-    def sleep(self, duration, recalibrate = True):
-        '''
-        Sleeps for the specified duration (in seconds), optionally allowing the manipulator to recalibrate its FT sensor.
-        Should be used instead of time.sleep() because it continues to log the manipulator state
-        '''
-        end = time.time() + duration
-        if recalibrate:
-            while time.time() < end:
-                self.arm.recalibrate()
-        else:
-            while time.time() < end:
-                self.arm.read()
+    def execute(self, cmd):
+        self.__server.send_bytes(cmd.array)
+        self.__server.recv_bytes_into(self.arm_state.array)
 
-    
+    def stop(self):
+        self.execute(STOP_CMD)
+
+    def read(self):
+        self.execute(READ_CMD)
+
+    def move_simple(self, dx, dy, dz, dyaw, gripper_state):
+        '''
+        Moves the arm relative to the current position in carthesian coordinates, 
+        assuming the gripper is vertical (aligned with the z-axis), pointing down.
+        This supports the simplest Gym robotic manipulation environment.
+        '''
+        pass
 
 def connect():
     m = Manipulator()

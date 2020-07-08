@@ -239,6 +239,33 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
       <inertia ixx="0.0171364731454" ixy="0.0" ixz="0.0" iyy="0.0171364731454" iyz="0.0" izz="0.033822"/>
     </inertial>
   </link>
+  <joint name="tcp_fixed_joint" type="fixed">
+    <parent link="wrist_3_link"/>
+    <child link="tcp_link"/>
+    <origin rpy="0.0 0.0 1.57079632679" xyz="0.0 0.215 0.0"/>
+  </joint>
+  <link name="tcp_link">
+    <!-- <visual>
+      <geometry>
+        <box size="0.01 0.01 0.01"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="Red">
+        <color rgba="1.0 0 0 1.0"/>
+      </material>
+    </visual> -->
+    <collision>
+      <geometry>
+        <box size="0.01 0.01 0.01"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="-0.01 0 0"/> <!-- inertia origin -1 to account for the size of the cube-->
+    </collision>
+    <inertial>
+      <mass value="0"/>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <inertia ixx="1" ixy="0.0" ixz="0.0" iyy="1" iyz="0.0" izz="1"/>
+    </inertial>
+  </link>
 <!-- Robotiq FT300 -->
   <!-- Handcrafted approximation-->
   <!--TODO: include the mounting plate -->
@@ -279,7 +306,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
   <joint name="gripper_fixed_joint" type="fixed">
     <parent link="ft_sensor"/>
     <child link="palm"/>
-    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0575 0.0"/>
+    <origin rpy="0.0 3.1415 0.0" xyz="0.0 0.0575 0.0"/>
   </joint>
 
 <!-- Copy/pasted from https://github.com/ros-industrial/robotiq/tree/kinetic-devel/robotiq_3f_gripper_visualization/meshes -->
