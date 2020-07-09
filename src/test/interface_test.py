@@ -11,12 +11,7 @@ from robot.types import *
 
 urscripts = os.path.join(rootdir, "URScripts")
 os.sys.path.insert(0, urscripts)
-from robot.URScripts.constants import *
-import robot.URScripts.urlib as urlib
-import robot.URScripts.drive as drive
 
-#setattr(urlib, "get_actual_joint_positions", lambda: np.ones(6))
-#setattr(drive, "ur_drive", lambda: print("drive"))
 from robot.URScripts.interface import *
 
 def get_arm_state_test():
@@ -34,5 +29,10 @@ def execute_arm_command_test():
     #print(state)
     print("Passed.")
 
-get_arm_state_test()
-execute_arm_command_test()
+def run():
+    get_arm_state_test()
+    execute_arm_command_test()
+
+#env_test()
+if __name__ == '__main__':
+    run()

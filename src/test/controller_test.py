@@ -6,9 +6,16 @@ import random
 import os
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
-from robot.connection import *
 from robot.controllers import *
 from robot.types import *
+
+class Connection(object):
+    def connect(self):
+        pass
+    def disconnect(self):
+        pass
+    def send(self, cmd, state):
+        pass
 
 def chain_test():
     print(f"Running {__file__}::{chain_test.__name__}()")

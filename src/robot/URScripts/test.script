@@ -1,0 +1,28 @@
+
+################################################################
+## test.script
+## Used to verify that the other scripts are syntactically valid,
+## by loading them and connecting back to the client to confirm.
+## Use upload_test.py to upload it.
+################################################################
+# If upload_test.py is hanging, comment out the import lines below 
+# one by one (starting from the bottom) to find the which script
+# file has a syntax error, then remove blocks from the file to 
+# determine the function/block/line of the error
+from math import *
+from constants import *
+from sensor import *
+from urlib import *
+from control import *
+from drive import *
+from interface import *
+from communication import *
+
+textmsg("test started")
+connected = False
+while not connected:
+    connected = socket_open(UR_CLIENT_IP, UR_CLIENT_PORT, "ctrl")
+end
+textmsg("test completed")
+
+

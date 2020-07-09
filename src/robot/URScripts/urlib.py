@@ -18,7 +18,7 @@ def norm(vec6):
     ''' Norm function as defined by urscript'''
     return np.linalg.norm(vec6)
 
-def get_inverse_kinematics(pose):
+def get_inverse_kin(pose):
     '''Calculates the joint angles that corespond to the specified tool pose.'''
     joints = pb.calculateInverseKinematics(SIM_BODY_ID, SIM_TCP_ID, pose[0:3], pb.getQuaternionFromEuler(pose[3:6]))
     return joints[:6]

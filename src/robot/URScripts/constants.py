@@ -72,15 +72,15 @@ UR_DEADMAN_SWITCH_LIMIT = 0.1 # seconds
 
 UR_DEFAULT_FORCE_LOW_BOUND = [-20.0, -20.0, -20.0, -2.0, -2.0, -2.0] 
 UR_DEFAULT_FORCE_HI_BOUND = [20.0, 20.0, 20.0, 2.0, 2.0, 2.0]
-UR_DEFAULT_ACCELERATION = 0.5 # rad/s2
+UR_DEFAULT_ACCELERATION = 0.1 # rad/s2
 UR_FAST_STOP_ACCELERATION = 2.0 # rad/s2
-UR_DEFAULT_MAX_SPEED = 2  # rad/s
+UR_DEFAULT_MAX_SPEED = 0.1  # rad/s
 
 
 # interface / protocol
 UR_RT_PORT = 30003 # real-time UR interface (RT)
-UR_ROBOT_IP = '192.168.1.2'
-UR_DEFAULT_CLIENT_IP = '192.168.1.10'
+UR_ROBOT_IP = "192.168.1.2"
+UR_DEFAULT_CLIENT_IP = "192.168.1.10"
 UR_DEFAULT_CLIENT_PORT = 50003
 
 # these need to be defined outside, e.g. through the defs parameter of utils.load_script()

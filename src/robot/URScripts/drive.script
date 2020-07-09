@@ -15,7 +15,7 @@ ur_cmd_contact_handling = 0
 ur_cmd_target_position = UR_ZERO
 ur_cmd_max_speed = 0
 
-ur_drive(time, id, kind, target_speed, max_acceleration, force_low_bound, force_high_bound, contact_handling, target_position, max_speed):
+def ur_drive(time, id, kind, target_speed, max_acceleration, force_low_bound, force_high_bound, contact_handling, target_position, max_speed):
     # the actual work is done on separate drive and motion threads, below
     ur_cmd_time = time
     ur_cmd_id = id
@@ -51,7 +51,7 @@ thread ur_speed_command_thread_fn():
     # Moreover, the speedj call needs to be the first instruction, otherwise the thread might be killed before the motion starts, 
     # leading to "infinite loop detected" errors. 
     # Adding a sync() call in the control thread would fix that, it would also make the control loop take 2 cycles instead of 1
-    speedj(ur_target_speed, ur_max_acc)
+    speedj(ur_target_speed, ur_max_acc, 0.008)
 end
 
 ################################################################################################################################
@@ -59,7 +59,9 @@ end
 ################################################################################################################################
 thread ur_drive_thread_fn():    
     # run forever, checking forces and updating targets
+    cmd_thread = run ur_speed_command_thread_fn()
     while True:
+        kill cmd_thread
         enter_critical 
         ur_target_speed = ur_get_target_speed(  ur_cmd_time,
                                                 ur_cmd_id,
@@ -71,14 +73,13 @@ thread ur_drive_thread_fn():
                                                 ur_cmd_contact_handling,
                                                 ur_cmd_target_position,
                                                 ur_cmd_max_speed)
-        ur_max_acc = global_cmd_max_acceleration
+        ur_max_acc = ur_cmd_max_acceleration
         exit_critical
 
         # Trigger the move, by starting and then killing the move thread. The move still executes for the current time step.
         # Note that the call below suspends the current thread (killing the motion thread yields the remaining time), 
         # so this loop resumes only after 8ms
         cmd_thread = run ur_speed_command_thread_fn()
-        kill cmd_thread
-    end
+        end
 end     
 

@@ -8,7 +8,7 @@ import time
 import pybullet as pb
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
-from robot.connection import *
+from robot.sim_connection import *
 from robot.controllers import *
 from robot.types import *
 from robot.simenv import SimEnvironment
