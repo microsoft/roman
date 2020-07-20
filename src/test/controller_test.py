@@ -6,8 +6,8 @@ import random
 import os
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
-from robot.controllers import *
-from robot.types import *
+from roman.arm.controllers import *
+from roman.arm.types import *
 
 class Connection(object):
     def connect(self):

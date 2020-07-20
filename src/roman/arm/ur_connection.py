@@ -10,14 +10,13 @@ import numpy as np
 import timeit
 import struct
 import time
-from robot import utils
 import math
 from enum import Enum
 import os
-from robot.types import *
-script_folder = os.path.join(os.path.dirname(__file__), 'urscripts')
-os.sys.path.insert(0, script_folder)
-from constants import *
+from ..common import *
+from .loader import *
+from .types import *
+from .URScripts.constants import *
 
 ################################################################
 ## Real robot implementation
@@ -34,8 +33,8 @@ class URConnection(object):
 
     def __generate_urscript(self):
         constants = [f"UR_CLIENT_IP=\"{self.local_ip}\"", f"UR_CLIENT_PORT={self.local_port}"]
-        
-        script = utils.load_script(script_folder, "main", defs=constants) 
+        script_folder = os.path.join(os.path.dirname(__file__), 'urscripts')
+        script = load_script(script_folder, "main", defs=constants) 
         return script
 
     def connect(self):
@@ -46,7 +45,7 @@ class URConnection(object):
             
         # upload our script, which will attempt to connect back to us
         script = self.__generate_urscript().encode('ascii')
-        utils.socket_send_retry(rt_socket, script)
+        socket_send_retry(rt_socket, script)
         print('Script uploaded.')
 
         # now create the control channel and accept the connection from the script now running on the robot
@@ -70,8 +69,8 @@ class URConnection(object):
         rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         rt_socket.connect((self.robot_ip, UR_RT_PORT))
         script_folder = os.path.join(os.path.dirname(__file__), 'urscripts')
-        script = utils.load_script(script_folder, "no_op")
-        utils.socket_send_retry(rt_socket, script.encode('ascii'))
+        script = load_script(script_folder, "no_op")
+        socket_send_retry(rt_socket, script.encode('ascii'))
 
     def send(self, cmd, state):
         self.__send_cmd(cmd)
@@ -94,7 +93,7 @@ class URConnection(object):
         self.__raw_cmd[i] =ord(')')
         length = i+1
         #print(self.__raw_cmd[:length])
-        return utils.socket_send_retry(self.__ctrl_socket, self.__raw_cmd, length)
+        return socket_send_retry(self.__ctrl_socket, self.__raw_cmd, length)
 
     def __receive_state(self, state_buffer):
         """Private. Retrieves the response from the robot and parses it. Must be preceeded by a call to __send_cmd."""

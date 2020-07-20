@@ -1,7 +1,7 @@
-from robot.URScripts.constants import *
-from robot.URScripts.urlib import *
-from robot.URScripts.control import *
-from robot.URScripts.drive import *
+from .constants import *
+from .urlib import *
+from .control import *
+from .drive import *
 
 ################################################################################################################################
 ## interface.py
@@ -86,9 +86,9 @@ def execute_arm_command(cmd, offset):
     if kind == UR_CMD_KIND_MOVE_TOOL_POSE:
         # convert tool pose to joints position
         kind = UR_CMD_KIND_MOVE_JOINTS_POSITION
-        textmsg("target position",target_position)
+        #textmsg("target position",target_position)
         target_position = get_inverse_kin(ur_pose(target_position))
-        textmsg("joint position",target_position)
+        #textmsg("joint position",target_position)
     #ur:end
     max_speed = cmd[UR_CMD_MOVE_MAX_SPEED + offset]
     ur_drive(time, id, kind, target_speed, max_acceleration, force_low_bound, force_high_bound, contact_handling, target_position, max_speed)

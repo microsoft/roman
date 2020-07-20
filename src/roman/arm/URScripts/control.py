@@ -1,5 +1,5 @@
-from robot.URScripts.constants import *
-from robot.URScripts.urlib import *
+from .constants import *
+from .urlib import *
 
 ################################################################################################################################
 ## control.py
@@ -63,17 +63,17 @@ def ur_get_status():
         is_moving = 1
     else:
         is_moving = 0
-    end
+    #ur:end
     if ctrl_is_contact:
         is_contact = 1
     else:
         is_contact = 0
-    end
+    #ur:end
     if ctrl_is_deadman:
         is_deadman = 1
     else:
         is_deadman = 0
-    end
+    #ur:end
     return [ctrl_last_loop_time, ctrl_last_cmd_id, is_moving, is_contact, is_deadman]
 #ur:end
 

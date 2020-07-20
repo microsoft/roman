@@ -8,6 +8,7 @@ import timeit
 import struct
 import time
 import os
+from ..common import *
 
 ################################################################
 ## UR script loader
@@ -48,39 +49,13 @@ def load_script(dir, module, is_include=False, imports=[], defs = []):
     return script
 
 ################################################################
-## float as int encoding
+## debuging functions 
 ################################################################
-FP_FLOAT_FACTOR = 10000
-def bytes2fpfloat(data, precision_factor = FP_FLOAT_FACTOR):
-    val = int((data[0] << 24) + (data[1]<<16) + (data[2]<<8) + (data[3]))
-    if (val & 0x80000000) > 0:
-        val = -(0xFFFFFFFF - val)
-    return val / precision_factor
-
-def fpfloat2int(data, precision_factor = FP_FLOAT_FACTOR):
-    return data * precision_factor
-
-################################################################
-## socket operations
-################################################################
-def socket_send_retry(socket, buf, size = 0):
-    total = 0
-    if size == 0: size = len(buf)
-    while size > total:
-        sent = socket.send(buf[total:size])
-        if sent == 0:
-            return False
-        total = total + sent
-    return True
-
-def socket_receive_retry(socket, buf, size = 0):
-    view = memoryview(buf)
-    if size == 0: size = len(buf)
-    while size > 0:
-        received = socket.recv_into(view, size)
-        if received == 0:
-            return False
-        view = view[received:]
-        size = size - received
-    
-    return True
+def dump_pose():
+    rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    rt_socket.connect(('192.168.1.2', 30003))
+    script = 'textmsg("TCP:", get_actual_tcp_pose())\n'
+    robot.utils.socket_send_retry(rt_socket, script.encode('ascii'))
+    script = 'textmsg("Joints:", get_actual_joint_positions())\n'
+    robot.utils.socket_send_retry(rt_socket, script.encode('ascii'))
+    rt_socket.close()

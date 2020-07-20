@@ -8,18 +8,10 @@ There can be multiple active controller chains, but only one can be used at a ti
 
 import numpy as np
 import math
-from robot.types import *
-from robot.URScripts.constants import *
+from .types import *
+from .URScripts.constants import *
 
-class Controller(object):
-
-    def __init__(self, next = None):
-        self.next = next
-
-    def __call__(self, cmd:Command)->State:
-        raise NotImplementedError()
-
-class ArmController(Controller):
+class ArmController(object):
     '''
     This is the lowest level controller, communicating directly with the arm.
     There should be only one instance (per connection/arm), and all controller chains targeting the same arm must include this instance.
@@ -38,7 +30,7 @@ class ArmController(Controller):
             self.state.set_state_flag(State._STATUS_FLAG_DONE, at_goal)
         return self.state
 
-class EMAForceCalibrator(Controller):
+class EMAForceCalibrator(object):
     '''
     Keeps an exponentially weighted moving average of the force reported by the FT sensor.
     Adds the average to the expected force of each move command.
@@ -46,7 +38,7 @@ class EMAForceCalibrator(Controller):
     avg(t) = alpha*sample(t) + (1-alpha)*avg(t-1) 
     '''
     def __init__(self, next, alpha = 0.01):
-        super().__init__(next)
+        self.next = next
         self.force_average = Joints()
         self.cmd = Command()
         self.state = State()
@@ -69,12 +61,12 @@ class EMAForceCalibrator(Controller):
         np.subtract(self.state.sensor_force(), self.force_average, self.state.sensor_force().array)
         return self.state
 
-class TouchController(Controller):
+class TouchController(object):
     '''
     Expects contact before completing the motion. Verifies that the contact is not spurrious before assuming the goal is reached.
     '''
     def __init__(self, next, validation_count = 3):
-        super().__init__(next)
+        self.next = next
         self.state = State()
         self.contact_position = Joints()
         self.count = validation_count

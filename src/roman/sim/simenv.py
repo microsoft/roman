@@ -12,7 +12,7 @@ class SimEnvironment(object):
     and allows further configuration of the cameras, objects present in the scene etc.
     '''
     def __init__(self, useGUI = True):
-        self.arm_urdf = os.path.join(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'sim'), 'roman.urdf')
+        self.arm_urdf = os.path.join(os.path.dirname(__file__), 'roman.urdf')
 
         if useGUI:
             pb.connect(pb.GUI)
@@ -35,5 +35,7 @@ class SimEnvironment(object):
     def update(self):
         pb.stepSimulation()
    
+    def disconnect(self):
+        pb.disconnect()
 
  

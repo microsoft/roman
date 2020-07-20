@@ -7,7 +7,7 @@ import numpy as np
 import timeit
 import struct
 import time
-from robot import utils
+from ..common import *
 from enum import Enum
 import random
 
@@ -84,16 +84,16 @@ class Robotiq3FGripper(object):
 
         #send the request
         try:
-            utils.socket_send_retry(self.__modbus_socket, self.__write_buf)
+            socket_send_retry(self.__modbus_socket, self.__write_buf)
         except Exception as e:
             self.connect(False)
-            utils.socket_send_retry(self.__modbus_socket, self.__write_buf)
+            socket_send_retry(self.__modbus_socket, self.__write_buf)
         
         #print("sent: ", self.__write_buf)
         
         # consume response
         # If this hangs, it's most likely because we got back a MODBUS error response, which is only 9 bytes
-        utils.socket_receive_retry(self.__modbus_socket, self.__write_resp, 8+2+2) # header (8 bytes) + address of first written register (2 byte) + number of registers written (2 byte)
+        socket_receive_retry(self.__modbus_socket, self.__write_resp, 8+2+2) # header (8 bytes) + address of first written register (2 byte) + number of registers written (2 byte)
 
         # update state 
         self.read()
@@ -123,14 +123,14 @@ class Robotiq3FGripper(object):
 
         # send the request
         try:
-            utils.socket_send_retry(self.__modbus_socket, self.__read_req)
+            socket_send_retry(self.__modbus_socket, self.__read_req)
         except Exception as e:
             self.connect(False)
-            utils.socket_send_retry(self.__modbus_socket, self.__read_req)
+            socket_send_retry(self.__modbus_socket, self.__read_req)
 
         # read the response
         # If this hangs, it's most likely because we got back a MODBUS error response, which is only 9 bytes
-        utils.socket_receive_retry(self.__modbus_socket, self.__read_buf, 8+1+16)
+        socket_receive_retry(self.__modbus_socket, self.__read_buf, 8+1+16)
 
     def is_inconsistent(self): 
         return ((self.__read_registers[0] & 0x07) != (self.__write_registers[0] & 0x07)) or self.__read_registers[Finger.A] != self.__write_registers[Finger.A] or self.__read_registers[Finger.B] != self.__write_registers[Finger.B] or self.__read_registers[Finger.C] != self.__write_registers[Finger.C]

@@ -1,39 +1,6 @@
 import numpy as np
-from robot.URScripts.constants import *
-
-class Vec(object):
-    '''
-    Base class for types that wrap a one-dimensional numpy array.
-    '''
-    def __init__(self, size):
-        self.array = np.zeros(size)
-
-    @classmethod
-    def fromarray(cls, array, clone = True):
-        self = cls.__new__(cls)
-        self.array = np.array(array) if clone else array
-        return self
-
-    def __getitem__(self, idx):
-        return self.array[idx]
-
-    def __setitem__(self, idx, val):
-        self.array[idx] = val
-
-    def __array__(self, dtype=None):
-        return self.array
-
-    def __iter__(self):
-        return iter(self.array)
-
-    def __len__(self):
-        return len(self.array)
-        
-    def __str__(self):
-        return np.array2string(self.array, separator=",")
-
-    def __repr__(self):
-        return type(self).__name__+"({s})".format(s = np.array2string(self.array, separator=","))
+from ..common import Vec
+from .URScripts.constants import *
 
 class Position(Vec): 
     pass
@@ -220,13 +187,6 @@ class Command(Vec):
     _MOVE_TARGET_POSITION = slice(*UR_CMD_MOVE_TARGET_POSITION)
     _MOVE_MAX_SPEED = UR_CMD_MOVE_MAX_SPEED
     _MOVE_CONTROLLER = UR_CMD_MOVE_CONTROLLER
-    
-    def _speed_reached(self, state:State): 
-        return self.target_speed().allclose(state.joint_speeds(), UR_SPEED_TOLERANCE)
-    def _joints_position_reached(self, state:State): 
-        return self.target_position().allclose(state.joint_positions(), UR_JOINTS_POSITION_TOLERANCE)
-    def _tool_pose_reached(self, state:State): 
-        return self.target_position().allclose(state.tool_pose(), UR_TOOL_POSE_TOLERANCE)
 
     def __init__(self,
                 target_position:Position=None, 

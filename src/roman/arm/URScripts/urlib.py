@@ -3,7 +3,7 @@
 ################################################################################################################################
 import pybullet as pb
 import numpy as np
-from robot.URScripts.constants import *
+from .constants import *
 
 # sim-specific constants
 SIM_MAX_JOINT_FORCE = 1000
@@ -92,7 +92,7 @@ def set_tcp(pose):
     pass
 
 def textmsg(s1, s2):
-    print(s1+s2)
+    print(str(s1)+str(s2))
 
 def ur_pose(v):
     return v

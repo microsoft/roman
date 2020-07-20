@@ -8,14 +8,14 @@ import time
 from multiprocessing import Process, Pipe
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
-from robot.types import *
-import robot.manipulator
+from roman.arm.types import *
+import roman.manipulator
 
 def arm_move():
     print(f"Running {__file__}::{arm_move.__name__}()")
     
     cmd = Command(target_position=Tool(-0.4, -0.4, 0.3,0, math.pi/2, math.pi))
-    m = robot.manipulator.connect()
+    m = roman.manipulator.connect()
     while not m.arm_state.is_done():
         m.execute(cmd)
 

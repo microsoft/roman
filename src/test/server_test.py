@@ -8,8 +8,8 @@ import time
 from multiprocessing import Process, Pipe
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
-from robot.types import *
-from robot.manipulation_server import server_loop
+from roman.arm.types import *
+from roman.manipulation_server import server_loop
 
 def direct_read():
     print(f"Running {__file__}::{direct_read.__name__}()")

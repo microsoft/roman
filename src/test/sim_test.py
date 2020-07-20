@@ -8,32 +8,38 @@ import time
 import pybullet as pb
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
-from robot.sim_connection import *
-from robot.controllers import *
-from robot.types import *
-from robot.simenv import SimEnvironment
+from roman.arm.sim_connection import *
+from roman.arm.controllers import *
+from roman.arm.types import *
+from roman.sim.simenv import SimEnvironment
+from roman.arm.URScripts.interface import *
 
-def env_test():
-    env = SimEnvironment()
-    env.reset()
-    env.update()
-    time.sleep(1)
+def get_arm_state_test(env):
+    print(f"Running {__file__}::{get_arm_state_test.__name__}()")
+    state = State.fromarray(get_arm_state())
+    #print(state)
+    print("Passed.")
 
-def arm_test():
-    print(f"Running {__file__}::{arm_test.__name__}()")
-    env = SimEnvironment()
-    env.reset()
-    env.update()
+def execute_arm_command_test(env):
+    print(f"Running {__file__}::{execute_arm_command_test.__name__}()")
+    cmd = Command()
+    state = State.fromarray(execute_arm_command(cmd, 0))
+    cmd = Command(target_position=Joints(1,1,1,1,1,1))
+    state = State.fromarray(execute_arm_command(cmd, 0))
+    #print(state)
+    print("Passed.")
 
-    con = SimURConnection()
+def move_arm_test(env):
+    print(f"Running {__file__}::{move_arm_test.__name__}()")
+
+    con = SimURConnection(env)
     arm_ctrl = ArmController(con)
     cmd = Command().make_read_cmd()
     state = arm_ctrl(cmd)
 
     print(state.tool_pose())
     marker_visual_id = pb.createVisualShape(pb.GEOM_BOX, halfExtents=[0.005, 0.005, 0.005], rgbaColor=[1,0,0,1])
-    #pb.createMultiBody(baseVisualShapeIndex=marker_visu
-    # al_id, basePosition=state.tool_pose()[:3])
+    #pb.createMultiBody(baseVisualShapeIndex=marker_visual_id, basePosition=state.tool_pose()[:3])
     cmd = Command(target_position=Tool(-0.4, -0.4, 0.3,0, math.pi/2, math.pi))
     pb.createMultiBody(baseVisualShapeIndex=marker_visual_id, basePosition=cmd.target_position()[:3])
     state = arm_ctrl(cmd)
@@ -50,8 +56,15 @@ def arm_test():
 
    
 def run():
-    env_test()
-    arm_test()
+    env = SimEnvironment()
+    env.reset()
+    env.update()
+
+    get_arm_state_test(env)
+    execute_arm_command_test(env)
+    move_arm_test(env)
+
+    env.disconnect()
    
 #env_test()
 if __name__ == '__main__':
