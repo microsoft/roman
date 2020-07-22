@@ -16,9 +16,10 @@ def arm_move():
     m = connect()
     cmd = arm.Command(target_position=arm.Tool(-0.4, -0.4, 0.3,0, math.pi/2, math.pi))
     while not m.arm_state.is_done():
-        m.execute(cmd)
+        m.cmd_hand(cmd)
 
     m.disconnect()
+    print("Passed.")
     
 def run():
     arm_move()

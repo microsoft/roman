@@ -2,7 +2,7 @@ import os
 import numpy
 import threading
 import time
-from multiprocessing import Process, Pipe
+from multiprocessing import Process, Pipe, Event
 from .rq import hand
 from .ur import arm
 from .server import server_loop
@@ -11,29 +11,45 @@ class Manipulator(object):
     '''
     Combines the manipulator components (arm, hand, FT and tactile sensors).
     '''
-    STOP_CMD = arm.Command()
-    READ_CMD = arm.Command.read()
+    _ARM_STOP_CMD = arm.Command()
+    _ARM_READ_CMD = arm.Command.read()
+    _HAND_STOP_CMD = hand.Command.stop()
+    _HAND_READ_CMD = hand.Command.read()
     
     def __init__(self):
         self.arm_state = arm.State()
+        self.hand_state = hand.State()
 
-    def connect(self, arm_config={}, hand_config={}):
-        self.__server, client = Pipe(duplex=True)
-        self.__process = Process(target=server_loop, args=(client, arm_config, hand_config))
+    def connect(self, config={}):
+        self.__hand_server, hand_client = Pipe(duplex=True)
+        self.__arm_server, arm_client = Pipe(duplex=True)
+        self.__shutdown_event = Event()
+        self.__process = Process(target=server_loop, args=(arm_client, hand_client, self.__shutdown_event, config))
         self.__process.start()
 
     def disconnect(self):
-        self.__process.terminate()
+        self.__shutdown_event.set()
+        self.__process.join()
 
-    def execute(self, cmd):
-        self.__server.send_bytes(cmd.array)
-        self.__server.recv_bytes_into(self.arm_state.array)
+    def cmd_arm(self, cmd):
+        self.__arm_server.send_bytes(cmd.array)
+        self.__arm_server.recv_bytes_into(self.arm_state.array)
 
-    def stop(self):
-        self.execute(STOP_CMD)
+    def stop_arm(self):
+        self.cmd_arm(Manipulator._ARM_STOP_CMD)
 
-    def read(self):
-        self.execute(READ_CMD)
+    def read_arm(self):
+        self.cmd_arm(Manipulator._ARM_READ_CMD)
+
+    def cmd_hand(self, cmd):
+        self.__hand_server.send_bytes(cmd.array)
+        self.__hand_server.recv_bytes_into(self.hand_state.array)
+
+    def stop_hand(self):
+        self.cmd_hand(Manipulator._HAND_STOP_CMD)
+
+    def read_hand(self):
+        self.cmd_hand(Manipulator._HAND_READ_CMD)
 
     def move_simple(self, dx, dy, dz, dyaw, gripper_state):
         '''
@@ -43,8 +59,8 @@ class Manipulator(object):
         '''
         pass
 
-def connect():
+def connect(config={}):
     m = Manipulator()
-    m.connect()
+    m.connect(config)
     return m
 

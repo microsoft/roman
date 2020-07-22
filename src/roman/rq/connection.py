@@ -65,28 +65,31 @@ class Connection(object):
 
     def send(self, cmd, state):
         # translate and send the command
-        if cmd.mode() != GraspMode.CURRENT:
-            self.set_mode(cmd.mode())
+        if cmd[Command._KIND] == Command._CMD_KIND_READ:
+            self.__read()
+        elif cmd[Command._KIND] == Command._CMD_KIND_STOP:
+            self.stop()
             self.__send()
-        if cmd.finger == Finger.All:
-            if cmd.position() == Position.CURRENT:
-                self.stop()
+        else: #Command._CMD_KIND_MOVE
+            if cmd[Command._MODE] != GraspMode.CURRENT:
+                self.set_mode(cmd[Command._MODE])
+                self.__send()
+            if cmd[Command._FINGER] == Finger.All:
+                self.move(cmd[Command._POSITION], cmd[Command._SPEED], cmd[Command._FORCE])
             else:
-                self.move(cmd.position(), cmd.speed(), cmd.force())
-        else:
-            self.move_finger(cmd.finger(), cmd.position(), cmd.speed(), cmd.force()) 
-        self.__send()
+                self.move_finger(cmd[Command._FINGER], cmd[Command._POSITION], cmd[Command._SPEED], cmd[Command._FORCE]) 
+            self.__send()
 
         # prepare the state
         state[State._TIME] = time.time()
         state[State._FLAGS] = State._FLAG_READY*self.is_ready() \
             + State._FLAG_FAULTED*self.is_faulted() \
             + State._FLAG_INCONSISTENT * self.is_inconsistent() \
+            + State._FLAG_OBJECT_DETECTED * self.object_detected() \
             + State._FLAG_MOVING * self.is_moving() \
-            + State._FLAG_OBJECT_DETECTED * self.object_detected() \ 
             + State._FLAG_DONE * self.is_done()
-        state[_MODE] = self.mode()
-        state[_TARGET:] = self.__read_registers[3:]
+        state[State._MODE] = self.mode()
+        state[State._TARGET_A:] = self.__read_registers[3]
 
     def __send(self):
         """Sends the current gripper command and returns without waiting for completion"""

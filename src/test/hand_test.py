@@ -8,18 +8,62 @@ import socket
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
 print(rootdir)
-import robot
+from roman import *
+from roman.rq import *
 
-def basic_com_test():
-    hand = robot.Robotiq3FGripper()
-    hand.connect()
-    hand.open()
-    hand.close()
-    hand.disconnect()
+def connection_test():
+    print(f"Running {__file__}::{connection_test.__name__}()")
+    state = State()
+    con = Connection()    
+    con.connect()
+    cmd_close = Command.close()
+    con.send(cmd_close, state)
+    time.sleep(2)
+    cmd_open = Command.open()
+    con.send(cmd_open, state)
+    time.sleep(2)
+    con.disconnect()
+    print("Passed.")
 
-   
+def controller_test():
+    print(f"Running {__file__}::{connection_test.__name__}()")
+    # check that a tight lop also works
+    state = State()
+    con = Connection()    
+    con.connect()
+    cmd_close = Command.close()
+    con.send(cmd_close, state)
+    while not state.is_done():
+        con.send(cmd_close, state)
+        time.sleep(1./125)
+        cmd_close = Command.close()
+    cmd_open = Command.open()
+    con.send(cmd_open, state)
+    while not state.is_done():
+        con.send(cmd_open, state)
+        time.sleep(1./125)
+    con.disconnect()
+    print("Passed.")
+
+def manipulator_test():
+    print(f"Running {__file__}::{manipulator_test.__name__}()")
+    
+    m = connect(config={"real_robot":True})
+    cmd = hand.Command.close()
+    while not m.hand_state.is_done():
+        m.cmd_hand(cmd)
+    cmd = hand.Command.open()
+    m.cmd_hand(cmd)
+    while not m.hand_state.is_done():
+        m.cmd_hand(cmd)
+
+    m.disconnect()
+    print("Passed.")
+
 def run():
-    basic_com_test()
+    #connection_test()
+    #controller_test()
+    manipulator_test()
    
 #env_test()
 if __name__ == '__main__':

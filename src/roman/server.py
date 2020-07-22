@@ -6,7 +6,7 @@ from . import rq
 from . import ur
 from .sim.ur import SimEnv
         
-def server_loop(client, arm_config={}, hand_config={}, log_file=None):
+def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=None):
     '''
     Control loop running at the same frequency as the hardware (e.g. 125Hz).
     It enables high-speed closed-loop control using force and tactile sensing (but no vision).
@@ -15,37 +15,51 @@ def server_loop(client, arm_config={}, hand_config={}, log_file=None):
         file = open(log_file, "wb")
         #file.write(ur.UR_PROTOCOL_VERSION)
 
-    real_robot = arm_config.get("real_robot", 0) 
+    real_robot = config.get("real_robot", 0) 
     # TODO: add arguments from config
     env = None
     if real_robot:
-        con = ur.Connection() 
+        arm_con = ur.Connection() 
+        hand_con = rq.Connection()
     else:
         env = SimEnv()
         env.reset()
-        con = ur.SimConnection(env)
+        arm_con = ur.SimConnection(env)
+        hand_con = rq.SimConnection(env)
 
-    con.connect()
-    arm_ctrl = ur.ArmController(con)
+    arm_con.connect()
+    hand_con.connect()
+    arm_ctrl = ur.ArmController(arm_con)
+    hand_ctrl = rq.HandController(hand_con)
     # TODO: chain other controllers based on config 
 
     arm_cmd = ur.Command()
-    while True:
-        cmd_is_new = client.poll()
-        if cmd_is_new:
-            client.recv_bytes_into(arm_cmd.array) # blocking
-            #client.recv_bytes_into(hand_cmd) # blocking
+    hand_cmd = rq.Command.stop()
+    while not shutdown_event.is_set():
+        arm_cmd_is_new = arm_client.poll()
+        if arm_cmd_is_new:
+            arm_client.recv_bytes_into(arm_cmd.array) # blocking
+        
+        hand_cmd_is_new = hand_client.poll()
+        if hand_cmd_is_new:
+            hand_client.recv_bytes_into(hand_cmd.array) # blocking
         
         #rectify(arm_cmd, hand_cmd, arm_state, hand_state) # replace position delta with absolute, account for arm/hand/FT/tactile states
+        hand_state = hand_ctrl(hand_cmd)
         arm_state = arm_ctrl(arm_cmd)
-        if cmd_is_new:
-            client.send_bytes(arm_state.array)
+
+        if arm_cmd_is_new:
+            arm_client.send_bytes(arm_state.array)
+
+        if hand_cmd_is_new:
+            hand_client.send_bytes(hand_state.array)
 
         #log(file, arm_cmd, hand_cmd, arm_state, hand_state)
         if log_file is not None:
-            file.write(arm_cmd, arm_state)
+            file.write(arm_cmd, hand_cmd, arm_state, hand_state)
 
     # Disconnect the arm and gripper.
-    con.disconnect()
+    arm_con.disconnect()
+    hand_con.disconnect()
     if env:
         env.disconnect()

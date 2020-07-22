@@ -16,8 +16,8 @@ from roman.sim.ur import SimEnv
 def read_test(con):
     print(f"Running {__file__}::{read_test.__name__}()")
     con.connect()
-    arm_ctrl = ArmController(con)
-    cmd = Command().read    ()
+    arm_ctrl = ur.ArmController(con)
+    cmd = ur.Command().read()
     state = arm_ctrl(cmd)
     print(state.tool_pose())
     con.disconnect()
@@ -26,10 +26,10 @@ def read_test(con):
 def move_test(con):
     print(f"Running {__file__}::{move_test.__name__}()")
     con.connect()
-    arm_ctrl = ArmController(con)
+    arm_ctrl = ur.ArmController(con)
 
     #cmd = Command(target_position=Tool(-0.4, -0.4, 0.3,0, math.pi, 0))
-    cmd = Command(target_position=Tool(-0.4, -0.4, 0.3,0, math.pi/2, math.pi))
+    cmd = ur.Command(target_position=Tool(-0.4, -0.4, 0.3,0, math.pi/2, math.pi))
     state = arm_ctrl(cmd)
     while not state.is_goal_reached():
         state = arm_ctrl(cmd)
@@ -51,4 +51,4 @@ def run(real_robot = False):
    
 #env_test()
 if __name__ == '__main__':
-    run()
+    run(True)
