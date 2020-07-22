@@ -15,14 +15,14 @@ from enum import Enum
 import os
 from ..common import *
 from .loader import *
-from .types import *
-from .URScripts.constants import *
+from .arm import *
+from .scripts.constants import *
 
 ################################################################
 ## Real robot implementation
 ################################################################
-class URConnection(object):
-    """Implements functionality to read real robot state (arm and F/T sensor) and command the robot in real-time."""
+class Connection(object):
+    """Reads real robot state (arm and F/T sensor) and commands the robot in real-time."""
     def __init__(self, robot_ip=UR_ROBOT_IP, local_ip=UR_DEFAULT_CLIENT_IP, local_port = UR_DEFAULT_CLIENT_PORT):
         self.robot_ip = robot_ip
         self.local_ip = local_ip
@@ -33,7 +33,7 @@ class URConnection(object):
 
     def __generate_urscript(self):
         constants = [f"UR_CLIENT_IP=\"{self.local_ip}\"", f"UR_CLIENT_PORT={self.local_port}"]
-        script_folder = os.path.join(os.path.dirname(__file__), 'urscripts')
+        script_folder = os.path.join(os.path.dirname(__file__), 'scripts')
         script = load_script(script_folder, "main", defs=constants) 
         return script
 
@@ -68,7 +68,7 @@ class URConnection(object):
 
         rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         rt_socket.connect((self.robot_ip, UR_RT_PORT))
-        script_folder = os.path.join(os.path.dirname(__file__), 'urscripts')
+        script_folder = os.path.join(os.path.dirname(__file__), 'scripts')
         script = load_script(script_folder, "no_op")
         socket_send_retry(rt_socket, script.encode('ascii'))
 

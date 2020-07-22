@@ -7,8 +7,8 @@ class Vec(object):
     '''
     Base class for types that wrap a one-dimensional numpy array.
     '''
-    def __init__(self, size):
-        self.array = np.zeros(size)
+    def __init__(self, size, dtype=np.float):
+        self.array = np.zeros(size, dtype)
 
     @classmethod
     def fromarray(cls, array, clone = True):

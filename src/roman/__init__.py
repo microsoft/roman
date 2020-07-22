@@ -1,2 +1,2 @@
 from .manipulator import *
-from .arm.types import *
+from .ur import arm

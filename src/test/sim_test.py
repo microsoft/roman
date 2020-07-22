@@ -8,11 +8,9 @@ import time
 import pybullet as pb
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
-from roman.arm.sim_connection import *
-from roman.arm.controllers import *
-from roman.arm.types import *
-from roman.sim.simenv import SimEnvironment
-from roman.arm.URScripts.interface import *
+from roman.ur import *
+from roman.sim.ur import SimEnv
+from roman.ur.scripts.interface import *
 
 def get_arm_state_test(env):
     print(f"Running {__file__}::{get_arm_state_test.__name__}()")
@@ -32,9 +30,9 @@ def execute_arm_command_test(env):
 def move_arm_test(env):
     print(f"Running {__file__}::{move_arm_test.__name__}()")
 
-    con = SimURConnection(env)
+    con = SimConnection(env)
     arm_ctrl = ArmController(con)
-    cmd = Command().make_read_cmd()
+    cmd = Command().read()
     state = arm_ctrl(cmd)
 
     print(state.tool_pose())
@@ -56,7 +54,7 @@ def move_arm_test(env):
 
    
 def run():
-    env = SimEnvironment()
+    env = SimEnv()
     env.reset()
     env.update()
 

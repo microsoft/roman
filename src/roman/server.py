@@ -2,13 +2,9 @@ import os
 import numpy
 import threading
 import time
-from .hand.rq_gripper import Robotiq3FGripper, GraspMode, Finger
-from .sim.simenv import *
-from .arm.sim_connection import *
-from .arm.ur_connection import *
-from .arm.controllers import *
-from .arm.types import *
-from .arm.URScripts.constants import *
+from . import rq
+from . import ur
+from .sim.ur import SimEnv
         
 def server_loop(client, arm_config={}, hand_config={}, log_file=None):
     '''
@@ -17,23 +13,23 @@ def server_loop(client, arm_config={}, hand_config={}, log_file=None):
     '''
     if log_file is not None:
         file = open(log_file, "wb")
-        file.write(UR_PROTOCOL_VERSION)
+        #file.write(ur.UR_PROTOCOL_VERSION)
 
     real_robot = arm_config.get("real_robot", 0) 
     # TODO: add arguments from config
     env = None
     if real_robot:
-        con = URConnection() 
+        con = ur.Connection() 
     else:
-        env = SimEnvironment()
+        env = SimEnv()
         env.reset()
-        con = SimURConnection(env)
+        con = ur.SimConnection(env)
 
     con.connect()
-    arm_ctrl = ArmController(con)
+    arm_ctrl = ur.ArmController(con)
     # TODO: chain other controllers based on config 
 
-    arm_cmd = Command()
+    arm_cmd = ur.Command()
     while True:
         cmd_is_new = client.poll()
         if cmd_is_new:

@@ -8,8 +8,8 @@ import time
 from multiprocessing import Process, Pipe
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
-from roman.arm.types import *
-from roman.manipulation_server import server_loop
+from roman.ur.arm import *
+from roman.server import server_loop
 
 def direct_read():
     print(f"Running {__file__}::{direct_read.__name__}()")
@@ -18,7 +18,7 @@ def direct_read():
     p = Process(target=server_loop, args=(client,))
     p.start()
 
-    cmd = Command.make_read_cmd()
+    cmd = Command.read()
     state = State()
     server.send_bytes(cmd.array)
     server.recv_bytes_into(state.array)

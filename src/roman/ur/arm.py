@@ -1,6 +1,6 @@
 import numpy as np
 from ..common import Vec
-from .URScripts.constants import *
+from .scripts.constants import *
 
 class Position(Vec): 
     pass
@@ -200,6 +200,7 @@ class Command(Vec):
         super().__init__(Command._BUFFER_SIZE)
         if target_position is None:
             cmd_type = UR_CMD_KIND_MOVE_JOINTS_SPEED
+            target_position = UR_ZERO
         elif type(target_position) is Joints:
             cmd_type = UR_CMD_KIND_MOVE_JOINTS_POSITION
         elif type(target_position) is Tool:
@@ -240,13 +241,13 @@ class Command(Vec):
             raise Exception("Invalid command type")
 
     @staticmethod
-    def make_read_cmd():
+    def read():
         cmd = Command.fromarray(np.zeros(Command._BUFFER_SIZE), clone=False)
         cmd[Command._KIND] = UR_CMD_KIND_READ
         return cmd
 
     @staticmethod
-    def make_config_cmd(self, mass = UR_DEFAULT_MASS, cog = UR_DEFAULT_TOOL_COG, tcp = UR_DEFAULT_TCP):
+    def config(self, mass = UR_DEFAULT_MASS, cog = UR_DEFAULT_TOOL_COG, tcp = UR_DEFAULT_TCP):
         cmd = Command.fromarray(np.zeros(Command._BUFFER_SIZE), clone=False)
         cmd[Command._KIND] = UR_CMD_KIND_CONFIG
         cmd[Command._CONFIG_MASS]=mass

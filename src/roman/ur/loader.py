@@ -20,7 +20,7 @@ def load_script(dir, module, is_include=False, imports=[], defs = []):
     Combines a script and its imports into a single in-memory string that can be loaded to the UR controller.
     The function looks for a file called module.script or module.py in the directory specified by dir.
     If the file is a .py , 'end' statements must still be present, prefixed with '#ur:', and import statements must be
-    of the form 'from foo import *'. The rest of the file needs to be fully compatible with the UR script language.
+    of the form 'from .foo import *'. The rest of the file needs to be fully compatible with the UR script language.
     Import statements are replaced with the correspondig file (.script or .py), assumed to be in the same folder.
     """
     script = f"def {module}():\n" if not is_include else ""

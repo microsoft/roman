@@ -3,19 +3,19 @@ import numpy
 import threading
 import time
 from multiprocessing import Process, Pipe
-from .hand.rq_gripper import Robotiq3FGripper, GraspMode, Finger
-from .arm.types import *
+from .rq import hand
+from .ur import arm
 from .server import server_loop
 
 class Manipulator(object):
     '''
     Combines the manipulator components (arm, hand, FT and tactile sensors).
     '''
-    STOP_CMD = Command()
-    READ_CMD = Command.make_read_cmd()
+    STOP_CMD = arm.Command()
+    READ_CMD = arm.Command.read()
     
     def __init__(self):
-        self.arm_state = State()
+        self.arm_state = arm.State()
 
     def connect(self, arm_config={}, hand_config={}):
         self.__server, client = Pipe(duplex=True)

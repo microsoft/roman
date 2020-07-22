@@ -8,12 +8,11 @@ import socket
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
 print(rootdir)
-import roman.arm.loader as loader
-from roman.arm.ur_connection import *
-from roman.arm.URScripts.constants import UR_RT_PORT, UR_ROBOT_IP, UR_DEFAULT_CLIENT_IP, UR_DEFAULT_CLIENT_PORT
+from roman import ur
+from roman.ur import loader
 
 def generate_script():
-    script = URConnection()._URConnection__generate_urscript()
+    script = ur.Connection()._URConnection__generate_urscript()
     # outF = open("complete.script", "w")
     # outF.writelines(script)
     # outF.close()
@@ -24,7 +23,7 @@ def validate_script_syntax():
     Uploads all the scripts (by loading test.script) to validate their syntax.
     If the test hangs, edit test.script and remove the imports one by one (from bottom to top)
     '''
-    script_folder = os.path.join(os.path.join(rootdir, 'robot'), 'urscripts')
+    script_folder = os.path.join(os.path.join(rootdir, 'robot'), 'scripts')
     defs = [f"UR_CLIENT_IP=\"{UR_DEFAULT_CLIENT_IP}\"", f"UR_CLIENT_PORT={UR_DEFAULT_CLIENT_PORT}"]
     rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     rt_socket.connect((UR_ROBOT_IP, UR_RT_PORT))

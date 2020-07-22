@@ -10,17 +10,14 @@ import os
 import time
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
-from roman.arm.ur_connection import *
-from roman.arm.sim_connection import *
-from roman.arm.controllers import *
-from roman.arm.types import *
-from roman.sim.simenv import *
+from roman import ur
+from roman.sim.ur import SimEnv 
 
 def read_test(con):
     print(f"Running {__file__}::{read_test.__name__}()")
     con.connect()
     arm_ctrl = ArmController(con)
-    cmd = Command().make_read_cmd()
+    cmd = Command().read    ()
     state = arm_ctrl(cmd)
     print(state.tool_pose())
     con.disconnect()
@@ -43,13 +40,13 @@ def move_test(con):
    
 def run(real_robot = False):
     if real_robot:
-        read_test(URConnection())
-        move_test(URConnection())
+        read_test(ur.Connection())
+        move_test(ur.Connection())
     else:
-        env = SimEnvironment()
+        env = SimEnv()
         env.reset()
-        read_test(SimURConnection(env))
-        move_test(SimURConnection(env))
+        read_test(ur.SimConnection(env))
+        move_test(ur.SimConnection(env))
         env.disconnect()
    
 #env_test()

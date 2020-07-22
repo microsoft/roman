@@ -6,13 +6,13 @@ import math
 ################################################################
 ## configures the simulated robot and environment
 ################################################################
-class SimEnvironment(object):
+class SimEnv(object):
     '''
     Loads the default environment (arm/hand/table urdf files) 
     and allows further configuration of the cameras, objects present in the scene etc.
     '''
-    def __init__(self, useGUI = True):
-        self.arm_urdf = os.path.join(os.path.dirname(__file__), 'roman.urdf')
+    def __init__(self, urdf='ur_rq3.urdf', useGUI = True):
+        self.arm_urdf = os.path.join(os.path.dirname(__file__), urdf)
 
         if useGUI:
             pb.connect(pb.GUI)
@@ -25,7 +25,7 @@ class SimEnvironment(object):
         pb.resetSimulation()
         self.arm_id = pb.loadURDF(self.arm_urdf, baseOrientation = pb.getQuaternionFromEuler([0, 0, math.pi]))
         #self.arm_id = pb.loadURDF(self.arm_urdf)
-        base_joint = 1 # form urdf
+        base_joint = 1 # from urdf
         # start position is along the x axis, in negative direction 
         start_positions = [0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0]
         for i in range(6):

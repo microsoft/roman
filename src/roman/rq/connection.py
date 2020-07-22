@@ -10,20 +10,10 @@ import time
 from ..common import *
 from enum import Enum
 import random
+from .hand import *
 
-class GraspMode(object):
-    BASIC = 0
-    PINCH = 2
-    WIDE = 4
-    SCISSOR = 6
-
-class Finger(object):
-    A = 3
-    B = 6
-    C = 9
-
-class Robotiq3FGripper(object):
-    '''Controls the Robotiq 3-finger gripper'''
+class Connection(object):
+    '''Reads and commands the Robotiq 3-finger gripper'''
     
     def __init__(self, hand_ip='192.168.1.11'):
         self.__ip = hand_ip
@@ -66,15 +56,40 @@ class Robotiq3FGripper(object):
         self.__modbus_socket.connect((self.__ip, 502)) # 502 = MODBUS_PORT
         if activate:
             self.__write_registers[0] = 1
-            self.__send_cmd() # activate
+            self.__send() # activate
         #print('Connected to hand.')
 
     def disconnect(self):
         self.__modbus_socket.close()
         self.__modbus_socket = None
 
-    def __send_cmd(self):
-        """Sends a gripper command and returns without waiting for completion"""
+    def send(self, cmd, state):
+        # translate and send the command
+        if cmd.mode() != GraspMode.CURRENT:
+            self.set_mode(cmd.mode())
+            self.__send()
+        if cmd.finger == Finger.All:
+            if cmd.position() == Position.CURRENT:
+                self.stop()
+            else:
+                self.move(cmd.position(), cmd.speed(), cmd.force())
+        else:
+            self.move_finger(cmd.finger(), cmd.position(), cmd.speed(), cmd.force()) 
+        self.__send()
+
+        # prepare the state
+        state[State._TIME] = time.time()
+        state[State._FLAGS] = State._FLAG_READY*self.is_ready() \
+            + State._FLAG_FAULTED*self.is_faulted() \
+            + State._FLAG_INCONSISTENT * self.is_inconsistent() \
+            + State._FLAG_MOVING * self.is_moving() \
+            + State._FLAG_OBJECT_DETECTED * self.object_detected() \ 
+            + State._FLAG_DONE * self.is_done()
+        state[_MODE] = self.mode()
+        state[_TARGET:] = self.__read_registers[3:]
+
+    def __send(self):
+        """Sends the current gripper command and returns without waiting for completion"""
         
         if self.__modbus_socket  is None:
             self.connect(False)
@@ -96,15 +111,14 @@ class Robotiq3FGripper(object):
         socket_receive_retry(self.__modbus_socket, self.__write_resp, 8+2+2) # header (8 bytes) + address of first written register (2 byte) + number of registers written (2 byte)
 
         # update state 
-        self.read()
-        
+        self.__read()        
 
     def __print_registers(self, registers):
         for x in registers:
             print(hex(x), end=" ")
         print()
 
-    def debug_dump(self):
+    def _debug_dump(self):
         print("Write registers:")
         self.__print_registers(self.__write_registers)
         print()
@@ -112,8 +126,8 @@ class Robotiq3FGripper(object):
         self.__print_registers(self.__read_registers)
         print()
 
-    def read(self):
-        """Reads the gripper state into a reusable state object."""
+    def __read(self):
+        """Reads the gripper state into the local state registers."""
 
         if self.__modbus_socket  is None:
             self.connect(False)
@@ -132,6 +146,7 @@ class Robotiq3FGripper(object):
         # If this hangs, it's most likely because we got back a MODBUS error response, which is only 9 bytes
         socket_receive_retry(self.__modbus_socket, self.__read_buf, 8+1+16)
 
+    
     def is_inconsistent(self): 
         return ((self.__read_registers[0] & 0x07) != (self.__write_registers[0] & 0x07)) or self.__read_registers[Finger.A] != self.__write_registers[Finger.A] or self.__read_registers[Finger.B] != self.__write_registers[Finger.B] or self.__read_registers[Finger.C] != self.__write_registers[Finger.C]
     def is_ready(self): return self.__read_registers[0] & 0x31 == 0x31 and not self.is_inconsistent()
@@ -139,106 +154,46 @@ class Robotiq3FGripper(object):
     def is_moving(self): return self.__read_registers[0] & 0xC8 == 0x08  
     def is_done(self): return self.is_ready() and not self.is_moving()
     def object_detected(self): return self.is_ready() and self.__read_registers[1] != 0xFF
-    def finger_status(self, finger): pass #TBD
     def mode(self): return self.__read_registers[0] & 0xF9
-    def taget_position(self): return self.__read_registers[3]
-    def position(self): return self.__read_registers[4]
-    def finger_target_position(self, finger): return self.__read_registers[finger]
-    def finger_position(self, finger): return self.__read_registers[finger+1]
-    def finger_current(self, finger): return self.__read_registers[finger+2]
-    def grasp_size(self): return (128 - self.__read_registers[Finger.A+1]) + (128 - min(self.__read_registers[Finger.B+1], self.__read_registers[Finger.C+1]))
 
     def deactivate(self): 
         self.__write_registers[0] = 0
-        self.__send_cmd()
 
     # sets the mode to one of GraspMode values
     def set_mode(self, mode):
         self.__write_registers[0] = mode | 1 # include the activation bit, and move
-        self.__send_cmd()
 
     def stop(self):
         self.__write_registers[0] = self.__write_registers[0] & 0xF7
-        self.__send_cmd()
 
-    def async_move(self, position, speed = 255, force = 0): 
+    def move(self, position, speed = 255, force = 0): 
         self.__write_registers[0] = self.__write_registers[0] | 8 # move
         self.__write_registers[1] = 0 # disable individual finger control
         self.__write_registers[Finger.A] = position
         self.__write_registers[Finger.A+1] = speed
         self.__write_registers[Finger.A+2] = force
-        self.__write_registers[Finger.B] = position
-        self.__write_registers[Finger.B+1] = speed
-        self.__write_registers[Finger.B+2] = force
-        self.__write_registers[Finger.C] = position
-        self.__write_registers[Finger.C+1] = speed
-        self.__write_registers[Finger.C+2] = force
-        self.__send_cmd()
+        self.__write_registers[Finger.B] = 0
+        self.__write_registers[Finger.B+1] = 0
+        self.__write_registers[Finger.B+2] = 0
+        self.__write_registers[Finger.C] = 0
+        self.__write_registers[Finger.C+1] = 0
+        self.__write_registers[Finger.C+2] = 0
 
-    def move(self, position, speed = 255, force = 0): 
-        self.async_move(position, speed, force)
-        self.ready_wait()
-
-    def async_move_finger(self, finger, position, speed = 255, force = 0):
+    def move_finger(self, finger, position, speed = 255, force = 0):
         self.__write_registers[0] = self.__write_registers[0] | 8 # move
         if (self.__write_registers[1] != 4):
             self.__write_registers[1] = 4
-            # make sure the command reflects the current finger position
-            self.__write_registers[Finger.B] = self.position()
+            # make sure the command reflects the actual position when switching mode. 
+            self.__write_registers[Finger.A] = self.finger_position(Finger.A)
+            self.__write_registers[Finger.A+1] = 0
+            self.__write_registers[Finger.A+2] = 0
+            self.__write_registers[Finger.B] = self.finger_position(Finger.B)
             self.__write_registers[Finger.B+1] = 0
             self.__write_registers[Finger.B+2] = 0
-            self.__write_registers[Finger.C] = self.position()
+            self.__write_registers[Finger.C] = self.finger_position(Finger.C)
             self.__write_registers[Finger.C+1] = 0
             self.__write_registers[Finger.C+2] = 0
         
         self.__write_registers[finger] = position
         self.__write_registers[finger+1] = speed
         self.__write_registers[finger+2] = force
-        self.__send_cmd()
-
-    def move_finger(self, finger, position, speed = 255, force = 0):
-        self.async_move_finger(finger, position, speed, force)
-        self.ready_wait()
-
-    def async_move_fingers(self, positionA, positionB, positionC, speedA = 255, speedB = 255, speedC = 255, forceA = 0, forceB = 0, forceC = 0):
-        self.__write_registers[0] = self.__write_registers[0] | 8 # move
-        self.__write_registers[1] = 4 # advanced mode (individual finger control)
-        self.__write_registers[Finger.A] = positionA
-        self.__write_registers[Finger.A+1] = speedA
-        self.__write_registers[Finger.A+2] = forceA
-        self.__write_registers[Finger.B] = positionB
-        self.__write_registers[Finger.B+1] = speedB
-        self.__write_registers[Finger.B+2] = forceB
-        self.__write_registers[Finger.C] = positionC
-        self.__write_registers[Finger.C+1] = speedC
-        self.__write_registers[Finger.C+2] = forceC
-        self.__send_cmd()
-
-    def move_fingers(self, positionA, positionB, positionC, speedA = 255, speedB = 255, speedC = 255, forceA = 0, forceB = 0, forceC = 0):
-        self.async_move_fingers(positionA, positionB, positionC, speedA, speedB, speedC, forceA, forceB, forceC)
-        self.ready_wait()
-        
-    def close(self, speed = 255, force = 0):
-        self.move(255, speed, force)
-
-    def grasp(self, speed = 255, force = 0):
-        self.set_mode(GraspMode.BASIC)
-        self.close(speed, force)
-
-    def pinch(self, speed = 255, force = 0):
-        self.set_mode(GraspMode.PINCH)
-        self.close(speed, force)
-
-    def release(self, speed = 0):
-        self.move(0, speed, 0)
-
-    def open(self, speed = 255):
-        self.move(0, speed, 0)
-
-    def ready_wait(self):
-        while not self.is_done():
-            time.sleep(0.01)
-            self.read()
-
-
-

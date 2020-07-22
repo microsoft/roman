@@ -8,8 +8,7 @@ import socket
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
 from roman.common import Vec
-from roman.arm.types import *
-from roman.arm.URScripts.constants import *
+from roman.ur import *
 
 def vec_test():
     print(f"Running {__file__}::{vec_test.__name__}()")

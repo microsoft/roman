@@ -8,8 +8,8 @@ There can be multiple active controller chains, but only one can be used at a ti
 
 import numpy as np
 import math
-from .types import *
-from .URScripts.constants import *
+from .arm import *
+from .scripts.constants import *
 
 class ArmController(object):
     '''
