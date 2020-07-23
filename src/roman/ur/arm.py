@@ -22,6 +22,8 @@ class Joints(Position):
         self.array[:] = [base, shoulder, elbow, wrist1, wrist2, wrist3]
 
     def allclose(self, array, tolerance = UR_JOINTS_POSITION_TOLERANCE):
+        # for i in range[6]:
+            # if self.array[i] != 
         return np.allclose(self.array, array, rtol=0, atol=tolerance)
 
 class Tool(Position):     

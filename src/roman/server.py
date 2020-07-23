@@ -6,7 +6,7 @@ from . import rq
 from . import ur
 from .sim.ur import SimEnv
         
-def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=None):
+def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=None, freq = 1./125):
     '''
     Control loop running at the same frequency as the hardware (e.g. 125Hz).
     It enables high-speed closed-loop control using force and tactile sensing (but no vision).
@@ -36,6 +36,7 @@ def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=Non
     arm_cmd = ur.Command()
     hand_cmd = rq.Command.stop()
     while not shutdown_event.is_set():
+        start_time = time.time()
         arm_cmd_is_new = arm_client.poll()
         if arm_cmd_is_new:
             arm_client.recv_bytes_into(arm_cmd.array) # blocking
@@ -57,6 +58,9 @@ def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=Non
         #log(file, arm_cmd, hand_cmd, arm_state, hand_state)
         if log_file is not None:
             file.write(arm_cmd, hand_cmd, arm_state, hand_state)
+
+        if time.time()-start_time > 2*freq:
+            print("Server loop lagging: " + str(time.time()-start_time))
 
     # Disconnect the arm and gripper.
     arm_con.disconnect()

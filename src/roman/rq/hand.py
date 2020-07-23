@@ -53,7 +53,6 @@ class State(Vec):
     _FLAG_INCONSISTENT = 2
     _FLAG_FAULTED = 4
     _FLAG_MOVING = 8
-    _FLAG_DONE = 16
     _FLAG_OBJECT_DETECTED = 32
 
     def __init__(self):
@@ -64,7 +63,7 @@ class State(Vec):
     def is_inconsistent(self): return self[State._FLAGS] & State._FLAG_INCONSISTENT
     def is_faulted(self): return self[State._FLAGS] & State._FLAG_FAULTED
     def is_moving(self): return self[State._FLAGS] & State._FLAG_MOVING
-    def is_done(self): return self[State._FLAGS] & State._FLAG_DONE
+    def is_done(self): return self.is_ready() and not self.is_moving()
     def object_detected(self): return self[State._FLAGS] & State._FLAG_OBJECT_DETECTED  
     def mode(self): return self[State._MODE]
     def target_A(self): return self[State._TARGET_A]

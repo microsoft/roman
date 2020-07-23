@@ -19,7 +19,8 @@ def read_test(con):
     arm_ctrl = ur.ArmController(con)
     cmd = ur.Command().read()
     state = arm_ctrl(cmd)
-    print(state.tool_pose())
+    print("Tool pose:" + str(state.tool_pose()))
+    print("Joint positions:" + str(state.joint_positions()))
     con.disconnect()
     print("Passed.")   
     
@@ -28,19 +29,25 @@ def move_test(con):
     con.connect()
     arm_ctrl = ur.ArmController(con)
 
-    #cmd = Command(target_position=Tool(-0.4, -0.4, 0.3,0, math.pi, 0))
-    cmd = ur.Command(target_position=Tool(-0.4, -0.4, 0.3,0, math.pi/2, math.pi))
+    cmd = ur.Command(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0))
     state = arm_ctrl(cmd)
     while not state.is_goal_reached():
         state = arm_ctrl(cmd)
 
+    cmd = ur.Command(target_position=ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0))
+    state = arm_ctrl(cmd)
+    while not state.is_goal_reached():
+        state = arm_ctrl(cmd)
+
+    print("Tool pose:" + str(state.tool_pose()))
+    print("Joint positions:" + str(state.joint_positions()))
     con.disconnect()
     print("Passed.")    
 
    
 def run(real_robot = False):
     if real_robot:
-        read_test(ur.Connection())
+        #read_test(ur.Connection())
         move_test(ur.Connection())
     else:
         env = SimEnv()

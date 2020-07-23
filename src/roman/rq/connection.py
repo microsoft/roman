@@ -73,7 +73,6 @@ class Connection(object):
         else: #Command._CMD_KIND_MOVE
             if cmd[Command._MODE] != GraspMode.CURRENT:
                 self.set_mode(cmd[Command._MODE])
-                self.__send()
             if cmd[Command._FINGER] == Finger.All:
                 self.move(cmd[Command._POSITION], cmd[Command._SPEED], cmd[Command._FORCE])
             else:
@@ -86,8 +85,7 @@ class Connection(object):
             + State._FLAG_FAULTED*self.is_faulted() \
             + State._FLAG_INCONSISTENT * self.is_inconsistent() \
             + State._FLAG_OBJECT_DETECTED * self.object_detected() \
-            + State._FLAG_MOVING * self.is_moving() \
-            + State._FLAG_DONE * self.is_done()
+            + State._FLAG_MOVING * self.is_moving() 
         state[State._MODE] = self.mode()
         state[State._TARGET_A:] = self.__read_registers[3]
 
@@ -155,7 +153,7 @@ class Connection(object):
     def is_ready(self): return self.__read_registers[0] & 0x31 == 0x31 and not self.is_inconsistent()
     def is_faulted(self): return self.__read_registers[2] != 0
     def is_moving(self): return self.__read_registers[0] & 0xC8 == 0x08  
-    def is_done(self): return self.is_ready() and not self.is_moving()
+    
     def object_detected(self): return self.is_ready() and self.__read_registers[1] != 0xFF
     def mode(self): return self.__read_registers[0] & 0xF9
 

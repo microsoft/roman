@@ -24,6 +24,12 @@ class SimEnv(object):
     def reset(self):
         pb.resetSimulation()
         self.arm_id = pb.loadURDF(self.arm_urdf, baseOrientation = pb.getQuaternionFromEuler([0, 0, math.pi]))
+
+        # dump joints:
+        for i in range(pb.getNumJoints(self.arm_id)):
+            ji = pb.getJointInfo(self.arm_id, i)
+            print(f"{i}: ix={ji[0]}, name={ji[1]}, link={ji[12]}")
+
         #self.arm_id = pb.loadURDF(self.arm_urdf)
         base_joint = 1 # from urdf
         # start position is along the x axis, in negative direction 
