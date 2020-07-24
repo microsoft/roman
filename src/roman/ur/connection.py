@@ -56,8 +56,6 @@ class Connection(object):
         self.__ctrl_socket, addr = reverse_conn.accept() 
         if (addr[0] != self.robot_ip):
             raise RuntimeError("Invalid client connection")
-        # start the time counter (on Windows)
-        time.clock()
         print('System ready.')
 
     def disconnect(self):
