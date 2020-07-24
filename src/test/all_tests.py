@@ -1,17 +1,16 @@
-import types_test
-import controller_test
-import sim_test
-import server_test
-import upload_test
-import ur_test
-import manipulator_test
+import arm_unit_tests
+import arm_functional_test
+import arm_sim_tests
+import arm_upload_tests
+import hand_functional_tests
+import manipulator_tests
 
-real_robot = False
+real_robot = True
 if __name__ == '__main__':
-    types_test.run()
-    sim_test.run()
-    controller_test.run()
-    server_test.run()
-    ur_test.run(real_robot)
-    upload_test.run(real_robot)
-    manipulator_test.run()
+    arm_unit_tests.run()
+    arm_functional_test.run(real_robot)
+    arm_sim_tests.run()
+    arm_upload_tests.run(real_robot)
+    hand_functional_tests.run(real_robot)
+    manipulator_tests.run(real_robot)
+

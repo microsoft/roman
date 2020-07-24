@@ -28,13 +28,13 @@ def start():
     timer_thread = run timer_thread_fn() 
 
     # start the FT sensor thread
-    ft_read_thread = run ft_read_fn()
+    ft_thread = ft_connect()
 
     # # start the drive thread
     ur_drive_thread = run ur_drive_thread_fn()   
 
     # forever, read commands and write responses    
-    while True:    
+    while connected:    
         cmd = socket_read_ascii_float(UR_CMD_ENTRIES_COUNT, "ctrl") 
         #acquire the critical section as early as possible, to preempt the drive thread. This ensures everything takes place in one timestep.
         enter_critical
@@ -46,6 +46,7 @@ def start():
         end
         exit_critical
         if cmd[0] == 0:
+            connected = False
             continue
         end
         if UR_CMD_ENTRIES_COUNT != cmd[0]:
@@ -60,7 +61,12 @@ def start():
         socket_send_string(response, "ctrl")
         #textmsg("response sent ", cmd_time)
     end
-    popup("script exited")
+
+    kill ur_drive_thread
+    ft_disconnect(ft_thread)
+    kill timer_thread
+
+    textmsg("roman exited")
 end
 
 

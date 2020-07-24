@@ -9,8 +9,8 @@ ur_cmd_id = 0
 ur_cmd_kind = 0 
 ur_cmd_target_speed = UR_ZERO
 ur_cmd_max_acceleration = 0
-ur_cmd_force_low_bound = UR_ZERO
-ur_cmd_force_high_bound = UR_ZERO
+ur_cmd_force_low_bound = UR_DEFAULT_FORCE_LOW_BOUND
+ur_cmd_force_high_bound = UR_DEFAULT_FORCE_HI_BOUND
 ur_cmd_contact_handling = 0
 ur_cmd_target_position = UR_ZERO
 ur_cmd_max_speed = 0
@@ -63,17 +63,18 @@ thread ur_drive_thread_fn():
     while True:
         kill cmd_thread
         enter_critical 
-        ur_target_speed = ur_get_target_speed(  ur_cmd_time,
-                                                ur_cmd_id,
-                                                ur_cmd_kind, 
-                                                ur_cmd_target_speed,
-                                                ur_cmd_max_acceleration,
-                                                ur_cmd_force_low_bound,
-                                                ur_cmd_force_high_bound,
-                                                ur_cmd_contact_handling,
-                                                ur_cmd_target_position,
-                                                ur_cmd_max_speed)
-        ur_max_acc = ur_cmd_max_acceleration
+        target = ur_get_target_speed( ur_cmd_time,
+                                      ur_cmd_id,
+                                      ur_cmd_kind, 
+                                      ur_cmd_target_speed,
+                                      ur_cmd_max_acceleration,
+                                      ur_cmd_force_low_bound,
+                                      ur_cmd_force_high_bound,
+                                      ur_cmd_contact_handling,
+                                      ur_cmd_target_position,
+                                      ur_cmd_max_speed)
+        ur_target_speed = [target[0], target[1], target[2], target[3], target[4], target[5]]
+        ur_max_acc = target[6]
         exit_critical
 
         # Trigger the move, by starting and then killing the move thread. The move still executes for the current time step.

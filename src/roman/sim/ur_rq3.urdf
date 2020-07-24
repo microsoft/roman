@@ -778,7 +778,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     Our custom TCP identifying the pinch grasp point (must match the TCP Installation on UR controller)
     -->
   <link name="grasp_point">
-    <!-- <visual>
+    <visual>
       <geometry>
         <box size="0.01 0.01 0.01"/>
       </geometry>
@@ -786,13 +786,13 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
       <material name="Red">
         <color rgba="1.0 0 0 1.0"/>
       </material>
-    </visual> -->
-    <collision>
+    </visual>
+    <!-- <collision>
       <geometry>
         <box size="0.01 0.01 0.01"/>
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0"/> 
-    </collision>
+    </collision> -->
   </link>
   <joint name="tool0-grasp_point_fixed_joint" type="fixed">
     <parent link="tool0"/>

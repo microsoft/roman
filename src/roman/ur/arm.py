@@ -227,7 +227,7 @@ class Command(Vec):
     def force_low_bound(self): return Tool.fromarray(self[Command._MOVE_FORCE_LOW_BOUND], False)
     def force_high_bound(self): return Tool.fromarray(self[Command._MOVE_FORCE_HIGH_BOUND], False)
     def contact_handling(self): return self[Command._MOVE_CONTACT_HANDLING]
-    def target_position(self): return Tool.fromarray(self[Command._MOVE_TARGET_POSITION], False) if self.kind == UR_CMD_KIND_MOVE_TOOL_POSE else Joints.fromarray(self[Command._MOVE_TARGET_POSITION], False)
+    def target_position(self): return Tool.fromarray(self[Command._MOVE_TARGET_POSITION], False) if self.kind() == UR_CMD_KIND_MOVE_TOOL_POSE else Joints.fromarray(self[Command._MOVE_TARGET_POSITION], False)
     def max_speed(self): return self[Command._MOVE_MAX_SPEED]
     def controller(self): return self[Command._MOVE_CONTROLLER]
     def is_move_command(self): return self.kind() > UR_CMD_KIND_READ and self.kind() < UR_CMD_KIND_CONFIG

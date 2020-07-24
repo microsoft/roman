@@ -9,12 +9,6 @@ from .urlib import *
 ## even if the command is the same.
 ################################################################################################################################
 
-# Computes the speed required to comply with the external force
-def ur_force_control():
-    #textmsg("Contact detected: ", external_force)
-    return [0,0,0,0,0,0]
-#ur:end
-
 # generates a trapezoidal speed profile for one joint 
 def ur_speed_from_joint_position(current_pos, current_speed, target_pos, target_speed, max_speed, acc):
     distance = target_pos - current_pos
@@ -94,25 +88,27 @@ def ur_get_target_speed(cmd_time, id, kind, target_speed, max_acc, force_low_bou
     global ctrl_last_loop_time
     ctrl_last_loop_time = ur_check_loop_delay(ctrl_last_loop_time) 
     # determine external forces and motion status
-    force_limit_reached = False #ur_force_limit_exceeded(force_low_bound, force_high_bound) 
+    force_limit_reached = ur_force_limit_exceeded(force_low_bound, force_high_bound) 
     # only flip is_contact back to false when we receive a new command 
     global ctrl_last_cmd_id
     global ctrl_is_contact
-    ctrl_is_contact = force_limit_reached or (ctrl_is_contact and (id == ctrl_last_cmd_id)) 
+    ctrl_is_contact = force_limit_reached #or (ctrl_is_contact and (id == ctrl_last_cmd_id)) 
     ctrl_last_cmd_id = id
     global ctrl_is_deadman
-    ctrl_is_deadman = False
+    was_deadman = ctrl_is_deadman
+    ctrl_is_deadman = (ctrl_last_loop_time - cmd_time) > UR_DEADMAN_SWITCH_LIMIT
 
     # determine desired speed 
-    if force_limit_reached: 
-        cmd = ur_force_control()
-        max_acc = UR_FAST_STOP_ACCELERATION
-        textmsg("force limit reached")
-    elif (ctrl_last_loop_time - cmd_time) > UR_DEADMAN_SWITCH_LIMIT:
+    if ctrl_is_deadman:
         cmd = UR_ZERO
         max_acc = UR_FAST_STOP_ACCELERATION
-        ctrl_is_deadman = True
-        textmsg("deadman")
+        if not was_deadman:
+            textmsg("deadman")
+        #ur:end
+    elif ctrl_is_contact: 
+        cmd = UR_ZERO
+        max_acc = UR_FAST_STOP_ACCELERATION
+        #textmsg("force limit reached")
     elif kind == UR_CMD_KIND_MOVE_JOINTS_POSITION:
         cmd = ur_speed_from_joint_positions(target_position, target_speed, max_speed, max_acc)
     else:
@@ -122,5 +118,5 @@ def ur_get_target_speed(cmd_time, id, kind, target_speed, max_acc, force_low_bou
     ctrl_is_moving = (norm(cmd) > UR_SPEED_TOLERANCE) or (norm(get_actual_joint_speeds()) > UR_SPEED_TOLERANCE)
 
     # update state
-    return cmd
+    return [cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], max_acc]
 #ur:end

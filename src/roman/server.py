@@ -4,7 +4,7 @@ import threading
 import time
 from . import rq
 from . import ur
-from .sim.ur import SimEnv
+from .sim.ur_rq3 import SimEnv
         
 def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=None, freq = 1./125):
     '''
@@ -16,6 +16,7 @@ def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=Non
         #file.write(ur.UR_PROTOCOL_VERSION)
 
     real_robot = config.get("real_robot", 0) 
+
     # TODO: add arguments from config
     env = None
     if real_robot:
@@ -29,9 +30,8 @@ def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=Non
 
     arm_con.connect()
     hand_con.connect()
-    arm_ctrl = ur.ArmController(arm_con)
+    arm_ctrl = ur.EMAForceCalibrator(ur.ArmController(arm_con))
     hand_ctrl = rq.HandController(hand_con)
-    # TODO: chain other controllers based on config 
 
     arm_cmd = ur.Command()
     hand_cmd = rq.Command.stop()
@@ -40,6 +40,7 @@ def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=Non
         arm_cmd_is_new = arm_client.poll()
         if arm_cmd_is_new:
             arm_client.recv_bytes_into(arm_cmd.array) # blocking
+            arm_cmd[ur.Command._ID] = time.time()
         
         hand_cmd_is_new = hand_client.poll()
         if hand_cmd_is_new:

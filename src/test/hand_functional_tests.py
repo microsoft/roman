@@ -11,10 +11,13 @@ print(rootdir)
 from roman import *
 from roman.rq import *
 
-def connection_test():
+#############################################################
+# These tests require a real hand for now (no sim option)
+#############################################################
+def connection_test(real_robot):
     print(f"Running {__file__}::{connection_test.__name__}()")
     state = State()
-    con = Connection()    
+    con = Connection() if real_robot else SimConnection(None)
     con.connect()
     cmd_close = Command.close()
     con.send(cmd_close, state)
@@ -26,7 +29,7 @@ def connection_test():
     print("Passed.")
 
 def controller_test():
-    print(f"Running {__file__}::{connection_test.__name__}()")
+    print(f"Running {__file__}::{controller_test.__name__}()")
     # check that a tight lop also works
     state = State()
     con = Connection()    
@@ -48,38 +51,13 @@ def controller_test():
     con.disconnect()
     print("Passed.")
 
-def manipulator_test():
-    print(f"Running {__file__}::{manipulator_test.__name__}()")
-    
-    m = connect(config={"real_robot":True})
-    cmd = hand.Command.close()
-    while not m.hand_state.is_done():
-        m.cmd_hand(cmd)
-    cmd = hand.Command.open()
-    m.cmd_hand(cmd)
-    while not m.hand_state.is_done():
-        m.cmd_hand(cmd)
-    assert m.hand_state.position_A() == Position.OPENED
-
-    # cmd = hand.Command(Position.OPENED, mode=GraspMode.PINCH)
-    # m.cmd_hand(cmd)
-    # while not m.hand_state.is_done():
-    #     m.cmd_hand(cmd)
-    
-    # cmd = hand.Command(Position.CLOSED, mode=GraspMode.PINCH)
-    # m.cmd_hand(cmd)
-    # while not m.hand_state.is_done():
-    #     m.cmd_hand(cmd)
-
-    m.disconnect()
-    print("Passed.")
-
+#############################################################
+# Runner
+#############################################################
 def run(real_robot = False):
-    connection_test()
+    connection_test(real_robot)
     if real_robot:
         controller_test()
-        manipulator_test()
    
-#env_test()
 if __name__ == '__main__':
     run(True)

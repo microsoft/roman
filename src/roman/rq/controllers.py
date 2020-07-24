@@ -9,9 +9,13 @@ class HandController(object):
     def __init__(self, connection):
         self.connection = connection
         self.state = State()
-        #self.lastcmd = Command()
+        self.lastcmd = Command.read()
+        self.readcmd = Command.read()
 
     def __call__(self, cmd):
-        #if np.array_equals(cmd, self.lastcmd)
-        self.connection.send(cmd, self.state)
+        if not np.array_equal(cmd, self.lastcmd):
+            self.connection.send(cmd, self.state)
+            self.lastcmd[:] = cmd
+        else:
+            self.connection.send(self.readcmd, self.state)
         return self.state

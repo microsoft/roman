@@ -21,7 +21,7 @@ class ArmController(object):
         self.state = State()
 
     def __call__(self, cmd):
-        if cmd.id() > UR_CMD_KIND_CONFIG:
+        if cmd.kind() > UR_CMD_KIND_CONFIG:
             raise Exception(f"Invalid command: {cmd.id()}")
         self.connection.send(cmd, self.state)
         if cmd.is_move_command():
@@ -39,11 +39,11 @@ class EMAForceCalibrator(object):
     '''
     def __init__(self, next, alpha = 0.01):
         self.next = next
-        self.force_average = Joints()
-        self.cmd = Command()
-        self.state = State()
         self.alpha = alpha
         self.sample = Joints()
+        self.force_average = Joints() # we are assuming the FT sensor is reset to zero on startup
+        self.cmd = Command.read()
+        self.state = State()
 
     def __call__(self, cmd):
         if cmd.is_move_command():
@@ -57,6 +57,8 @@ class EMAForceCalibrator(object):
             np.multiply(self.force_average, 1-self.alpha, self.force_average.array)
             np.multiply(self.sample, self.alpha, self.sample.array)
             np.add(self.force_average, self.sample, self.force_average.array)
+        else:
+            print(f"Contact detected:{self.state.sensor_force()}, outside of bounds {self.cmd.force_low_bound()} and {self.cmd.force_high_bound()}")
 
         np.subtract(self.state.sensor_force(), self.force_average, self.state.sensor_force().array)
         return self.state

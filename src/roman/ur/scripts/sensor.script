@@ -9,7 +9,6 @@ FT_PORT_READ = 63351
 FT_SOCKET_CMD = "ft_socket_cmd"
 FT_SOCKET_READ = "ft_socket_read"
 ft_last =[0,0,0,0,0,0]
-ft_reset_next = False
 
 socket_close(FT_SOCKET_CMD)
 socket_close(FT_SOCKET_READ)
@@ -28,54 +27,32 @@ def ft_get(critical_section_already_acquired = False):
     return ft
 end
 
-# sets the sensor to zero without spending the thread quota, by scheduling an ft_set_zero() on the background thread
-def ft_set_zero_async():
-    ft_reset_next = True
-end
-
-def ft_set_zero():
-    socket_send_string("SET ZRO",FT_SOCKET_CMD)
-end
-
-def ft_read():
-    r = socket_read_ascii_float(6,FT_SOCKET_READ)
-    if r[0] != 6:
-        return [0,0,0,0,0,0]
-    end
-    #textmsg(r)
-    return [r[1], r[2], r[3], r[4], r[5], r[6]]
-end
-
-def ft_turn_stream_off():
-    socket_send_string("STREAM OFF",FT_SOCKET_CMD)
-end
-
-def ft_turn_stream_on():
-    socket_send_string("STREAM ON",FT_SOCKET_CMD)
-end
-
 thread ft_read_fn():
-    ft_turn_stream_off()
-    ft_turn_stream_on()
     while True:
-        ft = ft_read()
-        enter_critical 
-        ft_last = ft
-        exit_critical
-        if ft_reset_next:
-            ft_set_zero()
-            ft_reset_next = False
+        r = socket_read_ascii_float(6,FT_SOCKET_READ)
+        if r[0] == 6:
+            enter_critical 
+            ft_last = [r[1], r[2], r[3], r[4], r[5], r[6]]
+            exit_critical
         end
     end
 end
 
-def ft_debug():
-    ft_set_zero()
-    while True:
-        ft = ft_read()
-        textmsg("FT:", ft)
-        sleep(0.5)
+def ft_connect():
+    #socket_send_string("STREAM OFF",FT_SOCKET_CMD)
+    socket_send_string("SET ZRO",FT_SOCKET_CMD)
+    socket_send_string("STREAM ON",FT_SOCKET_CMD)
+    r = socket_read_ascii_float(6,FT_SOCKET_READ)
+    while r[0] != 6:
+        r = socket_read_ascii_float(6,FT_SOCKET_READ)
     end
+    ft_thread = run ft_read_fn()
+    return ft_thread
+end
+
+def ft_disconnect(ft_thread):
+    kill ft_thread
+    socket_send_string("STREAM OFF",FT_SOCKET_CMD)
 end
 
 def ft_print_serial_number():
@@ -105,7 +82,6 @@ end
 def ft_save_calib_context():
     socket_send_string("CALIB NEXT TOOL",FT_SOCKET_CMD)
 end
-
 
 def ft_get_sensor_state():
     socket_send_string("CURRENT STATE",FT_SOCKET_CMD)

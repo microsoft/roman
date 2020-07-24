@@ -19,7 +19,6 @@ class SimEnv(object):
             pb.resetDebugVisualizerCamera(1.5, -30, -15, cameraTargetPosition=[-0.4, 0, 0.3])
         else:
             pb.connect(pb.DIRECT)
-        
 
     def reset(self):
         pb.resetSimulation()
