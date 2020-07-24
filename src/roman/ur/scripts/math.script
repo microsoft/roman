@@ -1,0 +1,11 @@
+################################################################
+## math.script
+## Implements functions from Python's math module and built-ins
+################################################################
+def fabs(a):
+    if a<0:
+        return -a
+    end
+    return a
+end
+

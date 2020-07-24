@@ -239,6 +239,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
       <inertia ixx="0.0171364731454" ixy="0.0" ixz="0.0" iyy="0.0171364731454" iyz="0.0" izz="0.033822"/>
     </inertial>
   </link>
+  
 <!-- Robotiq FT300 -->
   <!-- Handcrafted approximation-->
   <!--TODO: include the mounting plate -->
@@ -246,7 +247,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
   <joint name="ft_sensor_fixed_joint" type="fixed">
     <parent link="wrist_3_link"/>
     <child link="ft_sensor"/>
-    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.1 0.0"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.101 0.0"/> 
   </joint>
 
   <link name="ft_sensor">
@@ -276,10 +277,39 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
 <!-- END Robotiq FT300 -->
 
 <!-- Robotiq 3F Gripper -->
-  <joint name="gripper_fixed_joint" type="fixed">
+  <joint name="gripper_fixed_mount_joint" type="fixed">
     <parent link="ft_sensor"/>
+    <child link="gripper_mount"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.034 0.0"/>
+  </joint>
+  <link name="gripper_mount">
+    <visual>
+      <geometry>
+        <cylinder radius="0.0375" length="0.0275"/>	
+      </geometry>
+      <origin rpy="1.570796326 0 0" xyz="0 0 0"/>
+      <material name="Green">
+        <color rgba="0.0 0.7 0.0 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="0.0375" length="0.0275"/>		
+      </geometry>
+      <origin rpy="1.570796326 0 0" xyz="0 0 0"/>
+    </collision>
+    <inertial> 
+      <!-- http://wiki.ros.org/urdf/Tutorials/Adding%20Physical%20and%20Collision%20Properties%20to%20a%20URDF%20Model-->
+      <!--https://en.wikipedia.org/wiki/List_of_moments_of_inertia#List_of_3D_inertia_tensors-->
+      <mass value="0.1"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <inertia ixx="0.00014" ixy="0.0" ixz="0.0" iyy="0.00014" iyz="0.0" izz="0.00021"/> 
+    </inertial>
+  </link>
+  <joint name="gripper_fixed_joint" type="fixed">
+    <parent link="gripper_mount"/>
     <child link="palm"/>
-    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0575 0.0"/>
+    <origin rpy="0.0 3.1415 0.0" xyz="0.0 0.0475 0.0"/>
   </joint>
 
 <!-- Copy/pasted from https://github.com/ros-industrial/robotiq/tree/kinetic-devel/robotiq_3f_gripper_visualization/meshes -->
@@ -735,13 +765,41 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     <parent link="base_link"/>
     <child link="base"/>
   </joint>
-  <!-- Frame coincident with all-zeros TCP on UR controller -->
+  <!-- 
+    Frame coincident with all-zeros TCP Installation on UR controller (i.e. not including the hand)    
+    -->
   <link name="tool0"/>
   <joint name="wrist_3_link-tool0_fixed_joint" type="fixed">
     <origin rpy="-1.570796325 0 0" xyz="0 0.0823 0"/>
     <parent link="wrist_3_link"/>
     <child link="tool0"/>
   </joint>
+  <!-- 
+    Our custom TCP identifying the pinch grasp point (must match the TCP Installation on UR controller)
+    -->
+  <link name="grasp_point">
+    <visual>
+      <geometry>
+        <box size="0.01 0.01 0.01"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="Red">
+        <color rgba="1.0 0 0 1.0"/>
+      </material>
+    </visual>
+    <!-- <collision>
+      <geometry>
+        <box size="0.01 0.01 0.01"/>
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0"/> 
+    </collision> -->
+  </link>
+  <joint name="tool0-grasp_point_fixed_joint" type="fixed">
+    <parent link="tool0"/>
+    <child link="grasp_point"/>
+    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.260"/>
+  </joint>
+  
   <link name="world"/>
   <joint name="world_joint" type="fixed">
     <parent link="world"/>
