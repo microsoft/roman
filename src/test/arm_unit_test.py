@@ -119,7 +119,7 @@ def chain_test():
     """Verify that nothing complains when chaining arm controllers"""
     print(f"Running {__file__}::{chain_test.__name__}()")
     con = Connection()
-    arm_ctrl = ArmController(con)
+    arm_ctrl = BasicController(con)
     force_calib_ctrl = EMAForceCalibrator(arm_ctrl)
     touch_ctrl = TouchController(force_calib_ctrl)
 
@@ -131,7 +131,7 @@ def chain_test():
 def arm_controller_test():
     """Verifies the lowest level arm controller, without sim or the real arm"""
     print(f"Running {__file__}::{arm_controller_test.__name__}()")
-    arm_ctrl = ArmController(Connection())
+    arm_ctrl = BasicController(Connection())
     cmd = Command(target_position=Tool(1,1,1,0,0,0))
     state = arm_ctrl(cmd)
     assert not state.is_goal_reached()
@@ -192,14 +192,14 @@ def touch_controller_test():
     print(f"Running {__file__}::{touch_controller_test.__name__}()")
     arm_state = State()
     arm_state[State._STATUS] = State._STATUS_FLAG_GOAL_REACHED
-    cmd = Command(target_position=Joints(0,0,0,0,0,0))
-    ctrl = TouchController(lambda cmd: (arm_state), validation_count=3)
+    cmd = Command(target_position=Joints(0,0,0,0,0,0), contact_handling=3)
+    ctrl = TouchController(lambda cmd: (arm_state))
     state = ctrl(cmd)
     assert not state.is_goal_reached()
     assert state.is_done()
 
     arm_state[State._STATUS] = State._STATUS_FLAG_CONTACT
-    cmd = Command(target_position=Joints(1,1,1,1,1,1))
+    cmd = Command(target_position=Joints(1,1,1,1,1,1), contact_handling=3)
     state = ctrl(cmd)
     assert not state.is_goal_reached()
     assert not state.is_done()

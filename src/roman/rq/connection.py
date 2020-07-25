@@ -155,7 +155,7 @@ class Connection(object):
     def is_moving(self): return self.__read_registers[0] & 0xC8 == 0x08  
     
     def object_detected(self): return self.is_ready() and self.__read_registers[1] != 0xFF
-    def mode(self): return self.__read_registers[0] & 0xF9
+    def mode(self): return self.__read_registers[0] & 6
 
     def deactivate(self): 
         self.__write_registers[0] = 0

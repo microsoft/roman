@@ -30,7 +30,7 @@ def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=Non
 
     arm_con.connect()
     hand_con.connect()
-    arm_ctrl = ur.EMAForceCalibrator(ur.ArmController(arm_con))
+    arm_ctrl = ur.ArmController(arm_con)
     hand_ctrl = rq.HandController(hand_con)
 
     arm_cmd = ur.Command()

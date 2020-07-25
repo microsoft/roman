@@ -232,7 +232,7 @@ class Command(Vec):
     def controller(self): return self[Command._MOVE_CONTROLLER]
     def is_move_command(self): return self.kind() > UR_CMD_KIND_READ and self.kind() < UR_CMD_KIND_CONFIG
 
-    def goal_reached(self, state):
+    def _goal_reached(self, state):
         if self[Command._KIND] == UR_CMD_KIND_MOVE_JOINTS_SPEED:
             return self.target_speed().allclose(state.joint_speeds(), UR_SPEED_TOLERANCE)
         elif self[Command._KIND] == UR_CMD_KIND_MOVE_JOINTS_POSITION:
@@ -247,6 +247,10 @@ class Command(Vec):
         cmd = Command.fromarray(np.zeros(Command._BUFFER_SIZE), clone=False)
         cmd[Command._KIND] = UR_CMD_KIND_READ
         return cmd
+
+    @staticmethod
+    def stop():
+        return Command()
 
     @staticmethod
     def config(self, mass = UR_DEFAULT_MASS, cog = UR_DEFAULT_TOOL_COG, tcp = UR_DEFAULT_TCP):

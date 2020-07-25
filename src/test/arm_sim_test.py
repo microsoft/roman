@@ -34,7 +34,7 @@ def move_arm_test(env):
     print(f"Running {__file__}::{move_arm_test.__name__}()")
 
     con = SimConnection(env)
-    arm_ctrl = ArmController(con)
+    arm_ctrl = BasicController(con)
     cmd = Command().read()
     state = arm_ctrl(cmd)
 

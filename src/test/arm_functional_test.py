@@ -17,7 +17,7 @@ from roman.sim.ur_rq3 import SimEnv
 def read_test(con):
     print(f"Running {__file__}::{read_test.__name__}()")
     con.connect()
-    arm_ctrl = ur.ArmController(con)
+    arm_ctrl = ur.BasicController(con)
     cmd = ur.Command().read()
     state = arm_ctrl(cmd)
     print("Tool pose:" + str(state.tool_pose()))
@@ -28,7 +28,7 @@ def read_test(con):
 def move_test(con):
     print(f"Running {__file__}::{move_test.__name__}()")
     con.connect()
-    arm_ctrl = ur.ArmController(con)
+    arm_ctrl = ur.BasicController(con)
 
     cmd = ur.Command(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0))
     state = arm_ctrl(cmd)
