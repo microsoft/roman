@@ -12,6 +12,20 @@ from roman.ur.scripts.interface import *
 #############################################################
 # State and Command unit tests 
 #############################################################
+def angle_test():
+    print(f"Running {__file__}::{angle_test.__name__}()")
+    assert close_angular(0, 2*math.pi)
+    assert close_angular(0, -2*math.pi)
+    assert close_angular(2*math.pi, -2*math.pi)
+    assert close_angular(math.pi, 3*math.pi)
+    assert close_angular(-math.pi, math.pi)
+    a = np.array([0, 0, 2*math.pi, math.pi])
+    b = np.array([2*math.pi, -2*math.pi, -2*math.pi, 3*math.pi])
+    assert allclose_angular(a+0.1, b+0.109, 0.01)
+    assert allclose_angular(a+0.005, b-0.004, 0.01)
+    print("Passed.")
+
+
 def vec_test():
     print(f"Running {__file__}::{vec_test.__name__}()")
     p = Vec(10)
@@ -228,6 +242,7 @@ def touch_controller_test():
 # Runner
 #############################################################
 def run():
+    angle_test()
     vec_test()
     state_test()
     command_test()

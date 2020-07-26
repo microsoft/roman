@@ -1,6 +1,34 @@
 import numpy as np
+import math
 from ..common import Vec
 from .scripts.constants import *
+
+TWO_PI = 2*math.pi
+
+def clamp_angle(a):
+    if a > math.pi:
+        return  a - TWO_PI
+    if a < -math.pi:
+        return a + TWO_PI
+    return a
+
+def close_angular(a, b, tolerance = UR_TOOL_ROTATION_TOLERANCE):
+    a = clamp_angle(a)
+    b = clamp_angle(b)
+    if math.fabs(a-b) <= tolerance:
+        return True
+    if math.fabs((a + TWO_PI) - b) <= tolerance:
+        return True
+    if math.fabs((b + TWO_PI) - a) <= tolerance:
+        return True
+
+def allclose_angular(a, b, tolerance = UR_TOOL_ROTATION_TOLERANCE):
+    if len(a) != len(b):
+        return False
+    for i in range(len(a)):
+        if not close_angular(a[i], b[i], tolerance):
+            return False
+    return True
 
 class Position(Vec): 
     pass
@@ -24,7 +52,7 @@ class Joints(Position):
     def allclose(self, array, tolerance = UR_JOINTS_POSITION_TOLERANCE):
         # for i in range[6]:
             # if self.array[i] != 
-        return np.allclose(self.array, array, rtol=0, atol=tolerance)
+        return np.allclose(self.array, array, rtol=0, atol=tolerance) or allclose_angular(self.array, array, tolerance)
 
 class Tool(Position):     
     '''
@@ -42,7 +70,7 @@ class Tool(Position):
         self.array[:] = [x, y, z, rx, ry, rz]
 
     def allclose(self, array, position_tolerance = UR_TOOL_POSITION_TOLERANCE, rotation_tolerance = UR_TOOL_ROTATION_TOLERANCE):
-        return np.allclose(self.array[:3], array[:3], rtol=0, atol=position_tolerance) and np.allclose(self.array[3:6], array[3:6], rtol=0, atol=rotation_tolerance) 
+        return np.allclose(self.array[:3], array[:3], rtol=0, atol=position_tolerance) and (np.allclose(self.array[3:6], array[3:6], rtol=0, atol=rotation_tolerance) or allclose_angular(self.array[3:6], array[3:6], rotation_tolerance))
             
 
 ################################################################

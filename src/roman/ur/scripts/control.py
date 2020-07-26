@@ -12,12 +12,13 @@ from .urlib import *
 # generates a trapezoidal speed profile for one joint 
 def ur_speed_from_joint_position(current_pos, current_speed, target_pos, target_speed, max_speed, acc):
     distance = target_pos - current_pos
-    lim = 0
+
+    lim = 0.0001
     if (distance * current_speed) > 0: # is the joint rotating in the right direction?
-        lim = 0.5*current_speed*current_speed/acc
+        lim = 0.0001 + 0.5*current_speed*current_speed/acc
     #ur:end
     # move with maximum speed as long as we are far away from the goal, and decelerate when we get close
-    if (distance*distance)>(lim*lim + 0.001 * (current_speed*current_speed / (max_speed*max_speed))):
+    if (distance*distance)>lim*lim:
         if distance<0: 
             return -max_speed
         #ur:end
