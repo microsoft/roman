@@ -105,19 +105,13 @@ def arm_touch():
     home_pos = ur.Command(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=1, max_acc=0.5)
     m.move_arm(home_pos)
     time.sleep(1)
-    below_table = ur.Command(
-        target_position=ur.Tool(-0.4, -0.4, -0.2, 0, math.pi, 0), 
-        max_speed=0.05, 
-        max_acc=0.05, 
-        force_low_bound=[-5,-5,-5,-0.5, -0.5, -0.5],
-        force_high_bound=[5,5,5,0.5, 0.5, 0.5],
-        contact_handling=5, 
-        controller = 1)
+    below_table = ur.Command.touch(ur.Tool(-0.4, -0.4, -0.2, 0, math.pi, 0)), 
 
-    while True:
-        m.move_arm(below_table)
-        m.move_arm(home_pos)
-        time.sleep(1)
+    #while True:
+    m.move_arm(below_table)
+    assert m.arm_state.goal_reached()
+    m.move_arm(home_pos)
+    #time.sleep(1)
 
     m.disconnect()
     print("Passed.")
@@ -127,11 +121,11 @@ def arm_touch():
 ############################################################# 
 def run(real_robot = False):
     arm_move(real_robot)
-    #arm_touch(real_robot)
     if real_robot:
         hand_move()
         arm_hand_move()
-
+        arm_touch()
+    
 if __name__ == '__main__':
     run(True)
     

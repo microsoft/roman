@@ -31,6 +31,19 @@ def vec_test():
     p = Tool.fromarray(x, clone=True)
     x[0]=0
     assert x[0] != p[0]
+    p = Tool(0,0,0,0,0,0)
+    r = p + [1,2,3,4,5,6]
+    assert type(r) is Tool
+    assert r == [1,2,3,4,5,6]
+    assert not r == [6,2,3,4,5,6]
+    assert r <= [1,2,3,4,5,6]
+    assert r <= [6,2,3,4,5,6]
+    assert not r <= [0,2,3,4,5,6]
+    assert not r < [6,2,3,4,5,6]
+    assert not r < [6,6,6,6,6,6]
+    r -= [0,0,0,0,0,1]
+    assert r < [6,6,6,6,6,6]
+
     print("Passed.")
 
 def state_test():

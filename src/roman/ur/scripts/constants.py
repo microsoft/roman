@@ -80,7 +80,7 @@ UR_DEFAULT_MAX_SPEED = 0.1  # rad/s
 # interface / protocol
 UR_RT_PORT = 30003 # real-time UR interface (RT)
 UR_ROBOT_IP = "192.168.1.2"
-UR_DEFAULT_CLIENT_IP = "192.168.1.10"
+UR_DEFAULT_CLIENT_IP = "192.168.1.9"
 UR_DEFAULT_CLIENT_PORT = 50003
 
 # these need to be defined outside, e.g. through the defs parameter of utils.load_script()

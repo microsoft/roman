@@ -79,6 +79,11 @@ class TouchController(object):
     def __call__(self, cmd):
         
         self.state[:] = self.next(cmd)
+        
+        if self.state.is_goal_reached():
+            # stopped because the arm reached the goal but didn't detect contact, so this is a failure
+            self.state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 0)
+            self.state.set_state_flag(State._STATUS_FLAG_DONE, 1)
 
         if cmd.id() != self.cmd_id and cmd.is_move_command():
             # new command, reset
@@ -88,12 +93,6 @@ class TouchController(object):
             return self.state
         
         if self.state.is_moving() and not self.state.is_contact():
-            return self.state
-        
-        if self.state.is_goal_reached():
-            # stopped because the arm reached the goal but didn't detect contact, so this is a failure
-            self.state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 0)
-            self.state.set_state_flag(State._STATUS_FLAG_DONE, 1)
             return self.state
 
         if self.count == 0 or np.any(self.force_sum < cmd.force_low_bound()*cmd.contact_handling()) or np.any(self.force_sum > cmd.force_high_bound()*cmd.contact_handling()):

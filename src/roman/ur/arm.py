@@ -253,10 +253,22 @@ class Command(Vec):
         return Command()
 
     @staticmethod
-    def config(self, mass = UR_DEFAULT_MASS, cog = UR_DEFAULT_TOOL_COG, tcp = UR_DEFAULT_TCP):
+    def config(mass = UR_DEFAULT_MASS, cog = UR_DEFAULT_TOOL_COG, tcp = UR_DEFAULT_TCP):
         cmd = Command.fromarray(np.zeros(Command._BUFFER_SIZE), clone=False)
         cmd[Command._KIND] = UR_CMD_KIND_CONFIG
         cmd[Command._CONFIG_MASS]=mass
         cmd[Command._CONFIG_TOOL_COG]=cog
         cmd[Command._CONFIG_TOOL_TIP]=tcp
+        return cmd
+
+    @staticmethod
+    def touch( 
+            target_position, 
+            max_speed=0.05, 
+            max_acc=0.05, 
+            force_low_bound=[-5,-5,-5,-0.5, -0.5, -0.5],
+            force_high_bound=[5,5,5,0.5, 0.5, 0.5],
+            contact_handling=5, 
+            controller = 1):
+        cmd = Command(target_position, max_speed=max_speed, max_acc=max_acc, force_low_bound=force_low_bound, force_high_bound=force_high_bound, contact_handling=contact_handling, controller=controller)
         return cmd

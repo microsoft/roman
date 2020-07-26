@@ -37,6 +37,44 @@ class Vec(object):
     def __repr__(self):
         return type(self).__name__+"({s})".format(s = np.array2string(self.array, separator=","))
 
+    def __iadd__(self, other):
+        self.array += other
+        return self
+
+    def __isub__(self, other):
+        self.array -= other
+        return self
+
+    def __add__(self, other):
+        cls = self.__class__
+        res = cls.__new__(cls)
+        res.array = self.array + other
+        return res
+
+    def __sub__(self, other):
+        cls = self.__class__
+        res = cls.__new__(cls)
+        res.array = self.array - other
+        return res
+
+    def __lt__(self, other):
+        return np.all(self.array.__lt__(other))
+
+    def __le__(self, other):
+        return np.all(self.array.__le__(other))
+
+    def __eq__(self, other):
+        return np.all(self.array.__eq__(other))
+
+    def __ne__(self, other):
+        return np.any(self.array.__ne__(other))
+
+    def __gt__(self, other):
+        return np.all(self.array.__gt__(other))
+
+    def __ge__(self, other):
+        return np.all(self.array.__ge__(other))
+
 
 ################################################################
 ## socket operations
