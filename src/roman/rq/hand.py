@@ -66,6 +66,8 @@ class State(Vec):
     def is_done(self): return self.is_ready() and not self.is_moving()
     def object_detected(self): return self[State._FLAGS] & State._FLAG_OBJECT_DETECTED  
     def mode(self): return self[State._MODE]
+    def target(self): return self[State._TARGET_A]
+    def position(self): return self[State._POSITION_A]
     def target_A(self): return self[State._TARGET_A]
     def position_A(self): return self[State._POSITION_A]
     def current_A(self): return self[State._CURRENT_A]
@@ -91,36 +93,59 @@ class Command(Vec):
     _CMD_KIND_STOP = 1
     _CMD_KIND_MOVE = 2
 
-    def __init__(self, position, speed = 255, force = 0, mode=GraspMode.CURRENT, finger = Finger.All):
+    def __init__(self):
         super().__init__(Command._BUFFER_SIZE, dtype=np.int16)
-        self[Command._KIND] = Command._CMD_KIND_MOVE 
+
+    def make(self, kind, position, speed, force, mode, finger):
+        self[Command._KIND] = kind
         self[Command._MODE] = mode 
-        self[Command._FINGER] = Finger.All
+        self[Command._FINGER] = finger
         self[Command._POSITION] = position
         self[Command._SPEED] = speed
         self[Command._FORCE] = force
+        return self
 
-    @staticmethod
-    def stop():
-        cmd = Command(Position.CURRENT)
-        cmd[Command._KIND] = Command._CMD_KIND_STOP
-        return cmd
+    def kind(self): return self[Command._KIND]
+    def mode(self): return self[Command._MODE]
+    def finger(self): return self[Command._FINGER]
+    def position(self): return self[Command._POSITION]
+    def speed(self): return self[Command._SPEED]
+    def force(self): return self[Command._FORCE]
 
-    @staticmethod
-    def read():
-        cmd = Command(Position.CURRENT)
-        cmd[Command._KIND] = Command._CMD_KIND_READ
-        return cmd
+class Hand(object):        
+    _READ_CMD = Command.make(Command(), Command._CMD_KIND_READ, 0, 0, 0, GraspMode.CURRENT, Finger.All)
 
-    @staticmethod
-    def close(speed = 255, force = 0, mode = GraspMode.CURRENT):
-        return Command(position=Position.CLOSED, speed = speed, force = force, mode=mode, finger = Finger.All)
+    def __init__(self, controller):
+        self.controller = controller
+        self.command = Command()
+        self.state = State() 
 
-    @staticmethod
-    def open(speed = 255, force = 0, mode = GraspMode.CURRENT):
-        return Command(position=Position.OPENED, speed = speed, force = force, mode=mode, finger = Finger.All)
+    def __execute(self, blocking):
+        self.controller.execute(self.command, self.state)
+        while blocking and not self.state.is_done():
+            self.read()
 
-    @staticmethod
-    def change(mode):
-        return Command(position=Position.CURRENT, speed = 0, force = 0, mode=mode, finger = Finger.All)
+    def read(self):
+        self.controller.execute(Hand._READ_CMD, self.state)
+        return self.state
+
+    def move(self, finger, position, speed = 255, force = 0, blocking = True):
+        self.command.make(Command._CMD_KIND_MOVE, finger, position, speed, force, GraspMode.CURRENT)
+        self.__execute(blocking)
+
+    def stop(self, blocking = True):
+        self.command.make(Command._CMD_KIND_STOP, Finger.All, 0, 0, 0, GraspMode.CURRENT)
+        self.__execute(blocking)
+
+    def close(self, speed = 255, force = 0, blocking = True):
+        self.command.make(Command._CMD_KIND_MOVE, Finger.All, Position.CLOSED, speed, force, blocking)
+        self.__execute(blocking)
+
+    def open(self, speed = 255, force = 0, blocking = True):
+        self.command.make(Command._CMD_KIND_MOVE, Finger.All, Position.OPENED, speed, force, blocking)
+        self.__execute(blocking)
+
+    def change(self, mode):
+        self.command.make(Command._CMD_KIND_MOVE, Finger.All, Position.CURRENT, 0, 0, mode)
+        self.__execute(True)
 

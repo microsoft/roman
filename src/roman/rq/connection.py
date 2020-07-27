@@ -63,7 +63,7 @@ class Connection(object):
         self.__modbus_socket.close()
         self.__modbus_socket = None
 
-    def send(self, cmd, state):
+    def execute(self, cmd, state):
         # translate and send the command
         if cmd[Command._KIND] == Command._CMD_KIND_READ:
             self.__read()
