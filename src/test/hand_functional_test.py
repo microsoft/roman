@@ -21,8 +21,12 @@ def connection_test(real_robot):
     hand = Hand(con)
     hand.close(blocking=False)
     time.sleep(2)
+    hand.read()
+    assert hand.state.position() == Position.CLOSED
     hand.open(blocking=False)
     time.sleep(2)
+    hand.read()
+    assert hand.state.position() == Position.OPENED
     con.disconnect()
     print("Passed.")
 
@@ -47,7 +51,7 @@ def run(real_robot = False):
     
     if real_robot:
         connection_test(real_robot)
-        #controller_test()
+        controller_test()
    
 if __name__ == '__main__':
     run(True)

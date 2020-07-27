@@ -96,7 +96,7 @@ class Command(Vec):
     def __init__(self):
         super().__init__(Command._BUFFER_SIZE, dtype=np.int16)
 
-    def make(self, kind, position, speed, force, mode, finger):
+    def make(self, kind, finger, position, speed, force, mode):
         self[Command._KIND] = kind
         self[Command._MODE] = mode 
         self[Command._FINGER] = finger
