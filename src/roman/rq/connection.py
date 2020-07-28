@@ -63,18 +63,17 @@ class Connection(object):
         self.__modbus_socket.close()
         self.__modbus_socket = None
 
-    def send(self, cmd, state):
+    def execute(self, cmd, state):
         # translate and send the command
         if cmd[Command._KIND] == Command._CMD_KIND_READ:
             self.__read()
         elif cmd[Command._KIND] == Command._CMD_KIND_STOP:
             self.stop()
             self.__send()
+        elif cmd[Command._KIND] == Command._CMD_KIND_CHANGE:
+            self.set_mode(cmd[Command._MODE])
+            self.__send()
         else: #Command._CMD_KIND_MOVE
-            if cmd[Command._MODE] != GraspMode.CURRENT:
-                self.set_mode(cmd[Command._MODE])
-            else:
-                self.set_mode(self.mode())
             if cmd[Command._FINGER] == Finger.All:
                 self.move(cmd[Command._POSITION], cmd[Command._SPEED], cmd[Command._FORCE])
             else:
@@ -187,13 +186,13 @@ class Connection(object):
         if (self.__write_registers[1] != 4):
             self.__write_registers[1] = 4
             # make sure the command reflects the actual position when switching mode. 
-            self.__write_registers[Finger.A] = self.finger_position(Finger.A)
+            self.__write_registers[Finger.A] = self.__read_registers(Finger.A+1)
             self.__write_registers[Finger.A+1] = 0
             self.__write_registers[Finger.A+2] = 0
-            self.__write_registers[Finger.B] = self.finger_position(Finger.B)
+            self.__write_registers[Finger.B] = self.__read_registers(Finger.B+1)
             self.__write_registers[Finger.B+1] = 0
             self.__write_registers[Finger.B+2] = 0
-            self.__write_registers[Finger.C] = self.finger_position(Finger.C)
+            self.__write_registers[Finger.C] = self.__read_registers(Finger.C+1)
             self.__write_registers[Finger.C+1] = 0
             self.__write_registers[Finger.C+2] = 0
         

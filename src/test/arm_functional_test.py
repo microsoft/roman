@@ -18,8 +18,9 @@ def read_test(con):
     print(f"Running {__file__}::{read_test.__name__}()")
     con.connect()
     arm_ctrl = ur.BasicController(con)
-    cmd = ur.Command().read()
-    state = arm_ctrl(cmd)
+    cmd = ur.Command()
+    state = ur.State()
+    arm_ctrl.execute(cmd, state)
     print("Tool pose:" + str(state.tool_pose()))
     print("Joint positions:" + str(state.joint_positions()))
     con.disconnect()
@@ -30,23 +31,16 @@ def move_test(con):
     con.connect()
     arm_ctrl = ur.BasicController(con)
 
-    cmd = ur.Command(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0))
-    state = arm_ctrl(cmd)
-    while not state.is_goal_reached():
-        state = arm_ctrl(cmd)
+    arm = ur.Arm(arm_ctrl)
+    arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0))
+    assert arm.state.is_goal_reached()
+    arm.move(target_position=ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0))
+    assert arm.state.is_goal_reached()
+    arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0))
+    assert arm.state.is_goal_reached()
 
-    cmd = ur.Command(target_position=ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0))
-    state = arm_ctrl(cmd)
-    while not state.is_goal_reached():
-        state = arm_ctrl(cmd)
-
-    cmd = ur.Command(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0))
-    state = arm_ctrl(cmd)
-    while not state.is_goal_reached():
-        state = arm_ctrl(cmd)
-
-    print("Tool pose:" + str(state.tool_pose()))
-    print("Joint positions:" + str(state.joint_positions()))
+    print("Tool pose:" + str(arm.state.tool_pose()))
+    print("Joint positions:" + str(arm.state.joint_positions()))
     con.disconnect()
     print("Passed.")    
 
@@ -65,4 +59,4 @@ def run(real_robot = False):
         env.disconnect()
 
 if __name__ == '__main__':
-    run(False)
+    run(True)

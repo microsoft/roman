@@ -34,21 +34,22 @@ def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=Non
     hand_ctrl = rq.HandController(hand_con)
 
     arm_cmd = ur.Command()
-    hand_cmd = rq.Command.stop()
+    arm_state = ur.State()
+    hand_cmd = rq.Command()
+    hand_state = rq.State()
     while not shutdown_event.is_set():
         start_time = time.time()
         arm_cmd_is_new = arm_client.poll()
         if arm_cmd_is_new:
             arm_client.recv_bytes_into(arm_cmd.array) # blocking
-            arm_cmd[ur.Command._ID] = time.time()
         
         hand_cmd_is_new = hand_client.poll()
         if hand_cmd_is_new:
             hand_client.recv_bytes_into(hand_cmd.array) # blocking
         
         #rectify(arm_cmd, hand_cmd, arm_state, hand_state) # replace position delta with absolute, account for arm/hand/FT/tactile states
-        hand_state = hand_ctrl(hand_cmd)
-        arm_state = arm_ctrl(arm_cmd)
+        hand_ctrl.execute(hand_cmd, hand_state)
+        arm_ctrl.execute(arm_cmd, arm_state)
 
         if arm_cmd_is_new:
             arm_client.send_bytes(arm_state.array)

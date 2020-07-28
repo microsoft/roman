@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from .hand import *
 
 class HandController(object):
@@ -8,14 +9,16 @@ class HandController(object):
     '''
     def __init__(self, connection):
         self.connection = connection
-        self.state = State()
-        self.lastcmd = Command.read()
-        self.readcmd = Command.read()
+        self.lastcmd = Command()
+        self.readcmd = Command()
+        self.__last = time.time()
 
-    def __call__(self, cmd):
+    def execute(self, cmd, state):
         if not np.array_equal(cmd, self.lastcmd):
-            self.connection.send(cmd, self.state)
+            self.connection.execute(cmd, state)
             self.lastcmd[:] = cmd
-        else:
-            self.connection.send(self.readcmd, self.state)
-        return self.state
+        elif time.time() - self.__last > 0.01: # max recommended hand freq
+            self.connection.execute(self.readcmd, state)
+            self.__last = time.time()
+            
+        return state

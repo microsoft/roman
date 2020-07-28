@@ -18,17 +18,16 @@ class BasicController(object):
     '''
     def __init__(self, connection):
         self.connection = connection
-        self.state = State()
 
-    def __call__(self, cmd):
+    def execute(self, cmd, state):
         if cmd.kind() > UR_CMD_KIND_CONFIG:
             raise Exception(f"Invalid command: {cmd.id()}")
-        self.connection.send(cmd, self.state)
+        self.connection.execute(cmd, state)
         if cmd.is_move_command():
-            at_goal = cmd._goal_reached(self.state)
-            self.state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, at_goal)
-            self.state.set_state_flag(State._STATUS_FLAG_DONE, at_goal)
-        return self.state
+            at_goal = cmd._goal_reached(state)
+            state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, at_goal)
+            state.set_state_flag(State._STATUS_FLAG_DONE, at_goal)
+        return state
 
 class EMAForceCalibrator(object):
     '''
@@ -42,26 +41,25 @@ class EMAForceCalibrator(object):
         self.alpha = alpha
         self.sample = Joints()
         self.force_average = Joints() # we are assuming the FT sensor is reset to zero on startup
-        self.cmd = Command.read()
-        self.state = State()
+        self.cmd = Command()
 
-    def __call__(self, cmd):
+    def execute(self, cmd, state):
+        self.cmd[:] = cmd
         if cmd.is_move_command():
-            self.cmd[:] = cmd
             np.add(self.force_average, cmd.force_low_bound(), self.cmd.force_low_bound().array)
             np.add(self.force_average, cmd.force_high_bound(), self.cmd.force_high_bound().array)
         
-        self.state[:] = self.next(self.cmd)   
-        if not self.state.is_contact():
-            self.sample[:] = self.state.sensor_force()
+        self.next.execute(self.cmd, state)   
+        if not state.is_contact():
+            self.sample[:] = state.sensor_force()
             np.multiply(self.force_average, 1-self.alpha, self.force_average.array)
             np.multiply(self.sample, self.alpha, self.sample.array)
             np.add(self.force_average, self.sample, self.force_average.array)
         # else:
-        #     print(f"Contact detected:{self.state.sensor_force()}, outside of bounds {self.cmd.force_low_bound()} and {self.cmd.force_high_bound()}")
+        #     print(f"Contact detected:{state.sensor_force()}, outside of bounds {self.cmd.force_low_bound()} and {self.cmd.force_high_bound()}")
 
-        np.subtract(self.state.sensor_force(), self.force_average, self.state.sensor_force().array)
-        return self.state
+        np.subtract(state.sensor_force(), self.force_average, state.sensor_force().array)
+        return state
 
 class TouchController(object):
     '''
@@ -69,49 +67,48 @@ class TouchController(object):
     '''
     def __init__(self, next):
         self.next = next
-        self.state = State()
         self.contact_position = Joints()
         self.count = 1
         self.validation_count = 1
         self.cmd_id = 0
         self.force_sum = np.zeros(6)
 
-    def __call__(self, cmd):
+    def execute(self, cmd, state):
         
-        self.state[:] = self.next(cmd)
+        self.next.execute(cmd, state)
         
-        if self.state.is_goal_reached():
+        if state.is_goal_reached():
             # stopped because the arm reached the goal but didn't detect contact, so this is a failure
-            self.state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 0)
-            self.state.set_state_flag(State._STATUS_FLAG_DONE, 1)
+            state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 0)
+            state.set_state_flag(State._STATUS_FLAG_DONE, 1)
 
         if cmd.id() != self.cmd_id and cmd.is_move_command():
             # new command, reset
             self.cmd_id = cmd.id()
             self.count = self.validation_count = cmd.contact_handling()
             self.force_sum[:] = 0
-            return self.state
+            return state
         
-        if self.state.is_moving() and not self.state.is_contact():
-            return self.state
+        if state.is_moving() and not state.is_contact():
+            return state
 
         if self.count == 0 or np.any(self.force_sum < cmd.force_low_bound()*cmd.contact_handling()) or np.any(self.force_sum > cmd.force_high_bound()*cmd.contact_handling()):
-            self.state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 1)
-            self.state.set_state_flag(State._STATUS_FLAG_DONE, 1)
-            return self.state
+            state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 1)
+            state.set_state_flag(State._STATUS_FLAG_DONE, 1)
+            return state
 
-        if not self.state.is_contact():
-            return self.state
+        if not state.is_contact():
+            return state
 
-        if self.contact_position.allclose(self.state.joint_positions()):
-            self.force_sum += self.state.sensor_force()
+        if self.contact_position.allclose(state.joint_positions()):
+            self.force_sum += state.sensor_force()
             self.count -= 1
         else:
             self.count = self.validation_count
             self.force_sum[:] = 0
-            self.contact_position[:] = self.state.joint_positions()
+            self.contact_position[:] = state.joint_positions()
 
-        return self.state
+        return state
 
 
 class ArmController(object):
@@ -124,12 +121,12 @@ class ArmController(object):
         ema = EMAForceCalibrator(basic)
         touch = TouchController(ema)
         self.controllers = [ema, touch]
-        self.cmd = Command.stop()
+        self.cmd = Command()
 
-    def __call__(self, cmd):
+    def execute(self, cmd, state):
         if cmd.kind() != UR_CMD_KIND_READ:
             # ignore read commands and simply send the last move command (or config cmd). The timestamp/id of the command identifies it as old.
             self.cmd[:] = cmd
         controller = self.controllers[int(self.cmd.controller())]
-        return controller(self.cmd)
+        return controller.execute(self.cmd, state)
  

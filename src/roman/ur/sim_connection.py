@@ -14,7 +14,7 @@ class SimConnection(object):
     def disconnect(self):
         pass
 
-    def send(self, cmd, state):
+    def execute(self, cmd, state):
         """Sends the command to control layer and reads back the state, emulating the wire protocol used with the real robot."""
         state[:] = interface.execute_arm_command(cmd, 0)
         self.env.update()
