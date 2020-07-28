@@ -44,8 +44,19 @@ class Robot(object):
         self.arm.move(current)
         pass
 
-def connect(config={}):
+def connect():
     m = Robot()
     m.connect(config)
     return m
+
+def connect_real():
+    m = Robot()
+    m.connect({"real_robot":True})
+    return m
+
+def connect_sim():
+    m = Robot()
+    m.connect({"real_robot":False})
+    return m
+
 
