@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import time
+from scipy.spatial.transform import Rotation
 from ..common import Vec
 from .scripts.constants import *
 
@@ -57,7 +58,7 @@ class Joints(Position):
 
 class Tool(Position):     
     '''
-    A vector of 6 elements representing tool properties. The order is: x, y, z, rx, ry, rz.
+    A vector of 6 elements representing tool position and orientation. Orientation is stored as axis angles. The order is: x, y, z, rx, ry, rz.
     '''
     X = 0
     Y = 1
@@ -72,7 +73,16 @@ class Tool(Position):
 
     def allclose(self, array, position_tolerance = UR_TOOL_POSITION_TOLERANCE, rotation_tolerance = UR_TOOL_ROTATION_TOLERANCE):
         return np.allclose(self.array[:3], array[:3], rtol=0, atol=position_tolerance) and (np.allclose(self.array[3:6], array[3:6], rtol=0, atol=rotation_tolerance) or allclose_angular(self.array[3:6], array[3:6], rotation_tolerance))
-            
+
+    @staticmethod
+    def from_xyzrpy(x=0, y=0, z=0, roll=0, pitch=0, yaw=0):
+        r = Rotation.from_euler("xyz", [roll, pitch, yaw]).as_rotvec()
+        return Tool(x, y, z, *r)
+
+    def to_xyzrpy(self):
+        r = Rotation.from_rotvec(self.array[3:]).as_euler("xyz")
+        return np.array([x, y, z, *r])
+
 
 ################################################################
 ## Arm state. 
