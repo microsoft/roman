@@ -12,7 +12,7 @@ class SimConnection(object):
     def disconnect(self):
         pass
 
-    def send(self, cmd, state):
+    def execute(self, cmd, state):
         pass
 
  

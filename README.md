@@ -9,6 +9,8 @@ The supported hardware is:
 
 The library is in active development and the APIs are still evolving. 
 
+For usage, refer to src/examples/simple.py
+
 # Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
