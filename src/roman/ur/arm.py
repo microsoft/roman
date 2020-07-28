@@ -75,13 +75,13 @@ class Tool(Position):
         return np.allclose(self.array[:3], array[:3], rtol=0, atol=position_tolerance) and (np.allclose(self.array[3:6], array[3:6], rtol=0, atol=rotation_tolerance) or allclose_angular(self.array[3:6], array[3:6], rotation_tolerance))
 
     @staticmethod
-    def from_xyzrpy(x=0, y=0, z=0, roll=0, pitch=0, yaw=0):
-        r = Rotation.from_euler("xyz", [roll, pitch, yaw]).as_rotvec()
-        return Tool(x, y, z, *r)
+    def from_xyzrpy(xyzrpy):
+        r = Rotation.from_euler("xyz", xyzrpy[3:]).as_rotvec()
+        return Tool.fromarray(np.concatenate((xyzrpy[:3], r)))
 
     def to_xyzrpy(self):
         r = Rotation.from_rotvec(self.array[3:]).as_euler("xyz")
-        return np.array([x, y, z, *r])
+        return np.concatenate((self.array[:3], r))
 
 
 ################################################################

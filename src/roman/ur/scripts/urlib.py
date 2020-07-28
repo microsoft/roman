@@ -28,7 +28,10 @@ def get_inverse_kin(pose):
 def get_actual_tcp_pose():
     link_state = pb.getLinkState(SIM_BODY_ID, SIM_TCP_ID, computeLinkVelocity = 0, computeForwardKinematics = 1)
     pos = link_state[4]
-    rot = Rotation.from_quat(link_state[5]).as_rotvec()
+    q = link_state[5]
+    if q[3]>0:
+        q = [*q[:3], -q[3]]
+    rot = Rotation.from_quat(q).as_rotvec()
     return [pos[0], pos[1], pos[2], rot[0], rot[1], rot[2]]
 
 def get_actual_tcp_speed():

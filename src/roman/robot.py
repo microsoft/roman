@@ -33,15 +33,18 @@ class Robot(object):
         self.__shutdown_event.set()
         self.__process.join()
 
-    def move_simple(self, dx, dy, dz, dyaw, gripper_state):
+    def move_simple(self, dx, dy, dz, dyaw, gripper_state=hand.Position.OPENED, max_speed = 0.5):
         '''
         Moves the arm relative to the current position in carthesian coordinates, 
         assuming the gripper is vertical (aligned with the z-axis), pointing down.
         This supports the simplest Gym robotic manipulation environment.
         '''
-        current = self.arm.state.tool_pose()
-        current += arm.Tool.from_xyzrpy(dx,dy, dz,0,0, dyaw)
-        self.arm.move(current)
+        self.arm.read()
+        pose = self.arm.state.tool_pose()
+        print(pose)
+        pose = arm.Tool.from_xyzrpy(pose.to_xyzrpy() + [dx,dy, dz,0,0, dyaw])
+        print(pose)
+        self.arm.move(pose)
 
 def connect():
     m = Robot()
