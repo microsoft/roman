@@ -12,108 +12,98 @@ from roman import *
 
 def arm_move(real_robot):
     print(f"Running {__file__}::{arm_move.__name__}()")
-    m = connect(config={"real_robot":real_robot})
+    robot = connect(config={"real_robot":real_robot})
+    arm = robot.arm
+    position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0)
+    arm.move(target_position = position, max_speed=1, max_acc=0.5)
+    assert arm.state.joint_positions().allclose(position)
 
-    cmd = ur.Command(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=1, max_acc=0.5)
-    m.move_arm(cmd)
-    assert m.arm_state.joint_positions().allclose(cmd.target_position())
+    pose = ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0)
+    arm.move(target_position=pose, max_speed=1, max_acc=0.5)
+    assert arm.state.tool_pose().allclose(pose)
 
-    cmd = ur.Command(target_position=ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0), max_speed=1, max_acc=0.5)
-    m.move_arm(cmd)
-    assert m.arm_state.tool_pose().allclose(cmd.target_position())
+    arm.move(target_position=position, max_speed=1, max_acc=0.5)
+    assert arm.state.joint_positions().allclose(position)
 
-    cmd = ur.Command(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=1, max_acc=0.5)
-    m.move_arm(cmd)
-    assert m.arm_state.joint_positions().allclose(cmd.target_position())
-
-    m.disconnect()
+    robot.disconnect()
     print("Passed.")
 
 def hand_move():
     print(f"Running {__file__}::{hand_move.__name__}()")
-    m = connect(config={"real_robot":True})
-    cmd = hand.Command.open()
-    m.move_hand(cmd)
-    assert m.hand_state.position_A() == hand.Position.OPENED
+    robot = connect(config={"real_robot":True})
+    robot.hand.open()
+    assert robot.hand.state.position() == hand.Position.OPENED
     
-    cmd = hand.Command.close()
-    m.move_hand(cmd)
-    assert m.hand_state.position_A() == hand.Position.CLOSED
+    robot.hand.close()
+    assert robot.hand.state.position() == hand.Position.CLOSED
 
-    cmd = hand.Command.open()
-    m.move_hand(cmd)
-    assert m.hand_state.position_A() == hand.Position.OPENED
+    robot.hand.open()
+    assert robot.hand.state.position() == hand.Position.OPENED
 
-    cmd = hand.Command.open(mode=hand.GraspMode.PINCH)
-    m.move_hand(cmd)
-    assert m.hand_state.position_A() == hand.Position.OPENED
-    assert m.hand_state.mode() == hand.GraspMode.PINCH
+    robot.hand.change(mode=hand.GraspMode.PINCH)
+    assert robot.hand.state.position() == hand.Position.OPENED
+    assert robot.hand.state.mode() == hand.GraspMode.PINCH
     
-    cmd = hand.Command.close(mode=hand.GraspMode.PINCH)
-    m.move_hand(cmd)
-    assert m.hand_state.position_A() == hand.Position.CLOSED
-    assert m.hand_state.mode() == hand.GraspMode.PINCH
+    robot.hand.close()
+    assert robot.hand.state.position() == hand.Position.CLOSED
+    assert robot.hand.state.mode() == hand.GraspMode.PINCH
     
-    cmd = hand.Command.open(mode=hand.GraspMode.PINCH)
-    m.move_hand(cmd)
-    assert m.hand_state.position_A() == hand.Position.OPENED
-    assert m.hand_state.mode() == hand.GraspMode.PINCH
+    robot.hand.open()
+    assert robot.hand.state.position() == hand.Position.OPENED
+    assert robot.hand.state.mode() == hand.GraspMode.PINCH
 
-    cmd = hand.Command.open(mode=hand.GraspMode.BASIC)
-    m.move_hand(cmd)
-    assert m.hand_state.mode() == hand.GraspMode.BASIC
-    assert m.hand_state.position_A() == hand.Position.OPENED
+    robot.hand.change(mode=hand.GraspMode.BASIC)
+    assert robot.hand.state.mode() == hand.GraspMode.BASIC
+    assert robot.hand.state.position() == hand.Position.OPENED
 
-    m.disconnect()
+    robot.disconnect()
     print("Passed.")
 
 def arm_hand_move():
     print(f"Running {__file__}::{arm_hand_move.__name__}()")
-    m = connect(config={"real_robot":True})
-    hand_cmd = hand.Command.open()
-    m.move_hand(hand_cmd)
+    robot = connect(config={"real_robot":True})
 
-    hand_cmd = hand.Command.close()
-    arm_cmd =ur.Command(target_position=ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0), max_speed=1, max_acc=0.5)
-    m.send_arm_cmd(arm_cmd)
-    m.send_hand_cmd(hand_cmd)
-    while not m.arm_state.is_done() or not m.hand_state.is_done():
-        m.read_arm()
-        m.read_hand()
-    assert m.arm_state.tool_pose().allclose(arm_cmd.target_position())
-    assert m.hand_state.position_A() == hand.Position.CLOSED
+    robot.hand.open()
+    robot.hand.close(blocking=False)
+    pose = ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0)
+    robot.arm.move(target_position=pose, max_speed=1, max_acc=0.5, blocking=False)
+    while not robot.arm.state.is_done() or not robot.hand.state.is_done():
+        robot.arm.read()
+        robot.hand.read()
+    assert robot.arm.state.tool_pose().allclose(pose)
+    assert robot.hand.state.position() == hand.Position.CLOSED
     
-    arm_cmd = ur.Command(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=1, max_acc=0.5)
-    m.send_arm_cmd(arm_cmd)
-    hand_cmd = hand.Command.open()
-    m.send_hand_cmd(hand_cmd)
-    while not m.arm_state.is_done() or not m.hand_state.is_done():
-        m.read_arm()
-        m.read_hand()
-    assert m.arm_state.joint_positions().allclose(arm_cmd.target_position())
-    assert m.hand_state.position_A() == hand.Position.OPENED
-    m.disconnect()
+    position = ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0)
+    robot.arm.move(target_position=position, max_speed=1, max_acc=0.5, blocking=False)
+    robot.hand.open(blocking=False)
+    while not robot.arm.state.is_done() or not robot.hand.state.is_done():
+        robot.arm.read()
+        robot.hand.read()
+    assert robot.arm.state.joint_positions().allclose(position)
+    assert robot.hand.state.position() == hand.Position.OPENED
+    robot.disconnect()
     print("Passed.")
 
 def arm_touch():
     '''This requires a horizontal surface that the arm can touch.'''
-    print(f"Running {__file__}::{arm_move.__name__}()")
-    m = connect(config={"real_robot":True})
-    m.move_hand(hand.Command.open())
-    m.move_hand(hand.Command.open(mode=hand.GraspMode.PINCH))
-    m.move_hand(hand.Command.close(mode=hand.GraspMode.PINCH))
-    home_pos = ur.Command(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=1, max_acc=0.5)
-    m.move_arm(home_pos)
-    time.sleep(1)
-    below_table = ur.Command.touch(ur.Tool(-0.4, -0.4, -0.2, 0, math.pi, 0)), 
+    print(f"Running {__file__}::{arm_touch.__name__}()")
+    robot = connect(config={"real_robot":True})
+    robot.hand.open()
+    robot.hand.change(mode=hand.GraspMode.PINCH)
+    robot.hand.close()
+    home_pos = ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0)
+    robot.arm.move(target_position=home_pos, max_speed=1, max_acc=0.5)
+    time.sleep(0.5)
+    below_table = ur.Tool(-0.4, -0.4, -0.2, 0, math.pi, 0)
 
     #while True:
-    m.move_arm(below_table)
-    assert m.arm_state.goal_reached()
-    m.move_arm(home_pos)
+    time.sleep(1)
+    robot.arm.touch(below_table, max_speed = 0.05, max_acc=0.05)
+    assert robot.arm.state.is_goal_reached()
+    robot.arm.move(home_pos, force_low_bound=[-30,-30, -30, -2, -2, -2], force_high_bound = [30, 30, 30, 2, 2, 2])
     #time.sleep(1)
 
-    m.disconnect()
+    robot.disconnect()
     print("Passed.")
 
 #############################################################

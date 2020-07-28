@@ -99,25 +99,25 @@ def ur_get_target_speed(cmd_time, id, kind, target_speed, max_acc, force_low_bou
     was_deadman = ctrl_is_deadman
     ctrl_is_deadman = (ctrl_last_loop_time - cmd_time) > UR_DEADMAN_SWITCH_LIMIT
 
+    cmd = UR_ZERO
+    acc = UR_FAST_STOP_ACCELERATION
     # determine desired speed 
     if ctrl_is_deadman:
-        cmd = UR_ZERO
-        max_acc = UR_FAST_STOP_ACCELERATION
         if not was_deadman:
             textmsg("deadman")
         #ur:end
     elif ctrl_is_contact: 
-        cmd = UR_ZERO
-        max_acc = UR_FAST_STOP_ACCELERATION
-        #textmsg("force limit reached")
+        textmsg("force limit STOP")
     elif kind == UR_CMD_KIND_MOVE_JOINTS_POSITION:
         cmd = ur_speed_from_joint_positions(target_position, target_speed, max_speed, max_acc)
+        acc = max_acc
     else:
         cmd = target_speed
+        acc = max_acc
     #ur:end
     global ctrl_is_moving
     ctrl_is_moving = (norm(cmd) > UR_SPEED_TOLERANCE) or (norm(get_actual_joint_speeds()) > UR_SPEED_TOLERANCE)
 
     # update state
-    return [cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], max_acc]
+    return [cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], acc]
 #ur:end

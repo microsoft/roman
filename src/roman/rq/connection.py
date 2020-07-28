@@ -70,11 +70,10 @@ class Connection(object):
         elif cmd[Command._KIND] == Command._CMD_KIND_STOP:
             self.stop()
             self.__send()
+        elif cmd[Command._KIND] == Command._CMD_KIND_CHANGE:
+            self.set_mode(cmd[Command._MODE])
+            self.__send()
         else: #Command._CMD_KIND_MOVE
-            if cmd[Command._MODE] != GraspMode.CURRENT:
-                self.set_mode(cmd[Command._MODE])
-            else:
-                self.set_mode(self.mode())
             if cmd[Command._FINGER] == Finger.All:
                 self.move(cmd[Command._POSITION], cmd[Command._SPEED], cmd[Command._FORCE])
             else:

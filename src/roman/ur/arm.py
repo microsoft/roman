@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import time
 from ..common import Vec
 from .scripts.constants import *
 
@@ -218,27 +219,22 @@ class Command(Vec):
     _MOVE_MAX_SPEED = UR_CMD_MOVE_MAX_SPEED
     _MOVE_CONTROLLER = UR_CMD_MOVE_CONTROLLER
 
-    def __init__(self,
-                target_position:Position=None, 
-                max_speed=UR_DEFAULT_MAX_SPEED,
-                target_speed:Joints=UR_ZERO,
-                max_acc=UR_DEFAULT_ACCELERATION, 
-                force_low_bound:Tool=UR_DEFAULT_FORCE_LOW_BOUND, 
-                force_high_bound:Tool=UR_DEFAULT_FORCE_HI_BOUND, 
-                contact_handling=0, 
-                controller = 0):
+    def __init__(self):
         super().__init__(Command._BUFFER_SIZE)
-        if target_position is None:
-            cmd_type = UR_CMD_KIND_MOVE_JOINTS_SPEED
-            target_position = UR_ZERO
-        elif type(target_position) is Joints:
-            cmd_type = UR_CMD_KIND_MOVE_JOINTS_POSITION
-        elif type(target_position) is Tool:
-            cmd_type = UR_CMD_KIND_MOVE_TOOL_POSE
-        else:
-            raise TypeError("Argument target_position must be either None (for joints speed commands) or of type Tool or Joints. Use Joints.fromarray() or Tool.fromarray() to wrap an existing array.")
-     
-        self[Command._KIND]  = cmd_type
+        self[Command._KIND]  = UR_CMD_KIND_READ
+
+    def make(self,
+            kind = UR_CMD_KIND_READ,
+            target_position:Position=None, 
+            max_speed=UR_DEFAULT_MAX_SPEED,
+            target_speed:Joints=UR_ZERO,
+            max_acc=UR_DEFAULT_ACCELERATION, 
+            force_low_bound:Tool=UR_DEFAULT_FORCE_LOW_BOUND, 
+            force_high_bound:Tool=UR_DEFAULT_FORCE_HI_BOUND, 
+            contact_handling=0, 
+            controller = 0):
+        
+        self[Command._KIND] = kind
         self[Command._MOVE_TARGET_POSITION] = target_position
         self[Command._MOVE_MAX_SPEED] = max_speed
         self[Command._MOVE_TARGET_SPEED] = target_speed
@@ -247,6 +243,7 @@ class Command(Vec):
         self[Command._MOVE_FORCE_HIGH_BOUND]=force_high_bound
         self[Command._MOVE_CONTACT_HANDLING] = contact_handling
         self[Command._MOVE_CONTROLLER] = controller
+        return self
 
     def id(self): return self[Command._ID]
     def kind(self): return self[Command._KIND]
@@ -270,33 +267,99 @@ class Command(Vec):
         else:
             raise Exception("Invalid command type")
 
-    @staticmethod
-    def read():
-        cmd = Command.fromarray(np.zeros(Command._BUFFER_SIZE), clone=False)
-        cmd[Command._KIND] = UR_CMD_KIND_READ
-        return cmd
 
-    @staticmethod
-    def stop():
-        return Command()
+class Arm(object):
+    _READ_CMD = Command()
 
-    @staticmethod
-    def config(mass = UR_DEFAULT_MASS, cog = UR_DEFAULT_TOOL_COG, tcp = UR_DEFAULT_TCP):
-        cmd = Command.fromarray(np.zeros(Command._BUFFER_SIZE), clone=False)
-        cmd[Command._KIND] = UR_CMD_KIND_CONFIG
-        cmd[Command._CONFIG_MASS]=mass
-        cmd[Command._CONFIG_TOOL_COG]=cog
-        cmd[Command._CONFIG_TOOL_TIP]=tcp
-        return cmd
+    def __init__(self, controller):
+        self.controller = controller
+        self.command = Command()
+        self.state = State()
 
-    @staticmethod
-    def touch( 
+    def __execute(self, blocking):
+        self.__last_cmd_id = time.time()
+        self.command[Command._ID] = self.__last_cmd_id
+        self.controller.execute(self.command, self.state)
+        while blocking and not self.state.is_done():
+            self.controller.execute(self.command, self.state)
+
+    def read(self):
+        self.controller.execute(Arm._READ_CMD, self.state)
+        return self.state
+
+    def move(self,
             target_position, 
-            max_speed=0.05, 
-            max_acc=0.05, 
+            max_speed=UR_DEFAULT_MAX_SPEED, 
+            max_acc=UR_DEFAULT_ACCELERATION, 
+            force_low_bound=UR_DEFAULT_FORCE_LOW_BOUND,
+            force_high_bound=UR_DEFAULT_FORCE_HI_BOUND,
+            contact_handling=0, 
+            controller=0,
+            blocking=True):
+
+        if type(target_position) is Joints:
+            cmd_type = UR_CMD_KIND_MOVE_JOINTS_POSITION
+        elif type(target_position) is Tool:
+            cmd_type = UR_CMD_KIND_MOVE_TOOL_POSE
+        else:
+            raise TypeError("Argument target_position must be of type Tool or Joints. Use Joints.fromarray() or Tool.fromarray() to wrap an existing array.")
+     
+        self.command.make(
+            kind = cmd_type,
+            target_position = target_position, 
+            max_speed=max_speed, 
+            max_acc=max_acc, 
+            force_low_bound=force_low_bound, 
+            force_high_bound=force_high_bound, 
+            contact_handling=contact_handling, 
+            controller=controller)
+        self.__execute(blocking)
+
+    def speed(self,
+            target_speed, 
+            acc=UR_DEFAULT_ACCELERATION, 
+            force_low_bound=UR_DEFAULT_FORCE_LOW_BOUND,
+            force_high_bound=UR_DEFAULT_FORCE_HI_BOUND,
+            contact_handling=0, 
+            controller=0,
+            blocking=True):
+        if type(target_speed) is Tool:
+            raise TypeError("Speed can only be specified as joint velocities. Argument target_speed must be of type Joints.")
+     
+        self.command.make(
+            kind = UR_CMD_KIND_MOVE_JOINTS_SPEED,
+            target_speed = target_speed, 
+            max_acc = acc, 
+            force_low_bound=force_low_bound, 
+            force_high_bound=force_high_bound, 
+            contact_handling=contact_handling, 
+            controller=controller)
+        self.__execute(blocking)
+
+    def stop(self, acc = UR_FAST_STOP_ACCELERATION, blocking = True):
+        self.speed(target_speed = UR_ZERO, acc=acc)
+
+    def touch(self,
+            target_position, 
+            max_speed=UR_DEFAULT_MAX_SPEED, 
+            max_acc=UR_DEFAULT_ACCELERATION, 
             force_low_bound=[-5,-5,-5,-0.5, -0.5, -0.5],
             force_high_bound=[5,5,5,0.5, 0.5, 0.5],
             contact_handling=5, 
-            controller = 1):
-        cmd = Command(target_position, max_speed=max_speed, max_acc=max_acc, force_low_bound=force_low_bound, force_high_bound=force_high_bound, contact_handling=contact_handling, controller=controller)
-        return cmd
+            blocking = True):
+        self.move(
+            target_position, 
+            max_speed=max_speed, 
+            max_acc=max_acc, 
+            force_low_bound=force_low_bound, 
+            force_high_bound=force_high_bound, 
+            contact_handling=contact_handling, 
+            controller=1,
+            blocking=blocking)
+
+    def config(self, mass = UR_DEFAULT_MASS, cog = UR_DEFAULT_TOOL_COG, tcp = UR_DEFAULT_TCP):
+        self.command.make()
+        self.command[Command._KIND] = UR_CMD_KIND_CONFIG
+        self.command[Command._CONFIG_MASS]=mass
+        self.command[Command._CONFIG_TOOL_COG]=cog
+        self.command[Command._CONFIG_TOOL_TIP]=tcp

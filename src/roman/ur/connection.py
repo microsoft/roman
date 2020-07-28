@@ -70,7 +70,7 @@ class Connection(object):
         script = load_script(script_folder, "no_op")
         socket_send_retry(rt_socket, script.encode('ascii'))
 
-    def __call__(self, cmd, state):
+    def execute(self, cmd, state):
         self.__send_cmd(cmd)
         return self.__receive_state(state)
 

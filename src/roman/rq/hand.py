@@ -92,9 +92,11 @@ class Command(Vec):
     _CMD_KIND_READ = 0
     _CMD_KIND_STOP = 1
     _CMD_KIND_MOVE = 2
+    _CMD_KIND_CHANGE = 4
 
     def __init__(self):
         super().__init__(Command._BUFFER_SIZE, dtype=np.int16)
+        self[Command._KIND] = Command._CMD_KIND_READ
 
     def make(self, kind, finger, position, speed, force, mode):
         self[Command._KIND] = kind
@@ -113,7 +115,7 @@ class Command(Vec):
     def force(self): return self[Command._FORCE]
 
 class Hand(object):        
-    _READ_CMD = Command.make(Command(), Command._CMD_KIND_READ, 0, 0, 0, GraspMode.CURRENT, Finger.All)
+    _READ_CMD = Command()
 
     def __init__(self, controller):
         self.controller = controller
@@ -146,6 +148,6 @@ class Hand(object):
         self.__execute(blocking)
 
     def change(self, mode):
-        self.command.make(Command._CMD_KIND_MOVE, Finger.All, Position.CURRENT, 0, 0, mode)
+        self.command.make(Command._CMD_KIND_CHANGE, Finger.All, 0, 0, 0, mode)
         self.__execute(True)
 

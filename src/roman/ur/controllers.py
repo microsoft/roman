@@ -19,10 +19,10 @@ class BasicController(object):
     def __init__(self, connection):
         self.connection = connection
 
-    def __call__(self, cmd, state):
+    def execute(self, cmd, state):
         if cmd.kind() > UR_CMD_KIND_CONFIG:
             raise Exception(f"Invalid command: {cmd.id()}")
-        self.connection.send(cmd, state)
+        self.connection.execute(cmd, state)
         if cmd.is_move_command():
             at_goal = cmd._goal_reached(state)
             state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, at_goal)
@@ -43,13 +43,13 @@ class EMAForceCalibrator(object):
         self.force_average = Joints() # we are assuming the FT sensor is reset to zero on startup
         self.cmd = Command()
 
-    def __call__(self, cmd, state):
+    def execute(self, cmd, state):
+        self.cmd[:] = cmd
         if cmd.is_move_command():
-            self.cmd[:] = cmd
             np.add(self.force_average, cmd.force_low_bound(), self.cmd.force_low_bound().array)
             np.add(self.force_average, cmd.force_high_bound(), self.cmd.force_high_bound().array)
         
-        self.next(self.cmd, state)   
+        self.next.execute(self.cmd, state)   
         if not state.is_contact():
             self.sample[:] = state.sensor_force()
             np.multiply(self.force_average, 1-self.alpha, self.force_average.array)
@@ -73,9 +73,9 @@ class TouchController(object):
         self.cmd_id = 0
         self.force_sum = np.zeros(6)
 
-    def __call__(self, cmd, state):
+    def execute(self, cmd, state):
         
-        self.next(cmd, state)
+        self.next.execute(cmd, state)
         
         if state.is_goal_reached():
             # stopped because the arm reached the goal but didn't detect contact, so this is a failure
@@ -123,10 +123,10 @@ class ArmController(object):
         self.controllers = [ema, touch]
         self.cmd = Command()
 
-    def __call__(self, cmd):
+    def execute(self, cmd, state):
         if cmd.kind() != UR_CMD_KIND_READ:
             # ignore read commands and simply send the last move command (or config cmd). The timestamp/id of the command identifies it as old.
             self.cmd[:] = cmd
         controller = self.controllers[int(self.cmd.controller())]
-        return controller(self.cmd)
+        return controller.execute(self.cmd, state)
  

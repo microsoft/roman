@@ -51,7 +51,7 @@ thread ur_speed_command_thread_fn():
     # Moreover, the speedj call needs to be the first instruction, otherwise the thread might be killed before the motion starts, 
     # leading to "infinite loop detected" errors. 
     # Adding a sync() call in the control thread would fix that, it would also make the control loop take 2 cycles instead of 1
-    speedj(ur_target_speed, ur_max_acc, 0.008)
+    speedj(ur_target_speed, ur_max_acc, 0)
 end
 
 ################################################################################################################################
@@ -76,6 +76,7 @@ thread ur_drive_thread_fn():
         ur_target_speed = [target[0], target[1], target[2], target[3], target[4], target[5]]
         ur_max_acc = target[6]
         exit_critical
+        
 
         # Trigger the move, by starting and then killing the move thread. The move still executes for the current time step.
         # Note that the call below suspends the current thread (killing the motion thread yields the remaining time), 
