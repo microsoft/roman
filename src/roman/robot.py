@@ -43,10 +43,29 @@ class Robot(object):
         '''
         self.arm.read()
         pose = self.arm.state.tool_pose()
-        print(pose)
         pose = arm.Tool.from_xyzrpy(pose.to_xyzrpy() + [dx,dy, dz,0,0, dyaw])
-        print(pose)
-        self.arm.move(pose)
+        self.arm.move(pose, max_speed = max_speed)
+        self.hand.move(hand.Finger.All, position = gripper_state)
+
+    def step(self, dx, dy, dz, dyaw, gripper_state=hand.Position.OPENED, max_speed = 0.5, dt = 0.2):
+        '''
+        Moves the arm relative to the current position in carthesian coordinates, 
+        assuming the gripper is vertical (aligned with the z-axis), pointing down.
+        Thsi version returns after the amount of time specified by dt.
+        This supports the simplest Gym robotic manipulation environment.
+        '''
+        self.arm.read()
+        pose = self.arm.state.tool_pose()
+        pose = arm.Tool.from_xyzrpy(pose.to_xyzrpy() + [dx,dy, dz,0,0, dyaw])
+        self.hand.move(hand.Finger.All, position = gripper_state, blocking = False)
+        self.arm.move(pose, max_speed = max_speed, blocking = False)
+        end = self.arm.time() + dt
+        while self.arm.time() < end and not (self.arm.state.is_done() and self.hand.state.is_done()):
+            self.read()
+
+    def read():
+        self.arm.read()
+        self.hand.read()
 
 def connect(config):
     m = Robot()
