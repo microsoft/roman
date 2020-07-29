@@ -5,7 +5,7 @@ The supported hardware is:
 - Universal Robots UR5 arm 
 - Robotiq 2F/3F gripper
 - Robotiq FT 300 sensor
-- Takktile fingertip sensors
+- Takktile fingertip sensors (NYI)
 
 The library is in active development and the APIs are still evolving. 
 
