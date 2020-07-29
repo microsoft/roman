@@ -40,9 +40,13 @@ class Robot(object):
         This supports the simplest Gym robotic manipulation environment.
         '''
         current = self.arm.state.tool_pose()
-        current += [dx,dy, dz,0,0,0]
+        current += [dx,dy,dz,0,dyaw,gripper_state]
         self.arm.move(current)
         pass
+
+    @property
+    def state(self):
+        return self.arm.state.tool_pose()
 
 def connect():
     m = Robot()
