@@ -28,6 +28,8 @@ class Robot(object):
 
         self.arm = arm.Arm(Robot.PipeConnection(__arm_server))
         self.hand = hand.Hand(Robot.PipeConnection(__hand_server))
+        self.arm.read()
+        self.hand.read()
 
     def disconnect(self):
         self.__shutdown_event.set()
