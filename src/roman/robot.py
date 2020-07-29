@@ -46,7 +46,7 @@ class Robot(object):
         print(pose)
         self.arm.move(pose)
 
-def connect():
+def connect(config):
     m = Robot()
     m.connect(config)
     return m
