@@ -61,11 +61,11 @@ def test_script():
 #############################################################
 # Runner
 #############################################################
-def run(real_robot = False):
+def run(use_sim):
     # run the tests
     generate_script()
 
-    if real_robot:
+    if not use_sim:
         test_script()
         validate_script_syntax()
    

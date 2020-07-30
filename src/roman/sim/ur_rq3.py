@@ -13,8 +13,10 @@ class SimEnv(object):
     '''
     def __init__(self, urdf='ur_rq3.urdf', useGUI = True):
         self.arm_urdf = os.path.join(os.path.dirname(__file__), urdf)
+        self.useGUI = useGUI
 
-        if useGUI:
+    def connect(self):
+        if self.useGUI:
             pb.connect(pb.GUI)
             pb.resetDebugVisualizerCamera(1.5, -30, -15, cameraTargetPosition=[-0.4, 0, 0.3])
         else:
