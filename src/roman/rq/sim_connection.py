@@ -1,3 +1,5 @@
+from .hand import *
+
 ################################################################
 ## Simulated hand implementation
 ################################################################
@@ -13,6 +15,8 @@ class SimConnection(object):
         pass
 
     def execute(self, cmd, state):
-        pass
+        state[State._TIME] = self.env.time()
+        state[State._FLAGS] = State._FLAG_READY
+        return state
 
  

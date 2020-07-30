@@ -195,7 +195,7 @@ class State(Vec):
         '''The forces and moments reported by the Force/Torque sensor mounted on the wrist, in the axes of the robot base coordinate system'''
         return Tool.fromarray(self[State._SENSOR_FORCE], False)
 
-    def set_state_flag(self, flag, value):
+    def _set_state_flag(self, flag, value):
         if value:
             self[State._STATUS] = int(self[State._STATUS]) | flag
         else:

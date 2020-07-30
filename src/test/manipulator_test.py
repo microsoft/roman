@@ -28,6 +28,21 @@ def arm_move(use_sim):
     robot.disconnect()
     print("Passed.")
 
+def step(use_sim):
+    print(f"Running {__file__}::{step.__name__}()")
+    pose = ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0)
+    robot = connect(use_sim = use_sim)
+    d = pose.to_xyzrpy() - robot.arm.state.tool_pose().to_xyzrpy() 
+    robot.step(d[0], d[1], d[2], d[5])
+    while not robot.arm.state.is_done():
+        d = pose.to_xyzrpy() - robot.arm.state.tool_pose().to_xyzrpy() 
+        robot.step(d[0], d[1], d[2], d[5])
+    assert robot.arm.state.is_goal_reached()
+
+    robot.disconnect()
+    print("Passed.")
+
+
 def hand_move():
     print(f"Running {__file__}::{hand_move.__name__}()")
     robot = connect(use_sim = False)
@@ -110,8 +125,10 @@ def arm_touch():
 # Runner
 ############################################################# 
 def run(use_sim):
+    step(use_sim)
+
     arm_move(use_sim)
-    if use_sim:
+    if not use_sim:
         hand_move()
         arm_hand_move()
         arm_touch()

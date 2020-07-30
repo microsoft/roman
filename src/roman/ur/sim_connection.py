@@ -1,4 +1,4 @@
-from .scripts import interface
+from .scripts import interface, urlib
 
 ################################################################
 ## Simulated robot implementation
@@ -7,8 +7,10 @@ class SimConnection(object):
     """Implements functionality to read simulated robot state (arm and F/T sensor) and command the robot in real-time."""
     def __init__(self, env):
         self.env = env
+        urlib.sim = env
 
     def connect(self):
+
         print('System ready.')
 
     def disconnect(self):

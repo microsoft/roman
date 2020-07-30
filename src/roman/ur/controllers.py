@@ -25,8 +25,8 @@ class BasicController(object):
         self.connection.execute(cmd, state)
         if cmd.is_move_command():
             at_goal = cmd._goal_reached(state)
-            state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, at_goal)
-            state.set_state_flag(State._STATUS_FLAG_DONE, at_goal)
+            state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, at_goal)
+            state._set_state_flag(State._STATUS_FLAG_DONE, at_goal)
         return state
 
 class EMAForceCalibrator(object):
@@ -79,8 +79,8 @@ class TouchController(object):
         
         if state.is_goal_reached():
             # stopped because the arm reached the goal but didn't detect contact, so this is a failure
-            state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 0)
-            state.set_state_flag(State._STATUS_FLAG_DONE, 1)
+            state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 0)
+            state._set_state_flag(State._STATUS_FLAG_DONE, 1)
 
         if cmd.id() != self.cmd_id and cmd.is_move_command():
             # new command, reset
@@ -93,8 +93,8 @@ class TouchController(object):
             return state
 
         if self.count == 0 or np.any(self.force_sum < cmd.force_low_bound()*cmd.contact_handling()) or np.any(self.force_sum > cmd.force_high_bound()*cmd.contact_handling()):
-            state.set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 1)
-            state.set_state_flag(State._STATUS_FLAG_DONE, 1)
+            state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 1)
+            state._set_state_flag(State._STATUS_FLAG_DONE, 1)
             return state
 
         if not state.is_contact():

@@ -2,45 +2,47 @@ import numpy as np
 import pybullet as pb
 import os
 import math
+from . import ur
 
 ################################################################
 ## configures the simulated robot and environment
 ################################################################
 class SimEnv(object):
+    # from urdf
+    UR_BASE_JOINT_ID = 1 
+    #UR_TCP_ID = 22 # use this for TCP set at [0,0,0]
+    UR_TCP_ID = 23 # use this for TCP set at [0,0,0.260] 
+    TIME_STEP = 1/240.
+
     '''
     Loads the default environment (arm/hand/table urdf files) 
     and allows further configuration of the cameras, objects present in the scene etc.
     '''
     def __init__(self, urdf='ur_rq3.urdf', useGUI = True):
-        self.arm_urdf = os.path.join(os.path.dirname(__file__), urdf)
-        self.useGUI = useGUI
+        self._arm_urdf = os.path.join(os.path.dirname(__file__), urdf)
+        self._useGUI = useGUI
+        self.__time = 0.0
 
     def connect(self):
-        if self.useGUI:
+        if self._useGUI:
             pb.connect(pb.GUI)
             pb.resetDebugVisualizerCamera(1.5, -30, -15, cameraTargetPosition=[-0.4, 0, 0.3])
         else:
             pb.connect(pb.DIRECT)
+        self.reset()
 
     def reset(self):
         pb.resetSimulation()
-        self.arm_id = pb.loadURDF(self.arm_urdf, baseOrientation = pb.getQuaternionFromEuler([0, 0, math.pi]))
-
-        # dump joints:
-        # for i in range(pb.getNumJoints(self.arm_id)):
-        #     ji = pb.getJointInfo(self.arm_id, i)
-        #     print(f"{i}: ix={ji[0]}, name={ji[1]}, link={ji[12]}")
-
-        #self.arm_id = pb.loadURDF(self.arm_urdf)
-        base_joint = 1 # from urdf
-        # start position is along the x axis, in negative direction 
-        start_positions = [0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0]
-        for i in range(6):
-            pb.resetJointState(self.arm_id, base_joint + i, start_positions[i])
-        
+        arm_id = pb.loadURDF(self._arm_urdf, baseOrientation = pb.getQuaternionFromEuler([0, 0, math.pi]))
+        self.arm = ur.URArm(arm_id, SimEnv.UR_BASE_JOINT_ID, SimEnv.UR_TCP_ID, SimEnv.TIME_STEP)
+        self.arm.reset()
 
     def update(self):
         pb.stepSimulation()
+        self.__time += SimEnv.TIME_STEP
+        
+    def time(self):
+        return self.__time
    
     def disconnect(self):
         pb.disconnect()
