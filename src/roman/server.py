@@ -21,7 +21,6 @@ class InProc(object):
         if self.use_sim:
             self.env = SimEnv()
             self.env.connect()
-            self.env.reset()
             self._arm_con = ur.SimConnection(self.env)
             self._hand_con = rq.SimConnection(self.env)
         else:

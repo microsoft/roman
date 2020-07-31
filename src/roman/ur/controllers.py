@@ -9,7 +9,7 @@ There can be multiple active controller chains, but only one can be used at a ti
 import numpy as np
 import math
 from .arm import *
-from .scripts.constants import *
+from .realtime.constants import *
 
 class BasicController(object):
     '''

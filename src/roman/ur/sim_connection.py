@@ -1,4 +1,4 @@
-from .scripts import interface, urlib
+from .realtime import interface, urlib
 
 ################################################################
 ## Simulated robot implementation

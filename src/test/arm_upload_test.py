@@ -26,7 +26,7 @@ def validate_script_syntax():
     Uploads all the scripts (by loading test.script) to validate their syntax.
     If the test hangs, edit test.script and remove the imports one by one (from bottom to top)
     '''
-    script_folder = os.path.join(os.path.join(os.path.join(rootdir, 'roman'), 'ur'), 'scripts')
+    script_folder = os.path.join(os.path.join(os.path.join(rootdir, 'roman'), 'ur'), 'realtime')
     defs = [f"UR_CLIENT_IP=\"{ur.UR_DEFAULT_CLIENT_IP}\"", f"UR_CLIENT_PORT={ur.UR_DEFAULT_CLIENT_PORT}"]
     rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     rt_socket.connect((ur.UR_ROBOT_IP, ur.UR_RT_PORT))

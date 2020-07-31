@@ -9,7 +9,6 @@
 # one by one (starting from the bottom) to find the which script
 # file has a syntax error, then remove blocks from the file to 
 # determine the function/block/line of the error
-from math import *
 from constants import *
 from sensor import *
 from urlib import *

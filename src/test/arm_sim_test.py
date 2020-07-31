@@ -10,8 +10,8 @@ rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
 from roman.ur import *
 from roman.sim.ur_rq3 import SimEnv
-from roman.ur.scripts import urlib
-from roman.ur.scripts.interface import *
+from roman.ur.realtime import urlib
+from roman.ur.realtime.interface import *
 
 #############################################################
 # Low-level unit tests using the simulated arm. 

@@ -5,7 +5,7 @@ import math
 import pybullet as pb
 import numpy as np
 from scipy.spatial.transform import Rotation
-from ..ur.scripts.constants import *
+from ..ur.realtime.constants import *
 
 class URArm(object):
     # sim-specific constants
@@ -25,9 +25,9 @@ class URArm(object):
         for i in range(6):
             pb.resetJointState(self.body_id, self.base_joint_id + i, start_positions[i])
         # dump joints:
-        # for i in range(pb.getNumJoints(self.arm_id)):
-        #     ji = pb.getJointInfo(self.arm_id, i)
-        #     print(f"{i}: ix={ji[0]}, name={ji[1]}, link={ji[12]}")
+        # for i in range(pb.getNumJoints(self.body_id)):
+        #     ji = pb.getJointInfo(self.body_id, i)
+        #     print(f"{i}: ix={ji[0]}, name={ji[1]}, type={ji[2]}, link={ji[12]}, llim={ji[8]}, ulim={ji[9]}, ll={ji[8]}, force={ji[10]}, vel={ji[11]} ")
 
     def get_inverse_kin(self, pose):
         '''Calculates the joint angles that corespond to the specified tool pose.'''

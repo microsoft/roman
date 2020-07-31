@@ -1,8 +1,9 @@
 ################################################################################################################################
-## Contains the sim equivalent of the UR functions needed by the control script. 
+## Redirects the UR functions needed by the control script to the simulator. 
 ################################################################################################################################
 import pybullet as pb
 import numpy as np
+import math
 from .constants import *
 
 # this abstracts the simulator
@@ -72,6 +73,9 @@ def textmsg(s1, s2):
 def norm(vec6):
     ''' Norm function as defined by urscript'''
     return np.linalg.norm(vec6)
+
+def sqrt(a):
+    return math.sqrt(a)
 
 def ur_pose(v):
     return v
