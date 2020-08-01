@@ -1,7 +1,7 @@
 # Roman - User Guide
 
-The robot.py module contains the interface (Robot class) for controlling a Universal Robots UR5 arm equipped with a Robotiq Force/Torque Sensor and a Robotiq 3-Finger Gripper. A Robot instace can be connected to a real robot or a simulation (pybullet)
-The Robot class holds instances of the Arm and Hand classes, which can be accessed via the Robot.arm and Robot.hand fields. The Robot class provides additional functionality that spans the hand, arm and force sensor. 
+The robot.py module contains the interface ([Robot](robot.py) class) for controlling a Universal Robots UR5 arm equipped with a Robotiq Force/Torque Sensor and a Robotiq 3-Finger Gripper. A Robot instace can be connected to a real robot or a simulation (pybullet)
+The Robot class holds instances of the [Arm](ur/arm.py) and [Hand](rq/hand.py) classes, which can be accessed via the Robot.arm and Robot.hand fields. The Robot class provides additional functionality that spans the hand, arm and force sensor. 
 
 ## Dependencies
 Roman requires numpy, scipy and pybullet. A real robot can come in handy too, but is not required. 
@@ -32,6 +32,12 @@ Roman requires numpy, scipy and pybullet. A real robot can come in handy too, bu
   # see whether the arm finished moving
   print(robot.arm.state.is_done())
 
-    ```
+  ```
 
 For more examples, check out the examples directory.
+
+## Further reading:
+[Arm](ur/readme.md)
+[Hand](rq/readme.md)
+[Sim](sim/readme.md)
+
