@@ -1,3 +1,4 @@
+from math import *
 from .constants import *
 from .urlib import *
 
@@ -15,10 +16,10 @@ def ur_speed_from_joint_position(current_pos, current_speed, target_pos, target_
 
     lim = 0.0001
     if (distance * current_speed) > 0: # is the joint rotating in the right direction?
-        lim = 0.0001 + 0.5*current_speed*current_speed/acc
+        lim = lim + 0.5*(current_speed*current_speed-target_speed*target_speed)/acc
     #ur:end
     # move with maximum speed as long as we are far away from the goal, and decelerate when we get close
-    if (distance*distance)>lim*lim:
+    if (lim < 0) or (distance*distance > lim*lim):
         if distance<0: 
             return -max_speed
         #ur:end
@@ -38,6 +39,48 @@ def ur_speed_from_joint_positions(target_position, target_speed, max_speed, max_
         ur_speed_from_joint_position(joint_positions[3], joint_speeds[3], target_position[3], target_speed[3], max_speed, max_acc),
         ur_speed_from_joint_position(joint_positions[4], joint_speeds[4], target_position[4], target_speed[4], max_speed, max_acc),
         ur_speed_from_joint_position(joint_positions[5], joint_speeds[5], target_position[5], target_speed[5], max_speed, max_acc)
+    ]
+#ur:end
+
+# joint-linear speed 
+def ur_speed_linear_from_joint_positions(target_position, target_speed, max_speed, max_acc):
+    joint_positions = get_actual_joint_positions()
+    joint_speeds = get_target_joint_speeds() 
+    itime = 1.0
+    i = 0
+    while i < 6:
+        dist = target_position[i] - joint_positions[i]
+        if (dist > 0.0001) or (dist < -0.0001):
+            sign = fabs(dist)/dist
+            dist = sign * dist
+            if joint_speeds[i]*sign < 0: # moving in the wrong direction
+                dist = dist +  0.5*(joint_speeds[i]*joint_speeds[i])/max_acc # add the distance this joint will travel before it can reverse
+            #ur:end
+            
+            if dist <= 0.5*(joint_speeds[i]*joint_speeds[i]-target_speed[i]*target_speed[i])/max_acc: 
+                sign = -sign # we are close to the goal and need to decelerate
+            #ur:end
+            speed = fabs(joint_speeds[i] + sign * max_acc * 0.008) 
+            if speed > max_speed:
+                speed = max_speed
+            #ur:end 
+
+            # this is how much the joint can move in this time slice
+            tmp_itime = speed/dist
+            if tmp_itime < itime:
+                itime = tmp_itime
+            #ur:end   
+        #ur:end
+        i = i + 1
+    #ur:end   
+ 
+    return [
+        (target_position[0]-joint_positions[0])*itime,
+        (target_position[1]-joint_positions[1])*itime,
+        (target_position[2]-joint_positions[2])*itime,
+        (target_position[3]-joint_positions[3])*itime,
+        (target_position[4]-joint_positions[4])*itime,
+        (target_position[5]-joint_positions[5])*itime
     ]
 #ur:end
 
@@ -109,9 +152,10 @@ def ur_get_target_speed(cmd_time, id, kind, target_speed, max_acc, force_low_bou
     elif ctrl_is_contact: 
         textmsg("force limit STOP")
     elif kind == UR_CMD_KIND_MOVE_JOINTS_POSITION:
-        cmd = ur_speed_from_joint_positions(target_position, target_speed, max_speed, max_acc)
+        #cmd = ur_speed_from_joint_positions(target_position, target_speed, max_speed, max_acc)
+        cmd = ur_speed_linear_from_joint_positions(target_position, target_speed, max_speed, max_acc)
         acc = max_acc
-    else:
+    elif kind == UR_CMD_KIND_MOVE_JOINTS_SPEED:
         cmd = target_speed
         acc = max_acc
     #ur:end

@@ -38,7 +38,7 @@ def start():
         cmd = socket_read_ascii_float(UR_CMD_ENTRIES_COUNT, "ctrl") 
         #acquire the critical section as early as possible, to preempt the drive thread. This ensures everything takes place in one timestep.
         enter_critical
-        # We expect a vector of UR_CMD_ENTRIES_COUNT+1=31 values (UR requires that the total must stay under 30)
+        # We expect a vector of UR_CMD_ENTRIES_COUNT+1=31 values (UR requires that the total must stay under 30+1)
         # The first value is the count, followed by command code
         if UR_CMD_ENTRIES_COUNT == cmd[0]:
             #textmsg("received data ", ur_time)      
@@ -47,6 +47,7 @@ def start():
         exit_critical
         if cmd[0] == 0:
             connected = False
+            textmsg("disconnected")
             continue
         end
         if UR_CMD_ENTRIES_COUNT != cmd[0]:

@@ -12,8 +12,8 @@ UR_PROTOCOL_VERSION = 0.1
 UR_CMD_KIND_READ = 0
 UR_CMD_KIND_MOVE_JOINTS_SPEED = 1 # Accelerate to and maintain the specified speed 
 UR_CMD_KIND_MOVE_TOOL_POSE = 2 # Move towards an absolute goal position expressed as a tool pose. 
-UR_CMD_KIND_MOVE_JOINTS_POSITION = 3 # Move towards an absolute goal position expressed in joint angles. 
-UR_CMD_KIND_MOVE_TOOL_SPEED = 4 # Accelerate to and maintain the specified tool speed 
+UR_CMD_KIND_MOVE_JOINTS_POSITION = 3 # Move towards an absolute goal position expressed in joint angles.
+UR_CMD_KIND_MOVE_TOOL_LINEAR = 4 # Move in a straight line towards an absolute goal position expressed as a tool pose.  
 UR_CMD_KIND_CONFIG = 9
 
 # Command field indices
@@ -66,19 +66,17 @@ UR_DEFAULT_TCP =  [0, 0, 0.12, 0, 0, 0]
 
 # control
 UR_TIME_SLICE = 1./125
-UR_SPEED_TOLERANCE = 0.02 # rad/s
-UR_JOINTS_POSITION_TOLERANCE = 0.01 # rad
+UR_SPEED_TOLERANCE = 0.05 # rad/s
+UR_JOINTS_POSITION_TOLERANCE = 0.02 # rad
 UR_TOOL_POSITION_TOLERANCE = 0.001 # m
 UR_TOOL_ROTATION_TOLERANCE = 0.01 # rad
 UR_DEADMAN_SWITCH_LIMIT = 0.1 # seconds
-UR_JOINT_EPSILON = 0.0001
 
 UR_DEFAULT_FORCE_LOW_BOUND = [-20.0, -20.0, -20.0, -2, -2, -2] 
 UR_DEFAULT_FORCE_HI_BOUND = [20.0, 20.0, 20.0, 2, 2, 2]
 UR_DEFAULT_ACCELERATION = 0.1 # rad/s2
 UR_FAST_STOP_ACCELERATION = 3.0 # rad/s2
 UR_DEFAULT_MAX_SPEED = 0.1  # rad/s
-
 
 # interface / protocol
 UR_RT_PORT = 30003 # real-time UR interface (RT)
