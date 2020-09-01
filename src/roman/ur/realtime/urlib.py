@@ -67,7 +67,7 @@ def set_tcp(pose):
 # various other UR script and custom functions that are not simulation-specific
 #******************************************************************************
 
-def textmsg(s1, s2):
+def textmsg(s1, s2=""):
     print(str(s1)+str(s2))
 
 def norm(vec6):

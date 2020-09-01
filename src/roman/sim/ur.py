@@ -60,16 +60,16 @@ class URArm(object):
         return joint_velocities
 
     def get_target_tcp_pose(self):
-        return [0,0,0,0,0,0]
+        return self.get_actual_tcp_pose()
 
     def get_target_tcp_speed(self):
-        return [0,0,0,0,0,0]
+        return self.get_actual_tcp_speed()
 
     def get_target_joint_positions(self):
-        return [0,0,0,0,0,0]
+        return self.get_actual_joint_positions()
 
     def get_target_joint_speeds(self):
-        return [0,0,0,0,0,0]
+        return self.get_actual_joint_speeds()
 
     def get_tcp_force(self):
         return [0,0,0,0,0,0]
