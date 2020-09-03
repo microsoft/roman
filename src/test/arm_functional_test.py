@@ -47,31 +47,33 @@ def move_test(con):
 def move_linear_test(con):
     print(f"Running {__file__}::{move_test.__name__}()")
     con.connect()
-    arm_ctrl = ur.LinearTCPMotionController(ur.BasicController(con))
+    arm_ctrl = ur.BasicController(con)
 
     arm = ur.Arm(arm_ctrl)
     arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0))
     assert arm.state.is_goal_reached()
 
     home = arm.state.tool_pose() + 0
-    arm.move(target_position=home)
+    arm.movel(target_position=home)
     assert arm.state.is_goal_reached()
 
+    ms = 1
+    ma = 1
     next = home + [0.1, 0.1, 0, 0, 0, 0]
-    arm.move(target_position=next, max_speed=1, max_acc=1)
+    arm.movel(target_position=next, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
-    down = next + [0, 0, -0.2, 0, 0, 0]
-    arm.move(target_position=down, max_speed=1, max_acc=1)
+    down = next + [0, 0, -0.4, 0, 0, 0]
+    arm.movel(target_position=down, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
     
-    arm.move(target_position=next, max_speed=1, max_acc=1)
+    arm.movel(target_position=next, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
-    arm.move(target_position=down, max_speed=1, max_acc=1)
+    arm.movel(target_position=down, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
-    arm.move(target_position=home, max_speed=1, max_acc=1)
+    arm.movel(target_position=home, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
     print("Tool pose:" + str(arm.state.tool_pose()))
@@ -89,7 +91,7 @@ def run(use_sim):
         move_linear_test(ur.Connection())
     else:
         env = SimEnv()
-        env.reset()
+        env.connect()
         # read_test(ur.SimConnection(env))
         #move_test(ur.SimConnection(env))
         move_linear_test(ur.SimConnection(env))
@@ -97,3 +99,5 @@ def run(use_sim):
 
 if __name__ == '__main__':
     run(True)
+
+    

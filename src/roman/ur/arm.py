@@ -195,7 +195,7 @@ class State(Vec):
         '''The forces and moments reported by the Force/Torque sensor mounted on the wrist, in the axes of the robot base coordinate system'''
         return Tool.fromarray(self[State._SENSOR_FORCE], False)
 
-    def set_state_flag(self, flag, value):
+    def _set_state_flag(self, flag, value):
         if value:
             self[State._STATUS] = int(self[State._STATUS]) | flag
         else:
@@ -220,13 +220,12 @@ class Command(Vec):
     _CONFIG_MASS = UR_CMD_CONFIG_MASS
     _CONFIG_TOOL_COG = slice(*UR_CMD_CONFIG_TOOL_COG)
     _CONFIG_TOOL_TIP = slice(*UR_CMD_CONFIG_TOOL_TIP)
-    _MOVE_TARGET_SPEED = slice(*UR_CMD_MOVE_TARGET_SPEED)
+    _MOVE_TARGET = slice(*UR_CMD_MOVE_TARGET)
+    _MOVE_MAX_SPEED = UR_CMD_MOVE_MAX_SPEED
     _MOVE_MAX_ACCELERATION = UR_CMD_MOVE_MAX_ACCELERATION
     _MOVE_FORCE_LOW_BOUND = slice(*UR_CMD_MOVE_FORCE_LOW_BOUND)
     _MOVE_FORCE_HIGH_BOUND = slice(*UR_CMD_MOVE_FORCE_HIGH_BOUND)
     _MOVE_CONTACT_HANDLING = UR_CMD_MOVE_CONTACT_HANDLING
-    _MOVE_TARGET_POSITION = slice(*UR_CMD_MOVE_TARGET_POSITION)
-    _MOVE_MAX_SPEED = UR_CMD_MOVE_MAX_SPEED
     _MOVE_CONTROLLER = UR_CMD_MOVE_CONTROLLER
 
     def __init__(self):
@@ -235,9 +234,8 @@ class Command(Vec):
 
     def make(self,
             kind = UR_CMD_KIND_READ,
-            target_position:Position=UR_ZERO, 
+            target=UR_ZERO, 
             max_speed=UR_DEFAULT_MAX_SPEED,
-            target_speed:Joints=UR_ZERO,
             max_acc=UR_DEFAULT_ACCELERATION, 
             force_low_bound:Tool=UR_DEFAULT_FORCE_LOW_BOUND, 
             force_high_bound:Tool=UR_DEFAULT_FORCE_HI_BOUND, 
@@ -245,9 +243,8 @@ class Command(Vec):
             controller_flags = 0):
         
         self[Command._KIND] = kind
-        self[Command._MOVE_TARGET_POSITION] = target_position
+        self[Command._MOVE_TARGET] = target
         self[Command._MOVE_MAX_SPEED] = max_speed
-        self[Command._MOVE_TARGET_SPEED] = target_speed
         self[Command._MOVE_MAX_ACCELERATION]=max_acc
         self[Command._MOVE_FORCE_LOW_BOUND] = force_low_bound
         self[Command._MOVE_FORCE_HIGH_BOUND]=force_high_bound
@@ -257,26 +254,25 @@ class Command(Vec):
 
     def id(self): return self[Command._ID]
     def kind(self): return self[Command._KIND]
-    def target_speed(self): return Joints.fromarray(self[Command._MOVE_TARGET_SPEED], False)
+    def target(self): 
+            if self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE or self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_LINEAR:
+                return Tool.fromarray(self[Command._MOVE_TARGET], False) 
+            return Joints.fromarray(self[Command._MOVE_TARGET], False)
+    def max_speed(self): return self[Command._MOVE_MAX_SPEED]
     def max_acceleration(self): return self[Command._MOVE_MAX_ACCELERATION]
     def force_low_bound(self): return Tool.fromarray(self[Command._MOVE_FORCE_LOW_BOUND], False)
     def force_high_bound(self): return Tool.fromarray(self[Command._MOVE_FORCE_HIGH_BOUND], False)
     def contact_handling(self): return self[Command._MOVE_CONTACT_HANDLING]
-    def target_position(self): 
-            if self.kind() == UR_CMD_KIND_MOVE_TOOL_POSE or self.kind() == UR_CMD_KIND_MOVE_TOOL_LINEAR:
-                return Tool.fromarray(self[Command._MOVE_TARGET_POSITION], False) 
-            return Joints.fromarray(self[Command._MOVE_TARGET_POSITION], False)
-    def max_speed(self): return self[Command._MOVE_MAX_SPEED]
     def controller_flags(self): return self[Command._MOVE_CONTROLLER]
-    def is_move_command(self): return self.kind() > UR_CMD_KIND_READ and self.kind() < UR_CMD_KIND_CONFIG
+    def is_move_command(self): return self[Command._KIND] > UR_CMD_KIND_READ and self[Command._KIND] < UR_CMD_KIND_CONFIG
 
     def _goal_reached(self, state):
         if self[Command._KIND] == UR_CMD_KIND_MOVE_JOINTS_SPEED:
-            return self.target_speed().allclose(state.joint_speeds(), UR_SPEED_TOLERANCE)
+            return self.target().allclose(state.joint_speeds(), UR_SPEED_TOLERANCE)
         elif self[Command._KIND] == UR_CMD_KIND_MOVE_JOINTS_POSITION:
-            return self.target_position().allclose(state.joint_positions())
-        elif self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE:
-            return self.target_position().allclose(state.tool_pose())
+            return self.target().allclose(state.joint_positions())
+        elif self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE or self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_LINEAR:
+            return self.target().allclose(state.tool_pose())
         else:
             raise Exception("Invalid command type")
 
@@ -319,7 +315,7 @@ class Arm(object):
      
         self.command.make(
             kind = cmd_type,
-            target_position = target_position, 
+            target = target_position, 
             max_speed=max_speed, 
             max_acc=max_acc, 
             force_low_bound=force_low_bound, 
@@ -346,7 +342,7 @@ class Arm(object):
         
         self.command.make(
             kind = cmd_type,
-            target_position = target_position, 
+            target = target_position, 
             max_speed=max_speed, 
             max_acc=max_acc, 
             force_low_bound=force_low_bound, 
@@ -368,7 +364,7 @@ class Arm(object):
      
         self.command.make(
             kind = UR_CMD_KIND_MOVE_JOINTS_SPEED,
-            target_speed = target_speed, 
+            target = target_speed, 
             max_acc = acc, 
             force_low_bound=force_low_bound, 
             force_high_bound=force_high_bound, 

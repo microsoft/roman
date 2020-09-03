@@ -4,7 +4,6 @@
 ## The defaults can be oveeriden when calling utils.load_script, by including them in the defs hashtable.
 ################################################################################################################################
 UR_ZERO = [0.0,0.0,0.0,0.0,0.0,0.0]
-UR_CMD_ENTRIES_COUNT = 30 # This is how many floats we expect with each command (not including the count prefix). Needs to stay under 30 (UR restriction).
 UR_STATE_ENTRIES_COUNT = 72 # This is how many numbers we expect to receive with every response
 UR_PROTOCOL_VERSION = 0.1
 
@@ -22,14 +21,14 @@ UR_CMD_KIND = 1
 UR_CMD_CONFIG_MASS = 2
 UR_CMD_CONFIG_TOOL_COG = [3,6]
 UR_CMD_CONFIG_TOOL_TIP = [6,12]
-UR_CMD_MOVE_TARGET_SPEED = [2,8]
-UR_CMD_MOVE_MAX_ACCELERATION = 8 
-UR_CMD_MOVE_FORCE_LOW_BOUND = [9,15]
-UR_CMD_MOVE_FORCE_HIGH_BOUND = [15,21]
-UR_CMD_MOVE_CONTACT_HANDLING = 21
-UR_CMD_MOVE_TARGET_POSITION = [22,28]
-UR_CMD_MOVE_MAX_SPEED = 28
-UR_CMD_MOVE_CONTROLLER = 29
+UR_CMD_MOVE_TARGET = [2,8]
+UR_CMD_MOVE_MAX_SPEED = 8
+UR_CMD_MOVE_MAX_ACCELERATION = 9 
+UR_CMD_MOVE_FORCE_LOW_BOUND = [10,16]
+UR_CMD_MOVE_FORCE_HIGH_BOUND = [16,22]
+UR_CMD_MOVE_CONTACT_HANDLING = 22
+UR_CMD_MOVE_CONTROLLER = 23
+UR_CMD_ENTRIES_COUNT = 24 # This is how many floats we expect with each command (not including the count prefix). Needs to stay under 30 (UR restriction).
 
 # State field indices
 UR_STATE_TIME = 0
@@ -67,10 +66,11 @@ UR_DEFAULT_TCP =  [0, 0, 0.12, 0, 0, 0]
 # control
 UR_TIME_SLICE = 1./125
 UR_SPEED_TOLERANCE = 0.05 # rad/s
-UR_JOINTS_POSITION_TOLERANCE = 0.02 # rad
+UR_JOINTS_POSITION_TOLERANCE = 0.01 # rad
 UR_TOOL_POSITION_TOLERANCE = 0.001 # m
 UR_TOOL_ROTATION_TOLERANCE = 0.01 # rad
 UR_DEADMAN_SWITCH_LIMIT = 0.1 # seconds
+UR_EPSILON = 0.00001
 
 UR_DEFAULT_FORCE_LOW_BOUND = [-20.0, -20.0, -20.0, -2, -2, -2] 
 UR_DEFAULT_FORCE_HI_BOUND = [20.0, 20.0, 20.0, 2, 2, 2]

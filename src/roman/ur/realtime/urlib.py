@@ -70,9 +70,28 @@ def set_tcp(pose):
 def textmsg(s1, s2=""):
     print(str(s1)+str(s2))
 
-def norm(vec6):
-    ''' Norm function as defined by urscript'''
-    return np.linalg.norm(vec6)
+def norm(v):
+    ''' Norm function, as defined by urscript'''
+    return np.linalg.norm(v)
+
+def point_dist(p_from, p_to):
+    '''
+    Point distance, as defined by urscript.
+    Returns the distance between the two tool positions (without considering rotations)
+    '''
+    return math.dist(p_from[:3], p_to[:3])
+
+def interpolate_pose(p_from, p_to, alpha):
+    ''' Linear interpolation of tool position and orientation, as defined by urscript.'''
+    delta = np.subtract(p_to, p_from)
+
+    for v in [-4*math.pi, -2*math.pi, 2*math.pi, 4*math.pi]:
+        for i in range(3, 6):
+            alt = p_to[i] - p_from[i] + v
+            if math.fabs(alt) < math.fabs(delta[i]):
+                delta[i] = alt
+
+    return p_from + delta*alpha
 
 def sqrt(a):
     return math.sqrt(a)

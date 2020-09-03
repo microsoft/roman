@@ -7,26 +7,24 @@ from control import *
 ur_cmd_time = 0
 ur_cmd_id = 0
 ur_cmd_kind = 0 
-ur_cmd_target_speed = UR_ZERO
+ur_cmd_target = UR_ZERO
+ur_cmd_max_speed = 0
 ur_cmd_max_acceleration = 0
 ur_cmd_force_low_bound = UR_DEFAULT_FORCE_LOW_BOUND
 ur_cmd_force_high_bound = UR_DEFAULT_FORCE_HI_BOUND
 ur_cmd_contact_handling = 0
-ur_cmd_target_position = UR_ZERO
-ur_cmd_max_speed = 0
 
-def ur_drive(time, id, kind, target_speed, max_acceleration, force_low_bound, force_high_bound, contact_handling, target_position, max_speed):
+def ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, contact_handling):
     # the actual work is done on separate drive and motion threads, below
     ur_cmd_time = time
     ur_cmd_id = id
     ur_cmd_kind = kind 
-    ur_cmd_target_speed = target_speed
+    ur_cmd_target = target_speed
+    ur_cmd_max_speed = max_speed
     ur_cmd_max_acceleration = max_acceleration
     ur_cmd_force_low_bound = force_low_bound
     ur_cmd_force_high_bound = force_high_bound
     ur_cmd_contact_handling = contact_handling
-    ur_cmd_target_position = target_position
-    ur_cmd_max_speed = max_speed
     return 0
 end
 
@@ -66,13 +64,12 @@ thread ur_drive_thread_fn():
         target = ur_get_target_speed( ur_cmd_time,
                                       ur_cmd_id,
                                       ur_cmd_kind, 
-                                      ur_cmd_target_speed,
+                                      ur_cmd_target,
+                                      ur_cmd_max_speed,
                                       ur_cmd_max_acceleration,
                                       ur_cmd_force_low_bound,
                                       ur_cmd_force_high_bound,
-                                      ur_cmd_contact_handling,
-                                      ur_cmd_target_position,
-                                      ur_cmd_max_speed)
+                                      ur_cmd_contact_handling)
         ur_target_speed = [target[0], target[1], target[2], target[3], target[4], target[5]]
         ur_max_acc = target[6]
         exit_critical

@@ -77,21 +77,20 @@ def execute_arm_command(cmd, offset):
     # MOVE_XXX
     id = cmd[UR_CMD_ID + offset]
     time = ur_get_time()
-    target_speed = s_(cmd, UR_CMD_MOVE_TARGET_SPEED, offset)
+    target = s_(cmd, UR_CMD_MOVE_TARGET, offset)
     max_acceleration = cmd[UR_CMD_MOVE_MAX_ACCELERATION + offset]
     force_low_bound = s_(cmd, UR_CMD_MOVE_FORCE_LOW_BOUND, offset)
     force_high_bound = s_(cmd, UR_CMD_MOVE_FORCE_HIGH_BOUND, offset)
     contact_handling = cmd[UR_CMD_MOVE_CONTACT_HANDLING + offset]
-    target_position = s_(cmd, UR_CMD_MOVE_TARGET_POSITION, offset)
     if kind == UR_CMD_KIND_MOVE_TOOL_POSE:
         # convert tool pose to joints position
         kind = UR_CMD_KIND_MOVE_JOINTS_POSITION
         #textmsg("target position",target_position)
-        target_position = get_inverse_kin(ur_pose(target_position))
+        target = get_inverse_kin(ur_pose(target))
         #textmsg("joint position",target_position)
     #ur:end
     max_speed = cmd[UR_CMD_MOVE_MAX_SPEED + offset]
-    ur_drive(time, id, kind, target_speed, max_acceleration, force_low_bound, force_high_bound, contact_handling, target_position, max_speed)
+    ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, contact_handling)
     return state
 #ur:end
 
