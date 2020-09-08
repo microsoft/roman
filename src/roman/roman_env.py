@@ -3,7 +3,7 @@ from gym import spaces
 import numpy as np
 import math
 from . import robot
-#import robot
+
 
 class RoManEnv(gym.Env):
     metadata = {'render.modes': ['human']}
@@ -11,10 +11,10 @@ class RoManEnv(gym.Env):
 
     def __init__(self, real_robot=False):
         super().__init__()
-        # What are the state dimensions?????? why are there 6 of them???
+        # What are the state dimensions?? why are there 6 of them?
         self.action_space = spaces.Box(low=np.array([-2, -2, -2, -math.pi, 0]), high=np.array([2, 2, 2, math.pi, 1]), dtype=np.float32)
         # Video frames follow the channels, width, height convention.
-        # How do we get the video frames, at least from the simulator???
+        # How do we get the video frames, at least from the simulator?
         self.observation_space = spaces.Dict({'cam': spaces.Box(low=0, high=255, shape=(3, 224, 224), dtype=np.uint8), \
                                             'state': spaces.Box(low=np.array([-2, -2, -2, -math.pi, 0]), high=np.array([2, 2, 2, math.pi, 1]), dtype=np.float32)})
         if real_robot:
