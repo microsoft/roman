@@ -16,7 +16,7 @@ import os
 from ..common import *
 from .loader import *
 from .arm import *
-from .scripts.constants import *
+from .realtime.constants import *
 
 ################################################################
 ## Real robot implementation
@@ -33,7 +33,7 @@ class Connection(object):
 
     def __generate_urscript(self):
         constants = [f"UR_CLIENT_IP=\"{self.local_ip}\"", f"UR_CLIENT_PORT={self.local_port}"]
-        script_folder = os.path.join(os.path.dirname(__file__), 'scripts')
+        script_folder = os.path.join(os.path.dirname(__file__), 'realtime')
         script = load_script(script_folder, "main", defs=constants) 
         return script
 
@@ -66,7 +66,7 @@ class Connection(object):
 
         rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         rt_socket.connect((self.robot_ip, UR_RT_PORT))
-        script_folder = os.path.join(os.path.dirname(__file__), 'scripts')
+        script_folder = os.path.join(os.path.dirname(__file__), 'realtime')
         script = load_script(script_folder, "no_op")
         socket_send_retry(rt_socket, script.encode('ascii'))
 

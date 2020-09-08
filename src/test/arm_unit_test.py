@@ -7,7 +7,7 @@ import os
 rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
 from roman.ur import *
-from roman.ur.scripts.interface import *
+from roman.ur.realtime.interface import *
 
 #############################################################
 # State, Command and Controller unit tests 

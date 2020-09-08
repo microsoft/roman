@@ -47,12 +47,13 @@ def move_test(con):
 #############################################################
 # Runner
 #############################################################
-def run(real_robot = False):
-    if real_robot:
+def run(use_sim):
+    if not use_sim:
         #read_test(ur.Connection())
         move_test(ur.Connection())
     else:
         env = SimEnv()
+        env.connect()
         env.reset()
         read_test(ur.SimConnection(env))
         move_test(ur.SimConnection(env))

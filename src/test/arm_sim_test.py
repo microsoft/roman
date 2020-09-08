@@ -10,19 +10,22 @@ rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
 from roman.ur import *
 from roman.sim.ur_rq3 import SimEnv
-from roman.ur.scripts.interface import *
+from roman.ur.realtime import urlib
+from roman.ur.realtime.interface import *
 
 #############################################################
 # Low-level unit tests using the simulated arm. 
 #############################################################
 def get_arm_state_test(env):
     print(f"Running {__file__}::{get_arm_state_test.__name__}()")
+    urlib.sim = env
     state = State.fromarray(get_arm_state())
     #print(state)
     print("Passed.")
 
 def execute_arm_command_test(env):
     print(f"Running {__file__}::{execute_arm_command_test.__name__}()")
+    urlib.sim = env
     cmd = Command()
     state = State.fromarray(execute_arm_command(cmd, 0))
     cmd.make(kind = UR_CMD_KIND_MOVE_JOINTS_POSITION, target_position=Joints(1,1,1,1,1,1))
@@ -62,7 +65,7 @@ def move_arm_test(env):
 #############################################################
 def run():
     env = SimEnv()
-    env.reset()
+    env.connect()
 
     get_arm_state_test(env)
     execute_arm_command_test(env)

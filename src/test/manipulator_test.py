@@ -10,9 +10,9 @@ rootdir = os.path.dirname(os.path.dirname(__file__))
 os.sys.path.insert(0, rootdir)
 from roman import *
 
-def arm_move(real_robot):
+def arm_move(use_sim):
     print(f"Running {__file__}::{arm_move.__name__}()")
-    robot = connect(config={"real_robot":real_robot})
+    robot = connect(use_sim = use_sim)
     arm = robot.arm
     position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0)
     arm.move(target_position = position, max_speed=1, max_acc=0.5)
@@ -28,9 +28,24 @@ def arm_move(real_robot):
     robot.disconnect()
     print("Passed.")
 
+def step(use_sim):
+    print(f"Running {__file__}::{step.__name__}()")
+    pose = ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0)
+    robot = connect(use_sim = use_sim)
+    d = pose.to_xyzrpy() - robot.arm.state.tool_pose().to_xyzrpy() 
+    robot.step(d[0], d[1], d[2], d[5])
+    while not robot.arm.state.is_done():
+        d = pose.to_xyzrpy() - robot.arm.state.tool_pose().to_xyzrpy() 
+        robot.step(d[0], d[1], d[2], d[5])
+    assert robot.arm.state.is_goal_reached()
+
+    robot.disconnect()
+    print("Passed.")
+
+
 def hand_move():
     print(f"Running {__file__}::{hand_move.__name__}()")
-    robot = connect(config={"real_robot":True})
+    robot = connect(use_sim = False)
     robot.hand.open()
     assert robot.hand.state.position() == hand.Position.OPENED
     
@@ -61,7 +76,7 @@ def hand_move():
 
 def arm_hand_move():
     print(f"Running {__file__}::{arm_hand_move.__name__}()")
-    robot = connect(config={"real_robot":True})
+    robot = connect(use_sim = False)
 
     robot.hand.open()
     robot.hand.close(blocking=False)
@@ -87,7 +102,7 @@ def arm_hand_move():
 def arm_touch():
     '''This requires a horizontal surface that the arm can touch.'''
     print(f"Running {__file__}::{arm_touch.__name__}()")
-    robot = connect(config={"real_robot":True})
+    robot = connect(use_sim = False)
     robot.hand.open()
     robot.hand.change(mode=hand.GraspMode.PINCH)
     robot.hand.close()
@@ -109,9 +124,11 @@ def arm_touch():
 #############################################################
 # Runner
 ############################################################# 
-def run(real_robot = False):
-    arm_move(real_robot)
-    if real_robot:
+def run(use_sim):
+    step(use_sim)
+
+    arm_move(use_sim)
+    if not use_sim:
         hand_move()
         arm_hand_move()
         arm_touch()
@@ -119,3 +136,4 @@ def run(real_robot = False):
 if __name__ == '__main__':
     run(True)
     
+

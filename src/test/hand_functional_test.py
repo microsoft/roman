@@ -14,9 +14,9 @@ from roman.rq import *
 #############################################################
 # These tests require a real hand for now (no sim option)
 #############################################################
-def connection_test(real_robot):
+def connection_test():
     print(f"Running {__file__}::{connection_test.__name__}()")
-    con = Connection() if real_robot else SimConnection(None)
+    con = Connection()
     con.connect()
     hand = Hand(con)
     hand.close(blocking=False)
@@ -47,10 +47,10 @@ def controller_test():
 #############################################################
 # Runner
 #############################################################
-def run(real_robot = False):
+def run(use_sim = False):
     
-    if real_robot:
-        connection_test(real_robot)
+    if not use_sim:
+        connection_test()
         controller_test()
    
 if __name__ == '__main__':

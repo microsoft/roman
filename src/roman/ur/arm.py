@@ -3,7 +3,7 @@ import math
 import time
 from scipy.spatial.transform import Rotation
 from ..common import Vec
-from .scripts.constants import *
+from .realtime.constants import *
 
 TWO_PI = 2*math.pi
 
@@ -195,7 +195,7 @@ class State(Vec):
         '''The forces and moments reported by the Force/Torque sensor mounted on the wrist, in the axes of the robot base coordinate system'''
         return Tool.fromarray(self[State._SENSOR_FORCE], False)
 
-    def set_state_flag(self, flag, value):
+    def _set_state_flag(self, flag, value):
         if value:
             self[State._STATUS] = int(self[State._STATUS]) | flag
         else:
@@ -333,11 +333,15 @@ class Arm(object):
             contact_handling=0, 
             controller=0,
             blocking=True):
-        if type(target_speed) is Tool:
-            raise TypeError("Speed can only be specified as joint velocities. Argument target_speed must be of type Joints.")
+        if type(target_speed) is Joints:
+            cmd_type = UR_CMD_KIND_MOVE_JOINTS_SPEED
+        elif type(target_speed) is Tool:
+            cmd_type = UR_CMD_KIND_MOVE_TOOL_SPEED
+        else:
+            raise TypeError("Argument target_speed must be of type Tool or Joints. Use Joints.fromarray() or Tool.fromarray() to wrap an existing array.")
      
         self.command.make(
-            kind = UR_CMD_KIND_MOVE_JOINTS_SPEED,
+            kind = cmd_type,
             target_speed = target_speed, 
             max_acc = acc, 
             force_low_bound=force_low_bound, 

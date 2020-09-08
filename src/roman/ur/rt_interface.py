@@ -1,8 +1,8 @@
-################################################################
-## ur_rt_robot.py
+################################################################################
 ## Retrieves the arm state from the UR's built-in Real-Time interface. 
 ## Does not need a script running on the robot and can be used with the pendant.
-################################################################
+## Note: This file is not used. It is kept for reference and debugging purposes only.
+################################################################################
 import socket
 import numpy as np
 import timeit
@@ -11,7 +11,6 @@ import time
 
 RT_PORT = 30003 # real-time UR interface (RT)
 RT_PACKET_SIZE = 812
-MAGIC_CONTROLLER_TIME_QUANTA = 4398046511.104
 
 class realtime_interface(object):
     """Implements functionality to read robot state."""
