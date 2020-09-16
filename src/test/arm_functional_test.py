@@ -12,6 +12,7 @@ from roman.sim.ur_rq3 import SimEnv
 
 #############################################################
 # Arm unit tests that bypass the manipulator server.
+
 # These tests can run on either sim or real arm.
 #############################################################
 def read_test(con):
@@ -32,19 +33,26 @@ def move_test(con):
     arm_ctrl = ur.BasicController(con)
 
     arm = ur.Arm(arm_ctrl)
-    arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=0.5, max_acc=0.5)
+    ms = 5
+    ma = 5
+    arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
-    arm.move(target_position=ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0), max_speed=1, max_acc=1)
+    arm.move(target_position=ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
-    arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=0.5, max_acc=0.5)
+    arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
+    arm.move(target_position=ur.Tool(-0.2, -0.2, 0.3, 0, math.pi, math.pi/2), max_speed=ms, max_acc=ma)
+    assert arm.state.is_goal_reached()
+    arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=ms, max_acc=ma)
+    assert arm.state.is_goal_reached()
+    
 
     print("Tool pose:" + str(arm.state.tool_pose()))
     print("Joint positions:" + str(arm.state.joint_positions()))
     con.disconnect()
     print("Passed.")    
 
-def move_linear_test(con):
+def move_test2(con):
     print(f"Running {__file__}::{move_test.__name__}()")
     con.connect()
     arm_ctrl = ur.BasicController(con)
@@ -54,26 +62,29 @@ def move_linear_test(con):
     assert arm.state.is_goal_reached()
 
     home = arm.state.tool_pose() + 0
-    arm.movel(target_position=home)
+    arm.move(target_position=home)
     assert arm.state.is_goal_reached()
 
-    ms = 1
-    ma = 1
-    next = home + [0.1, 0.1, 0, 0, 0, 0]
-    arm.movel(target_position=next, max_speed=ms, max_acc=ma)
+    ms = 2
+    ma = 2
+
+    next = home + [0, 0, 0.1, 0, 0, math.pi/2]
+    #next = home + [0, 0, 0.25, 0, 0, 0]
+    arm.move(target_position=next, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
-    down = next + [0, 0, -0.4, 0, 0, 0]
-    arm.movel(target_position=down, max_speed=ms, max_acc=ma)
+    down = home + [0, 0, -0.3, 0, 0, 0]
+    arm.move(target_position=down, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
     
-    arm.movel(target_position=next, max_speed=ms, max_acc=ma)
+    arm.move(target_position=next, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
-    arm.movel(target_position=down, max_speed=ms, max_acc=ma)
+    arm.move(target_position=down, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
-    arm.movel(target_position=home, max_speed=ms, max_acc=ma)
+    arm.move(target_position=home,
+     max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
     print("Tool pose:" + str(arm.state.tool_pose()))
@@ -86,15 +97,15 @@ def move_linear_test(con):
 #############################################################
 def run(use_sim):
     if not use_sim:
-        #read_test(ur.Connection())
-        #move_test(ur.Connection())
-        move_linear_test(ur.Connection())
+        read_test(ur.Connection())
+        move_test(ur.Connection())
+        move_test2(ur.Connection())
     else:
         env = SimEnv()
         env.connect()
-        # read_test(ur.SimConnection(env))
-        #move_test(ur.SimConnection(env))
-        move_linear_test(ur.SimConnection(env))
+        read_test(ur.SimConnection(env))
+        move_test(ur.SimConnection(env))
+        move_test2(ur.SimConnection(env))
         env.disconnect()
 
 if __name__ == '__main__':

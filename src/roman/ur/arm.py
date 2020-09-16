@@ -7,35 +7,7 @@ from .realtime.constants import *
 
 TWO_PI = 2*math.pi
 
-def clamp_angle(a):
-    if a > math.pi:
-        return  a - TWO_PI
-    if a < -math.pi:
-        return a + TWO_PI
-    return a
-
-def close_angular(a, b, tolerance = UR_TOOL_ROTATION_TOLERANCE):
-    a = clamp_angle(a)
-    b = clamp_angle(b)
-    if math.fabs(a-b) <= tolerance:
-        return True
-    if math.fabs((a + TWO_PI) - b) <= tolerance:
-        return True
-    if math.fabs((b + TWO_PI) - a) <= tolerance:
-        return True
-
-def allclose_angular(a, b, tolerance = UR_TOOL_ROTATION_TOLERANCE):
-    if len(a) != len(b):
-        return False
-    for i in range(len(a)):
-        if not close_angular(a[i], b[i], tolerance):
-            return False
-    return True
-
-class Position(Vec): 
-    pass
-
-class Joints(Position): 
+class Joints(Vec): 
     
     '''
     A vector of 6 elements representing joint properties. The order is: base, shoulder, elbow, wrist1, wrist2, wrist3.
@@ -54,9 +26,26 @@ class Joints(Position):
     def allclose(self, array, tolerance = UR_JOINTS_POSITION_TOLERANCE):
         # for i in range[6]:
             # if self.array[i] != 
-        return np.allclose(self.array, array, rtol=0, atol=tolerance) or allclose_angular(self.array, array, tolerance)
+        if np.allclose(self.array, array, rtol=0, atol=tolerance):
+            return True
+        for i in range(len(array)):
+            a = Joints.clamp_angle(self.array[i])
+            b = Joints.clamp_angle(array[i])
+            if math.fabs(a-b) > tolerance \
+                and  math.fabs((a + TWO_PI) - b) > tolerance \
+                and math.fabs((b + TWO_PI) - a) > tolerance:
+                return False
+        return True
 
-class Tool(Position):     
+    @staticmethod
+    def clamp_angle(a):
+        if a > math.pi:
+            return  a - TWO_PI
+        if a < -math.pi:
+            return a + TWO_PI
+        return a 
+
+class Tool(Vec):     
     '''
     A vector of 6 elements representing tool position and orientation. Orientation is stored as axis angles. The order is: x, y, z, rx, ry, rz.
     '''
@@ -72,7 +61,13 @@ class Tool(Position):
         self.array[:] = [x, y, z, rx, ry, rz]
 
     def allclose(self, array, position_tolerance = UR_TOOL_POSITION_TOLERANCE, rotation_tolerance = UR_TOOL_ROTATION_TOLERANCE):
-        return np.allclose(self.array[:3], array[:3], rtol=0, atol=position_tolerance) and (np.allclose(self.array[3:6], array[3:6], rtol=0, atol=rotation_tolerance) or allclose_angular(self.array[3:6], array[3:6], rotation_tolerance))
+        if not np.allclose(self.array[:3], array[:3], rtol=0, atol=position_tolerance):
+            return False
+
+        # normalize the two rotation vectors first
+        a = Rotation.from_rotvec(self.array[3:6]).as_rotvec()
+        b = Rotation.from_rotvec(array[3:6]).as_rotvec()
+        return np.allclose(a, b, rtol=0, atol=rotation_tolerance)
 
     @staticmethod
     def from_xyzrpy(xyzrpy):
@@ -207,8 +202,7 @@ class State(Vec):
 class Command(Vec):
     '''
     Represents a command that can be sent to the arm. 
-    When a target_position is provided, the arm moves to an absolute position, specified either as a tool pose or as joint angles. 
-    When target_position is omitted, the move is a speed move and the arm accelerate to the joint speeds specified by target_speed.
+    The move target can be joint speeds, or an absolute position, specified either as a tool pose or as joint angles. 
     In either case, the arm stops when contact is detected, that is, if fabs(actual_force - expected_force) > max_force.
     The type of reaction to contact is determined by the contact_handling parameter.
     An optional motion controller choice can be specified using the controller parameter.
@@ -313,33 +307,6 @@ class Arm(object):
         else:
             raise TypeError("Argument target_position must be of type Tool or Joints. Use Joints.fromarray() or Tool.fromarray() to wrap an existing array.")
      
-        self.command.make(
-            kind = cmd_type,
-            target = target_position, 
-            max_speed=max_speed, 
-            max_acc=max_acc, 
-            force_low_bound=force_low_bound, 
-            force_high_bound=force_high_bound, 
-            contact_handling=contact_handling, 
-            controller_flags=controller_flags)
-        self.__execute(blocking)
-
-    def movel(self,
-            target_position, 
-            max_speed=UR_DEFAULT_MAX_SPEED, 
-            max_acc=UR_DEFAULT_ACCELERATION, 
-            force_low_bound=UR_DEFAULT_FORCE_LOW_BOUND,
-            force_high_bound=UR_DEFAULT_FORCE_HI_BOUND,
-            contact_handling=0, 
-            controller_flags=0,
-            blocking=True):
-        if type(target_position) is Joints:
-            raise TypeError("Argument target_position must be of type Tool for tool-linear move. Use movej with joint positions.")
-        elif type(target_position) is Tool:
-            cmd_type = UR_CMD_KIND_MOVE_TOOL_LINEAR
-        else:
-            raise TypeError("Argument target_position must be of type Tool or Joints. Use Joints.fromarray() or Tool.fromarray() to wrap an existing array.")
-        
         self.command.make(
             kind = cmd_type,
             target = target_position, 

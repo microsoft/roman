@@ -33,6 +33,7 @@ class SimEnv(object):
 
     def reset(self):
         pb.resetSimulation()
+        pb.setGravity(0,0,-10)
         arm_id = pb.loadURDF(self._arm_urdf, baseOrientation = pb.getQuaternionFromEuler([0, 0, math.pi]))
         self.arm = ur.URArm(arm_id, SimEnv.UR_BASE_JOINT_ID, SimEnv.UR_TCP_ID, SimEnv.TIME_STEP)
         self.arm.reset()
@@ -46,5 +47,4 @@ class SimEnv(object):
    
     def disconnect(self):
         pb.disconnect()
-
  

@@ -24,22 +24,19 @@ class URArm(object):
         start_positions = [0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0]
         for i in range(6):
             pb.resetJointState(self.body_id, self.base_joint_id + i, start_positions[i])
-        # dump joints:
-        # for i in range(pb.getNumJoints(self.body_id)):
-        #     ji = pb.getJointInfo(self.body_id, i)
-        #     print(f"{i}: ix={ji[0]}, name={ji[1]}, type={ji[2]}, link={ji[12]}, llim={ji[8]}, ulim={ji[9]}, ll={ji[8]}, force={ji[10]}, vel={ji[11]} ")
 
+        #self._debug_dump()
+    
     def get_inverse_kin(self, pose):
         '''Calculates the joint angles that corespond to the specified tool pose.'''
-        joints = pb.calculateInverseKinematics(self.body_id, self.tcp_id, pose[0:3], Rotation.from_rotvec(pose[3:6]).as_quat())
+        rot = Rotation.from_rotvec(pose[3:6]).as_quat()
+        joints = pb.calculateInverseKinematics(self.body_id, self.tcp_id, pose[0:3], rot)
         return joints[:6]
 
     def get_actual_tcp_pose(self):
         link_state = pb.getLinkState(self.body_id, self.tcp_id, computeLinkVelocity = 0, computeForwardKinematics = 1)
         pos = link_state[4]
         q = link_state[5]
-        if q[3]>0:
-            q = [*q[:3], -q[3]]
         rot = Rotation.from_quat(q).as_rotvec()
         return [pos[0], pos[1], pos[2], rot[0], rot[1], rot[2]]
 
@@ -108,3 +105,14 @@ class URArm(object):
     def set_tcp(self, pose):
         pass
 
+    def _debug_dump(self):
+        print("joints:")
+
+        for i in range(pb.getNumJoints(self.body_id)):
+            ji = pb.getJointInfo(self.body_id, i)
+            print(f"{i}: ix={ji[0]}, name={ji[1]}, type={ji[2]}, link={ji[12]}, link={ji[12]}, , llim={ji[8]}, ulim={ji[9]}, force={ji[10]}, vel={ji[11]} ")
+
+        print("dynamics:")
+        for i in range(pb.getNumJoints(self.body_id)):
+            di = pb.getDynamicsInfo(self.body_id, i)
+            print(di)
