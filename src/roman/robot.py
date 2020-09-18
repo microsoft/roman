@@ -35,7 +35,7 @@ class Robot(object):
         self.arm.move(pose, max_speed = max_speed)
         self.hand.move(hand.Finger.All, position = gripper_state)
 
-    def step(self, dx, dy, dz, dyaw, gripper_state=hand.Position.OPENED, max_speed = 0.5, dt = 0.2):
+    def step(self, dx, dy, dz, dyaw, gripper_state=hand.Position.OPENED, max_speed = 0.5, max_acc=0.5, dt = 0.2):
         '''
         Moves the arm relative to the current position in carthesian coordinates, 
         assuming the gripper is vertical (aligned with the z-axis), pointing down.
@@ -46,7 +46,7 @@ class Robot(object):
         pose = self.arm.state.tool_pose()
         pose = arm.Tool.from_xyzrpy(pose.to_xyzrpy() + [dx,dy, dz,0,0, dyaw])
         self.hand.move(hand.Finger.All, position = gripper_state, blocking = False)
-        self.arm.move(pose, max_speed = max_speed, blocking = False)
+        self.arm.move(pose, max_speed = max_speed, max_acc=max_acc, blocking = False)
         end = self.arm.state.time() + dt
         while self.arm.state.time() < end and not (self.arm.state.is_done() and self.hand.state.is_done()):
             self.read()

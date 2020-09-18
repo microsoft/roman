@@ -77,7 +77,7 @@ def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=Non
         file = open(log_file, "wb")
         #file.write(ur.UR_PROTOCOL_VERSION)
 
-    connection = connector.Local(config)
+    connection = InProc(config)
     (arm_ctrl, hand_ctrl) = connection.connect()
 
     arm_cmd = ur.Command()

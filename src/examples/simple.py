@@ -19,6 +19,7 @@ if __name__ == '__main__':
 
     # default way to move blocks until the arm reaches the specified pose
     for i in range(3):
-        robot.arm.move(p1)
+        robot.arm.move(p1, max_speed=1, max_acc=0.5)
         robot.arm.move(p2, max_speed=2, max_acc=2)
     
+    robot.disconnect()
