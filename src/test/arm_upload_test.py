@@ -15,23 +15,26 @@ from roman.ur import loader
 # These tests verify the UR script generation and uploading
 #############################################################
 def generate_script():
+    print(f"Running {__file__}::{validate_script_syntax.__name__}()")
     script = ur.Connection()._Connection__generate_urscript()
     # outF = open("complete.script", "w")
     # outF.writelines(script)
     # outF.close()
     print(script)
+    print("Passed.")
 
 def validate_script_syntax():
     '''
     Uploads all the scripts (by loading test.script) to validate their syntax.
     If the test hangs, edit test.script and remove the imports one by one (from bottom to top)
     '''
+    print(f"Running {__file__}::{validate_script_syntax.__name__}()")
     script_folder = os.path.join(os.path.join(os.path.join(rootdir, 'roman'), 'ur'), 'realtime')
     defs = [f"UR_CLIENT_IP=\"{ur.UR_DEFAULT_CLIENT_IP}\"", f"UR_CLIENT_PORT={ur.UR_DEFAULT_CLIENT_PORT}"]
     rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     rt_socket.connect((ur.UR_ROBOT_IP, ur.UR_RT_PORT))
     print(f"loading test")
-    script = loader.load_script(script_folder, "test", defs = defs)
+    script = loader.load_script(script_folder, "test", imports=[], defs = defs)
     loader.socket_send_retry(rt_socket, script.encode('ascii'))
 
     reverse_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -49,14 +52,17 @@ def validate_script_syntax():
 
     print('Script uploaded.')
     rt_socket.close()
+    print("Passed.")
 
 def test_script():
+    print(f"Running {__file__}::{test_script.__name__}()")
     '''Use this to verify connectivity to the UR controller '''
     rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     rt_socket.connect(('192.168.1.2', 30003))
     script = "textmsg(get_actual_tcp_pose())\n"
     loader.socket_send_retry(rt_socket, script.encode('ascii'))
     rt_socket.close()
+    print("Passed.")
 
 #############################################################
 # Runner
@@ -70,4 +76,4 @@ def run(use_sim):
         validate_script_syntax()
    
 if __name__ == '__main__':
-    run()
+    run(True)

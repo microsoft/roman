@@ -19,7 +19,7 @@ def ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_boun
     ur_cmd_time = time
     ur_cmd_id = id
     ur_cmd_kind = kind 
-    ur_cmd_target = target_speed
+    ur_cmd_target = target
     ur_cmd_max_speed = max_speed
     ur_cmd_max_acceleration = max_acceleration
     ur_cmd_force_low_bound = force_low_bound
@@ -79,6 +79,6 @@ thread ur_drive_thread_fn():
         # Note that the call below suspends the current thread (killing the motion thread yields the remaining time), 
         # so this loop resumes only after 8ms
         cmd_thread = run ur_speed_command_thread_fn()
-        end
+    end
 end     
 

@@ -23,7 +23,7 @@ def get_joint_distance(current, target):
         #ur:end   
     #ur:end  
     return delta
- #ur:end     
+#ur:end     
 
 def ur_joint_distances(current, target):
     return [
@@ -32,7 +32,7 @@ def ur_joint_distances(current, target):
         get_joint_distance(current[2], target[2]),
         get_joint_distance(current[3], target[3]),
         get_joint_distance(current[4], target[4]),
-        get_joint_distance(current[5], target[5]),
+        get_joint_distance(current[5], target[5])
     ]
 #ur:end  
 

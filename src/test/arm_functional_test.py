@@ -17,24 +17,21 @@ from roman.sim.ur_rq3 import SimEnv
 #############################################################
 def read_test(con):
     print(f"Running {__file__}::{read_test.__name__}()")
-    con.connect()
     arm_ctrl = ur.BasicController(con)
     cmd = ur.Command()
     state = ur.State()
     arm_ctrl.execute(cmd, state)
     print("Tool pose:" + str(state.tool_pose()))
     print("Joint positions:" + str(state.joint_positions()))
-    con.disconnect()
     print("Passed.")   
     
 def move_test(con):
     print(f"Running {__file__}::{move_test.__name__}()")
-    con.connect()
     arm_ctrl = ur.BasicController(con)
 
     arm = ur.Arm(arm_ctrl)
-    ms = 5
-    ma = 5
+    ms = 1
+    ma = 0.5
     arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
     arm.move(target_position=ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0), max_speed=ms, max_acc=ma)
@@ -49,12 +46,10 @@ def move_test(con):
 
     print("Tool pose:" + str(arm.state.tool_pose()))
     print("Joint positions:" + str(arm.state.joint_positions()))
-    con.disconnect()
     print("Passed.")    
 
 def move_test2(con):
     print(f"Running {__file__}::{move_test.__name__}()")
-    con.connect()
     arm_ctrl = ur.BasicController(con)
 
     arm = ur.Arm(arm_ctrl)
@@ -65,8 +60,8 @@ def move_test2(con):
     arm.move(target_position=home)
     assert arm.state.is_goal_reached()
 
-    ms = 2
-    ma = 2
+    ms = 1
+    ma = 0.5
 
     next = home + [0, 0, 0.1, 0, 0, math.pi/2]
     #next = home + [0, 0, 0.25, 0, 0, 0]
@@ -89,7 +84,6 @@ def move_test2(con):
 
     print("Tool pose:" + str(arm.state.tool_pose()))
     print("Joint positions:" + str(arm.state.joint_positions()))
-    con.disconnect()
     print("Passed.")  
 
 #############################################################
@@ -97,15 +91,19 @@ def move_test2(con):
 #############################################################
 def run(use_sim):
     if not use_sim:
-        read_test(ur.Connection())
-        move_test(ur.Connection())
-        move_test2(ur.Connection())
+        con = ur.Connection()
     else:
         env = SimEnv()
         env.connect()
-        read_test(ur.SimConnection(env))
-        move_test(ur.SimConnection(env))
-        move_test2(ur.SimConnection(env))
+        con = ur.SimConnection(env)
+
+    con.connect()
+    read_test(con)
+    move_test(con)
+    move_test2(con)
+    con.disconnect()
+
+    if use_sim:
         env.disconnect()
 
 if __name__ == '__main__':
