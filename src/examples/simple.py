@@ -9,7 +9,7 @@ import math
 
 if __name__ == '__main__':
     # connect to robot. Use connect_real() to start up the real robot. 
-    robot = connect_sim()
+    robot = connect(use_sim=True)
 
     # arm poses can be expresses in tool space (carthesian coordinates xyzrpy) ...
     p1 = arm.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0)

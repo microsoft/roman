@@ -3,6 +3,7 @@
 ################################################################################################################################
 import pybullet as pb
 import numpy as np
+from scipy.spatial.transform import Rotation
 import math
 from .constants import *
 
@@ -67,12 +68,40 @@ def set_tcp(pose):
 # various other UR script and custom functions that are not simulation-specific
 #******************************************************************************
 
-def textmsg(s1, s2):
+def textmsg(s1, s2=""):
     print(str(s1)+str(s2))
 
-def norm(vec6):
-    ''' Norm function as defined by urscript'''
-    return np.linalg.norm(vec6)
+def norm(v):
+    ''' Norm function, as defined by urscript'''
+    return np.linalg.norm(v)
+
+def point_dist(p_from, p_to):
+    '''
+    Point distance, as defined by urscript.
+    Returns the distance between the two tool positions (without considering rotations)
+    '''
+    return math.dist(p_from[:3], p_to[:3])
+
+def pose_sub(p_to, p_from):
+    ''' Pose subtraction, as defined by urscript.'''
+    t = np.subtract(p_to[:3], p_from[:3])
+    r_to = Rotation.from_rotvec(p_to[3:])
+    r_from = Rotation.from_rotvec(p_from[3:])
+    r = (r_from.inv() * r_to).as_rotvec()
+    return np.concatenate((t, r))
+
+def pose_add(p1, p2):
+    ''' Pose addition, as defined by urscript.'''
+    t = np.add(p1[:3], p2[:3])
+    r1 = Rotation.from_rotvec(p1[3:])
+    r2 = Rotation.from_rotvec(p2[3:])
+    r = (r1*r2).as_rotvec()
+    return np.concatenate((t, r))
+
+def interpolate_pose(p_from, p_to, alpha):
+    ''' Linear interpolation of tool position and orientation, as defined by urscript.'''
+    delta = pose_sub(p_to, p_from)
+    return pose_add(p_from, delta*alpha)
 
 def sqrt(a):
     return math.sqrt(a)

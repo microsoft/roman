@@ -127,6 +127,6 @@ class ArmController(object):
         if cmd.kind() != UR_CMD_KIND_READ:
             # ignore read commands and simply send the last move command (or config cmd). The timestamp/id of the command identifies it as old.
             self.cmd[:] = cmd
-        controller = self.controllers[int(self.cmd.controller())]
+        controller = self.controllers[int(self.cmd.controller_flags())]
         return controller.execute(self.cmd, state)
  

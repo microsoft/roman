@@ -7,35 +7,7 @@ from .realtime.constants import *
 
 TWO_PI = 2*math.pi
 
-def clamp_angle(a):
-    if a > math.pi:
-        return  a - TWO_PI
-    if a < -math.pi:
-        return a + TWO_PI
-    return a
-
-def close_angular(a, b, tolerance = UR_TOOL_ROTATION_TOLERANCE):
-    a = clamp_angle(a)
-    b = clamp_angle(b)
-    if math.fabs(a-b) <= tolerance:
-        return True
-    if math.fabs((a + TWO_PI) - b) <= tolerance:
-        return True
-    if math.fabs((b + TWO_PI) - a) <= tolerance:
-        return True
-
-def allclose_angular(a, b, tolerance = UR_TOOL_ROTATION_TOLERANCE):
-    if len(a) != len(b):
-        return False
-    for i in range(len(a)):
-        if not close_angular(a[i], b[i], tolerance):
-            return False
-    return True
-
-class Position(Vec): 
-    pass
-
-class Joints(Position): 
+class Joints(Vec): 
     
     '''
     A vector of 6 elements representing joint properties. The order is: base, shoulder, elbow, wrist1, wrist2, wrist3.
@@ -54,9 +26,26 @@ class Joints(Position):
     def allclose(self, array, tolerance = UR_JOINTS_POSITION_TOLERANCE):
         # for i in range[6]:
             # if self.array[i] != 
-        return np.allclose(self.array, array, rtol=0, atol=tolerance) or allclose_angular(self.array, array, tolerance)
+        if np.allclose(self.array, array, rtol=0, atol=tolerance):
+            return True
+        for i in range(len(array)):
+            a = Joints.clamp_angle(self.array[i])
+            b = Joints.clamp_angle(array[i])
+            if math.fabs(a-b) > tolerance \
+                and  math.fabs((a + TWO_PI) - b) > tolerance \
+                and math.fabs((b + TWO_PI) - a) > tolerance:
+                return False
+        return True
 
-class Tool(Position):     
+    @staticmethod
+    def clamp_angle(a):
+        if a > math.pi:
+            return  a - TWO_PI
+        if a < -math.pi:
+            return a + TWO_PI
+        return a 
+
+class Tool(Vec):     
     '''
     A vector of 6 elements representing tool position and orientation. Orientation is stored as axis angles. The order is: x, y, z, rx, ry, rz.
     '''
@@ -72,7 +61,13 @@ class Tool(Position):
         self.array[:] = [x, y, z, rx, ry, rz]
 
     def allclose(self, array, position_tolerance = UR_TOOL_POSITION_TOLERANCE, rotation_tolerance = UR_TOOL_ROTATION_TOLERANCE):
-        return np.allclose(self.array[:3], array[:3], rtol=0, atol=position_tolerance) and (np.allclose(self.array[3:6], array[3:6], rtol=0, atol=rotation_tolerance) or allclose_angular(self.array[3:6], array[3:6], rotation_tolerance))
+        if not np.allclose(self.array[:3], array[:3], rtol=0, atol=position_tolerance):
+            return False
+
+        # normalize the two rotation vectors first
+        a = Rotation.from_rotvec(self.array[3:6]).as_rotvec()
+        b = Rotation.from_rotvec(array[3:6]).as_rotvec()
+        return np.allclose(a, b, rtol=0, atol=rotation_tolerance)
 
     @staticmethod
     def from_xyzrpy(xyzrpy):
@@ -207,8 +202,7 @@ class State(Vec):
 class Command(Vec):
     '''
     Represents a command that can be sent to the arm. 
-    When a target_position is provided, the arm moves to an absolute position, specified either as a tool pose or as joint angles. 
-    When target_position is omitted, the move is a speed move and the arm accelerate to the joint speeds specified by target_speed.
+    The move target can be joint speeds, or an absolute position, specified either as a tool pose or as joint angles. 
     In either case, the arm stops when contact is detected, that is, if fabs(actual_force - expected_force) > max_force.
     The type of reaction to contact is determined by the contact_handling parameter.
     An optional motion controller choice can be specified using the controller parameter.
@@ -220,13 +214,12 @@ class Command(Vec):
     _CONFIG_MASS = UR_CMD_CONFIG_MASS
     _CONFIG_TOOL_COG = slice(*UR_CMD_CONFIG_TOOL_COG)
     _CONFIG_TOOL_TIP = slice(*UR_CMD_CONFIG_TOOL_TIP)
-    _MOVE_TARGET_SPEED = slice(*UR_CMD_MOVE_TARGET_SPEED)
+    _MOVE_TARGET = slice(*UR_CMD_MOVE_TARGET)
+    _MOVE_MAX_SPEED = UR_CMD_MOVE_MAX_SPEED
     _MOVE_MAX_ACCELERATION = UR_CMD_MOVE_MAX_ACCELERATION
     _MOVE_FORCE_LOW_BOUND = slice(*UR_CMD_MOVE_FORCE_LOW_BOUND)
     _MOVE_FORCE_HIGH_BOUND = slice(*UR_CMD_MOVE_FORCE_HIGH_BOUND)
     _MOVE_CONTACT_HANDLING = UR_CMD_MOVE_CONTACT_HANDLING
-    _MOVE_TARGET_POSITION = slice(*UR_CMD_MOVE_TARGET_POSITION)
-    _MOVE_MAX_SPEED = UR_CMD_MOVE_MAX_SPEED
     _MOVE_CONTROLLER = UR_CMD_MOVE_CONTROLLER
 
     def __init__(self):
@@ -235,45 +228,45 @@ class Command(Vec):
 
     def make(self,
             kind = UR_CMD_KIND_READ,
-            target_position:Position=None, 
+            target=UR_ZERO, 
             max_speed=UR_DEFAULT_MAX_SPEED,
-            target_speed:Joints=UR_ZERO,
             max_acc=UR_DEFAULT_ACCELERATION, 
             force_low_bound:Tool=UR_DEFAULT_FORCE_LOW_BOUND, 
             force_high_bound:Tool=UR_DEFAULT_FORCE_HI_BOUND, 
             contact_handling=0, 
-            controller = 0):
+            controller_flags = 0):
         
         self[Command._KIND] = kind
-        self[Command._MOVE_TARGET_POSITION] = target_position
+        self[Command._MOVE_TARGET] = target
         self[Command._MOVE_MAX_SPEED] = max_speed
-        self[Command._MOVE_TARGET_SPEED] = target_speed
         self[Command._MOVE_MAX_ACCELERATION]=max_acc
         self[Command._MOVE_FORCE_LOW_BOUND] = force_low_bound
         self[Command._MOVE_FORCE_HIGH_BOUND]=force_high_bound
         self[Command._MOVE_CONTACT_HANDLING] = contact_handling
-        self[Command._MOVE_CONTROLLER] = controller
+        self[Command._MOVE_CONTROLLER] = controller_flags
         return self
 
     def id(self): return self[Command._ID]
     def kind(self): return self[Command._KIND]
-    def target_speed(self): return Joints.fromarray(self[Command._MOVE_TARGET_SPEED], False)
+    def target(self): 
+            if self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE or self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_LINEAR:
+                return Tool.fromarray(self[Command._MOVE_TARGET], False) 
+            return Joints.fromarray(self[Command._MOVE_TARGET], False)
+    def max_speed(self): return self[Command._MOVE_MAX_SPEED]
     def max_acceleration(self): return self[Command._MOVE_MAX_ACCELERATION]
     def force_low_bound(self): return Tool.fromarray(self[Command._MOVE_FORCE_LOW_BOUND], False)
     def force_high_bound(self): return Tool.fromarray(self[Command._MOVE_FORCE_HIGH_BOUND], False)
     def contact_handling(self): return self[Command._MOVE_CONTACT_HANDLING]
-    def target_position(self): return Tool.fromarray(self[Command._MOVE_TARGET_POSITION], False) if self.kind() == UR_CMD_KIND_MOVE_TOOL_POSE else Joints.fromarray(self[Command._MOVE_TARGET_POSITION], False)
-    def max_speed(self): return self[Command._MOVE_MAX_SPEED]
-    def controller(self): return self[Command._MOVE_CONTROLLER]
-    def is_move_command(self): return self.kind() > UR_CMD_KIND_READ and self.kind() < UR_CMD_KIND_CONFIG
+    def controller_flags(self): return self[Command._MOVE_CONTROLLER]
+    def is_move_command(self): return self[Command._KIND] > UR_CMD_KIND_READ and self[Command._KIND] < UR_CMD_KIND_CONFIG
 
     def _goal_reached(self, state):
         if self[Command._KIND] == UR_CMD_KIND_MOVE_JOINTS_SPEED:
-            return self.target_speed().allclose(state.joint_speeds(), UR_SPEED_TOLERANCE)
+            return self.target().allclose(state.joint_speeds(), UR_SPEED_TOLERANCE)
         elif self[Command._KIND] == UR_CMD_KIND_MOVE_JOINTS_POSITION:
-            return self.target_position().allclose(state.joint_positions())
-        elif self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE:
-            return self.target_position().allclose(state.tool_pose())
+            return self.target().allclose(state.joint_positions())
+        elif self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE or self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_LINEAR:
+            return self.target().allclose(state.tool_pose())
         else:
             raise Exception("Invalid command type")
 
@@ -304,7 +297,7 @@ class Arm(object):
             force_low_bound=UR_DEFAULT_FORCE_LOW_BOUND,
             force_high_bound=UR_DEFAULT_FORCE_HI_BOUND,
             contact_handling=0, 
-            controller=0,
+            controller_flags=0,
             blocking=True):
 
         if type(target_position) is Joints:
@@ -316,13 +309,13 @@ class Arm(object):
      
         self.command.make(
             kind = cmd_type,
-            target_position = target_position, 
+            target = target_position, 
             max_speed=max_speed, 
             max_acc=max_acc, 
             force_low_bound=force_low_bound, 
             force_high_bound=force_high_bound, 
             contact_handling=contact_handling, 
-            controller=controller)
+            controller_flags=controller_flags)
         self.__execute(blocking)
 
     def speed(self,
@@ -331,23 +324,19 @@ class Arm(object):
             force_low_bound=UR_DEFAULT_FORCE_LOW_BOUND,
             force_high_bound=UR_DEFAULT_FORCE_HI_BOUND,
             contact_handling=0, 
-            controller=0,
+            controller_flags=0,
             blocking=True):
-        if type(target_speed) is Joints:
-            cmd_type = UR_CMD_KIND_MOVE_JOINTS_SPEED
-        elif type(target_speed) is Tool:
-            cmd_type = UR_CMD_KIND_MOVE_TOOL_SPEED
-        else:
-            raise TypeError("Argument target_speed must be of type Tool or Joints. Use Joints.fromarray() or Tool.fromarray() to wrap an existing array.")
+        if type(target_speed) is Tool:
+            raise TypeError("Speed can only be specified as joint velocities. Argument target_speed must be of type Joints.")
      
         self.command.make(
-            kind = cmd_type,
-            target_speed = target_speed, 
+            kind = UR_CMD_KIND_MOVE_JOINTS_SPEED,
+            target = target_speed, 
             max_acc = acc, 
             force_low_bound=force_low_bound, 
             force_high_bound=force_high_bound, 
             contact_handling=contact_handling, 
-            controller=controller)
+            controller_flags=controller_flags)
         self.__execute(blocking)
 
     def stop(self, acc = UR_FAST_STOP_ACCELERATION, blocking = True):
@@ -368,7 +357,7 @@ class Arm(object):
             force_low_bound=force_low_bound, 
             force_high_bound=force_high_bound, 
             contact_handling=contact_handling, 
-            controller=1,
+            controller_flags=1,
             blocking=blocking)
 
     def config(self, mass = UR_DEFAULT_MASS, cog = UR_DEFAULT_TOOL_COG, tcp = UR_DEFAULT_TCP):

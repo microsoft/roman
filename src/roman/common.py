@@ -57,6 +57,26 @@ class Vec(object):
         res.array = self.array - other
         return res
 
+    def __imul__(self, other):
+        self.array *= other
+        return self
+
+    def __mul__(self, other):
+        cls = self.__class__
+        res = cls.__new__(cls)
+        res.array = self.array * other
+        return res
+    
+    def __idiv__(self, other):
+        self.array /= other
+        return self
+
+    def __div__(self, other):
+        cls = self.__class__
+        res = cls.__new__(cls)
+        res.array = self.array / other
+        return res
+
     def __lt__(self, other):
         return np.all(self.array.__lt__(other))
 

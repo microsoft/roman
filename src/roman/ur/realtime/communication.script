@@ -17,9 +17,11 @@ def start():
 
     # connect with the client
     connected = False
+    textmsg("connecting to ", UR_CLIENT_IP)
     while not connected:
         connected = socket_open(UR_CLIENT_IP, UR_CLIENT_PORT, "ctrl")
     end
+    textmsg("connected.")
 
     # calibrate the accelerometer once
     ur_calibrate_accelerometer()
@@ -28,25 +30,28 @@ def start():
     timer_thread = run timer_thread_fn() 
 
     # start the FT sensor thread
+    textmsg("initializing FT sensor.")
     ft_thread = ft_connect()
+    textmsg("FT sensor initialized.")
 
     # # start the drive thread
     ur_drive_thread = run ur_drive_thread_fn()   
 
-    # forever, read commands and write responses    
+    # forever, read commands and write responses
+    textmsg("ready, listening for commands.")    
     while connected:    
         cmd = socket_read_ascii_float(UR_CMD_ENTRIES_COUNT, "ctrl") 
         #acquire the critical section as early as possible, to preempt the drive thread. This ensures everything takes place in one timestep.
         enter_critical
-        # We expect a vector of UR_CMD_ENTRIES_COUNT+1=31 values (UR requires that the total must stay under 30)
+        # We expect a vector of UR_CMD_ENTRIES_COUNT+1 values (UR requires that the total must stay under 30+1)
         # The first value is the count, followed by command code
         if UR_CMD_ENTRIES_COUNT == cmd[0]:
-            #textmsg("received data ", ur_time)      
             response = execute_arm_command(cmd, 1) 
         end
         exit_critical
         if cmd[0] == 0:
             connected = False
+            textmsg("disconnected")
             continue
         end
         if UR_CMD_ENTRIES_COUNT != cmd[0]:

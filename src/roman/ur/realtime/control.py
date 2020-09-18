@@ -1,3 +1,4 @@
+from math import *
 from .constants import *
 from .urlib import *
 
@@ -8,36 +9,81 @@ from .urlib import *
 ## Both controllers implement a deadman switch of 100 ms, thus requiring the client to call the drive fn at 10Hz or more 
 ## even if the command is the same.
 ################################################################################################################################
+def get_joint_distance(current, target):
+    delta = target - current
+    if fabs(delta) > pi:
+        alt = delta-4*pi
+        i = 0
+        while i < 5:
+            if fabs(alt) < fabs(delta):
+                delta = alt
+            #ur:end 
+            alt = alt + 2*pi
+            i = i+1
+        #ur:end   
+    #ur:end  
+    return delta
+#ur:end     
 
-# generates a trapezoidal speed profile for one joint 
-def ur_speed_from_joint_position(current_pos, current_speed, target_pos, target_speed, max_speed, acc):
-    distance = target_pos - current_pos
-
-    lim = 0.0001
-    if (distance * current_speed) > 0: # is the joint rotating in the right direction?
-        lim = 0.0001 + 0.5*current_speed*current_speed/acc
-    #ur:end
-    # move with maximum speed as long as we are far away from the goal, and decelerate when we get close
-    if (distance*distance)>lim*lim:
-        if distance<0: 
-            return -max_speed
-        #ur:end
-        return max_speed
-    #ur:end
-    return 0.0
-#ur:end
-
-# generates a trapezoidal speed profile for each joint, independent of each other 
-def ur_speed_from_joint_positions(target_position, target_speed, max_speed, max_acc):
-    joint_positions = get_actual_joint_positions()
-    joint_speeds = get_actual_joint_speeds() 
+def ur_joint_distances(current, target):
     return [
-        ur_speed_from_joint_position(joint_positions[0], joint_speeds[0], target_position[0], target_speed[0], max_speed, max_acc),
-        ur_speed_from_joint_position(joint_positions[1], joint_speeds[1], target_position[1], target_speed[1], max_speed, max_acc),
-        ur_speed_from_joint_position(joint_positions[2], joint_speeds[2], target_position[2], target_speed[2], max_speed, max_acc),
-        ur_speed_from_joint_position(joint_positions[3], joint_speeds[3], target_position[3], target_speed[3], max_speed, max_acc),
-        ur_speed_from_joint_position(joint_positions[4], joint_speeds[4], target_position[4], target_speed[4], max_speed, max_acc),
-        ur_speed_from_joint_position(joint_positions[5], joint_speeds[5], target_position[5], target_speed[5], max_speed, max_acc)
+        get_joint_distance(current[0], target[0]),
+        get_joint_distance(current[1], target[1]),
+        get_joint_distance(current[2], target[2]),
+        get_joint_distance(current[3], target[3]),
+        get_joint_distance(current[4], target[4]),
+        get_joint_distance(current[5], target[5])
+    ]
+#ur:end  
+
+# finds the joint that requires the longest time to reach the target position
+def ur_get_leading_dim(distances, speeds, max_speed, max_acc, decel_to_zero):
+    i = 0
+    itime = 10000.
+    litime = 0.
+    while i < len(distances):
+        dist = distances[i]
+        if fabs(dist) > UR_EPSILON:
+            sign = fabs(dist)/dist
+            dist = sign * dist  #fabs
+            speed = speeds[i]
+            if speed*sign < 0: # moving in the wrong direction
+                extra = speed*speed/max_acc # add the (double) distance this joint will travel before it can reverse
+                dist = dist + extra
+            #ur:end
+            
+            if decel_to_zero and (dist <= 0.5*speed*speed/max_acc): 
+                sign = -sign # we are close to the final goal and need to decelerate
+            #ur:end
+            speed = fabs(speed + sign * max_acc * UR_TIME_SLICE) 
+            if speed > max_speed:
+                speed = max_speed
+            #ur:end 
+            # this is (the inverse of) how long it would take to move to target given the updated speed 
+            tmp_itime = speed/dist
+            if tmp_itime < itime:
+                itime = tmp_itime
+                litime = itime
+            #ur:end   
+        #ur:end
+        i = i + 1
+    #ur:end   
+    return litime
+#ur:end  
+
+# joint-linear motion 
+def ur_speed_joint_linear(target, max_speed, max_acc):
+    positions = get_actual_joint_positions()
+    speeds = get_target_joint_speeds() 
+    distances = ur_joint_distances(positions, target)
+    itime =  ur_get_leading_dim(distances, speeds, max_speed, max_acc, True)
+    return [
+        distances[0]*itime,
+        distances[1]*itime,
+        distances[2]*itime,
+        distances[3]*itime,
+        distances[4]*itime,
+        distances[5]*itime
     ]
 #ur:end
 
@@ -84,7 +130,7 @@ def ur_check_loop_delay(loop_time):
 #ur:end
 
 # Generate a target speed based on the latest command and current state
-def ur_get_target_speed(cmd_time, id, kind, target_speed, max_acc, force_low_bound, force_high_bound, contact_handling, target_position, max_speed):
+def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_low_bound, force_high_bound, contact_handling):
     # verify we are not running behind
     global ctrl_last_loop_time
     ctrl_last_loop_time = ur_check_loop_delay(ctrl_last_loop_time) 
@@ -108,11 +154,11 @@ def ur_get_target_speed(cmd_time, id, kind, target_speed, max_acc, force_low_bou
         #ur:end
     elif ctrl_is_contact: 
         textmsg("force limit STOP")
-    elif kind == UR_CMD_KIND_MOVE_JOINTS_POSITION:
-        cmd = ur_speed_from_joint_positions(target_position, target_speed, max_speed, max_acc)
+    elif kind == UR_CMD_KIND_MOVE_JOINTS_SPEED:
+        cmd = target
         acc = max_acc
-    else:
-        cmd = target_speed
+    elif kind == UR_CMD_KIND_MOVE_JOINTS_POSITION: # this covers UR_CMD_KIND_MOVE_TOOL_POSE too, see interface.py 
+        cmd = ur_speed_joint_linear(target, max_speed, max_acc)
         acc = max_acc
     #ur:end
     global ctrl_is_moving

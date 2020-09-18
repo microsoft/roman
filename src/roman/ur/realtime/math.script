@@ -1,0 +1,16 @@
+################################################################
+## math.script
+## Implements functions from Python's math module and built-ins
+################################################################
+pi =  3.14159
+
+def len(v):
+    return get_list_length(v)
+end
+
+def fabs(a):
+    if a<0:
+        return -a
+    end
+    return a
+end
