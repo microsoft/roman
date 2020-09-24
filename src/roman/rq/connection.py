@@ -186,13 +186,13 @@ class Connection(object):
         if (self.__write_registers[1] != 4):
             self.__write_registers[1] = 4
             # make sure the command reflects the actual position when switching mode. 
-            self.__write_registers[Finger.A] = self.__read_registers(Finger.A+1)
+            self.__write_registers[Finger.A] = self.__read_registers[Finger.A+1]
             self.__write_registers[Finger.A+1] = 0
             self.__write_registers[Finger.A+2] = 0
-            self.__write_registers[Finger.B] = self.__read_registers(Finger.B+1)
+            self.__write_registers[Finger.B] = self.__read_registers[Finger.B+1]
             self.__write_registers[Finger.B+1] = 0
             self.__write_registers[Finger.B+2] = 0
-            self.__write_registers[Finger.C] = self.__read_registers(Finger.C+1)
+            self.__write_registers[Finger.C] = self.__read_registers[Finger.C+1]
             self.__write_registers[Finger.C+1] = 0
             self.__write_registers[Finger.C+2] = 0
         
