@@ -134,6 +134,6 @@ def run(use_sim):
         arm_touch()
     
 if __name__ == '__main__':
-    run(True)
+    run(False)
     
 

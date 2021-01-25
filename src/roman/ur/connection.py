@@ -23,7 +23,7 @@ from .realtime.constants import *
 ################################################################
 class Connection(object):
     """Reads real robot state (arm and F/T sensor) and commands the robot in real-time."""
-    def __init__(self, robot_ip=UR_ROBOT_IP, local_ip=UR_DEFAULT_CLIENT_IP, local_port = UR_DEFAULT_CLIENT_PORT):
+    def __init__(self, robot_ip=UR_ROBOT_IP, local_ip=UR_DEFAULT_CLIENT_IP, local_port=UR_DEFAULT_CLIENT_PORT):
         self.robot_ip = robot_ip
         self.local_ip = local_ip
         self.local_port = local_port
@@ -31,10 +31,10 @@ class Connection(object):
         self.__raw_state = bytearray(2048)
         self.__raw_cmd = bytearray(512)
 
-    def __generate_urscript(self):
+    def __generate_urscript(self, name = "main"):
         constants = [f"UR_CLIENT_IP=\"{self.local_ip}\"", f"UR_CLIENT_PORT={self.local_port}"]
         script_folder = os.path.join(os.path.dirname(__file__), 'realtime')
-        script = load_script(script_folder, "main", defs=constants) 
+        script = load_script(script_folder, name, defs=constants) 
         return script
 
     def connect(self):
@@ -42,16 +42,29 @@ class Connection(object):
         rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         rt_socket.connect((self.robot_ip, UR_RT_PORT))
         print('Connected to robot.')
-            
-        # upload our script, which will attempt to connect back to us
-        script = self.__generate_urscript().encode('ascii')
-        socket_send_retry(rt_socket, script)
-        print('Script uploaded.')
 
-        # now create the control channel and accept the connection from the script now running on the robot
+        # now create the control channel and accept the connection from the script that will be running on the robot
         reverse_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         reverse_conn.bind((self.local_ip, self.local_port))
         reverse_conn.listen(1)
+        reverse_conn.settimeout(1)
+
+        # test the version of the controller by running a script that attempts to connect back 
+        script = self.__generate_urscript("version_test").encode('ascii')
+        socket_send_retry(rt_socket, script)
+        print('Checking version ... ')
+        main = "main" # e-series entry-point
+        try:
+            self.__ctrl_socket, addr = reverse_conn.accept() 
+            print('Controller is E-series')
+            self.__ctrl_socket.close()
+        except TimeoutError:
+            main = "main_cb2" # CB2 entry point
+            print('Controller is CB2')
+
+        # upload the runtime, which will also connect back to us
+        script = self.__generate_urscript(main).encode('ascii')
+        socket_send_retry(rt_socket, script)
         print('Waiting for robot to connect... ')
         self.__ctrl_socket, addr = reverse_conn.accept() 
         if (addr[0] != self.robot_ip):

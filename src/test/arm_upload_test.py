@@ -76,4 +76,4 @@ def run(use_sim):
         validate_script_syntax()
    
 if __name__ == '__main__':
-    run(True)
+    run(False)

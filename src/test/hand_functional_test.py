@@ -54,4 +54,4 @@ def run(use_sim = False):
         controller_test()
    
 if __name__ == '__main__':
-    run(True)
+    run(False)

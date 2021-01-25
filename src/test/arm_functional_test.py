@@ -107,6 +107,6 @@ def run(use_sim):
         env.disconnect()
 
 if __name__ == '__main__':
-    run(True)
+    run(False)
 
     

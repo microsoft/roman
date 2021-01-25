@@ -55,7 +55,13 @@ class Connection(object):
         self.__modbus_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__modbus_socket.connect((self.__ip, 502)) # 502 = MODBUS_PORT
         if activate:
-            self.__write_registers[0] = 1
+            self.__read()
+            self.__write_registers[0] = self.mode() | 1
+            self.__write_registers[1] = 4 # individual finger control
+            # make sure the command reflects the actual position when switching mode. 
+            self.__write_registers[Finger.A] = self.__read_registers[Finger.A+1]
+            self.__write_registers[Finger.B] = self.__read_registers[Finger.B+1]
+            self.__write_registers[Finger.C] = self.__read_registers[Finger.C+1]
             self.__send() # activate
         #print('Connected to hand.')
 

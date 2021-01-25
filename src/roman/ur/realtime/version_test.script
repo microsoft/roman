@@ -1,0 +1,15 @@
+
+################################################################
+## version_test.script
+## Used to probe for E-series vs CB2
+################################################################
+
+# on CB2,because get_steptime doesn't exist, the script will fail to execute and never connect back to the client
+st = get_steptime() 
+
+connected = False
+while not connected:
+    connected = socket_open(UR_CLIENT_IP, UR_CLIENT_PORT, "ctrl")
+end
+
+

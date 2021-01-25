@@ -1,7 +1,7 @@
 ################################################################
 ## sensor.script
 ## Implements functions for interacting with the Robotiq FT 300 sensor
-## The main entry points are ft_get() and ft_set_zero_async()
+## The main entry points are ft_get() and ft_connect()
 ################################################################
 FT_IPADDRESS = "127.0.0.1"
 FT_PORT_CMD = 63350
@@ -9,11 +9,6 @@ FT_PORT_READ = 63351
 FT_SOCKET_CMD = "ft_socket_cmd"
 FT_SOCKET_READ = "ft_socket_read"
 ft_last =[0,0,0,0,0,0]
-
-socket_close(FT_SOCKET_CMD)
-socket_close(FT_SOCKET_READ)
-socket_open(FT_IPADDRESS,FT_PORT_CMD,FT_SOCKET_CMD)
-socket_open(FT_IPADDRESS,FT_PORT_READ,FT_SOCKET_READ)
 
 # gets the last reading
 def ft_get(critical_section_already_acquired = False):
@@ -39,6 +34,11 @@ thread ft_read_fn():
 end
 
 def ft_connect():
+    socket_close(FT_SOCKET_CMD)
+    socket_close(FT_SOCKET_READ)
+    socket_open(FT_IPADDRESS,FT_PORT_CMD,FT_SOCKET_CMD)
+    socket_open(FT_IPADDRESS,FT_PORT_READ,FT_SOCKET_READ)
+    
     #socket_send_string("STREAM OFF",FT_SOCKET_CMD)
     socket_send_string("SET ZRO",FT_SOCKET_CMD)
     socket_send_string("STREAM ON",FT_SOCKET_CMD)

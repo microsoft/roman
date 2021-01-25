@@ -64,7 +64,7 @@ UR_DEFAULT_TOOL_COG = [0, 0, 0.12]
 UR_DEFAULT_TCP =  [0, 0, 0.12, 0, 0, 0]
 
 # control
-UR_TIME_SLICE = 1./125
+UR_TIME_SLICE = 1./125 # by default, use the CB2 version. 
 UR_SPEED_TOLERANCE = 0.05 # rad/s
 UR_JOINTS_POSITION_TOLERANCE = 0.01 # rad
 UR_TOOL_POSITION_TOLERANCE = 0.001 # m
@@ -85,11 +85,13 @@ UR_RT_PORT = 30003 # real-time UR interface (RT)
 UR_ROBOT_IP = "192.168.1.2"
 UR_DEFAULT_CLIENT_IP = "192.168.1.9"
 UR_DEFAULT_CLIENT_PORT = 50003
+UR_ROBOT_VERSION_CB2 = 0
+UR_ROBOT_VERSION_ESERIES = 2
+UR_ROBOT_VERSION = UR_ROBOT_VERSION_CB2
 
 # these need to be defined outside, e.g. through the defs parameter of utils.load_script()
 #UR_CLIENT_IP
 #UR_CLIENT_PORT
-
 
 # URScript-compatible slicing function
 def s_(vec, bounds, start):
