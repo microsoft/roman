@@ -8,7 +8,7 @@ class SimConnection(object):
     def __init__(self, env):
         self.env = env
 
-    def connect(self):
+    def connect(self, activate=True):
         pass
 
     def disconnect(self):

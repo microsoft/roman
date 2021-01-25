@@ -16,6 +16,9 @@ class Vec(object):
         self.array = np.array(array) if clone else array
         return self
 
+    def clone(self):
+        return self.__class__.fromarray(self.array, clone = True)
+
     def __getitem__(self, idx):
         return self.array[idx]
 

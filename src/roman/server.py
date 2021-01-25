@@ -28,7 +28,8 @@ class InProc(object):
             self._hand_con = rq.Connection()
 
         self._arm_con.connect()
-        self._hand_con.connect()
+        activate_hand = self.config.get("hand.activate", True) 
+        self._hand_con.connect(activate_hand)
         self.arm= ur.ArmController(self._arm_con)
         self.hand = rq.HandController(self._hand_con)
         return (self.arm, self.hand)

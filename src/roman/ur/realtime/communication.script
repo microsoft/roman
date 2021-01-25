@@ -29,14 +29,21 @@ def start():
     # start the timer thread
     timer_thread = run timer_thread_fn() 
 
-    # start the FT sensor thread
-    textmsg("initializing FT sensor.")
-    ft_thread = ft_connect()
-    textmsg("FT sensor initialized.")
+    if UR_ROBOT_VERSION < UR_ROBOT_VERSION_ESERIES:
+        # start the FT sensor thread
+        textmsg("initializing FT sensor.")
+        ft_thread = ft_connect()
+    end
 
-    # # start the drive thread
-    ur_drive_thread = run ur_drive_thread_fn()   
-
+    if UR_ROBOT_VERSION == UR_ROBOT_VERSION_CB2:
+        # start the drive thread
+        textmsg("starting CB2 drive thread.")
+        ur_drive_thread = run ur_cb2_drive_thread_fn()   
+    else:
+        # start the drive thread
+        textmsg("starting CB3/E-Series drive thread.")
+        ur_drive_thread = run ur_drive_thread_fn()   
+    end
     # forever, read commands and write responses
     textmsg("ready, listening for commands.")    
     while connected:    
@@ -68,7 +75,9 @@ def start():
     end
 
     kill ur_drive_thread
-    ft_disconnect(ft_thread)
+    if UR_ROBOT_VERSION < UR_ROBOT_VERSION_ESERIES:
+        ft_disconnect(ft_thread)
+    end
     kill timer_thread
 
     textmsg("roman exited")

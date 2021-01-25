@@ -26,7 +26,13 @@ def get_arm_state():
     f = get_tcp_force()
     m = get_joint_torques() 
     a = ur_get_tcp_acceleration()
-    ft = ur_get_tcp_sensor_force(True) #FT sensor reading
+
+    if UR_ROBOT_VERSION == UR_ROBOT_VERSION_CB2:
+        ft = ur_get_tcp_sensor_force(True) #FT sensor reading
+    else:
+        ft = f # on e-series, the ft sensor is built in and the value reported by get_tcp_force()
+    end
+
     
     return [s[0], # time
             s[1], # cmd_id
