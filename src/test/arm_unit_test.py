@@ -117,7 +117,7 @@ def command_test():
 # Controller unit tests. 
 # These don't actually interact with the arm (sim or real)
 #############################################################
-class Connection(object):
+class Connection:
     """Mock connection"""
     def __init__(self, state):
         self.__state = state

@@ -11,7 +11,7 @@ import math
 from .arm import *
 from .realtime.constants import *
 
-class BasicController(object):
+class BasicController:
     '''
     This is the lowest level controller, communicating directly with the arm.
     There should be only one instance (per connection/arm), and all controller chains targeting the same arm must include this instance.
@@ -29,7 +29,7 @@ class BasicController(object):
             state._set_state_flag(State._STATUS_FLAG_DONE, at_goal)
         return state
 
-class EMAForceCalibrator(object):
+class EMAForceCalibrator:
     '''
     Keeps an exponentially weighted moving average of the force reported by the FT sensor.
     Adds the average to the expected force of each move command.
@@ -61,7 +61,7 @@ class EMAForceCalibrator(object):
         np.subtract(state.sensor_force(), self.force_average, state.sensor_force().array)
         return state
 
-class TouchController(object):
+class TouchController:
     '''
     Expects contact before completing the motion. Verifies that the contact is not spurrious before assuming the goal is reached.
     '''
@@ -111,7 +111,7 @@ class TouchController(object):
         return state
 
 
-class ArmController(object):
+class ArmController:
     '''
     This is the highest-level controller. 
     It's job is to determine which controller hierarchy to set up for a given command.

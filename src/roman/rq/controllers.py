@@ -2,7 +2,7 @@ import numpy as np
 import time
 from .hand import *
 
-class HandController(object):
+class HandController:
     '''
     This is the lowest level controller, communicating directly with the hand.
     There should be only one instance (per connection/hand), and all controller chains targeting the same hand must include this instance.

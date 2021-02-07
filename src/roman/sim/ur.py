@@ -7,9 +7,10 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 from ..ur.realtime.constants import *
 
-class URArm(object):
+class URArm:
+    '''PyBullet-specific implementation of the simulated arm'''
     # sim-specific constants
-    SIM_MAX_JOINT_FORCE = 1000
+    SIM_MAX_JOINT_FORCE = 100
 
     def __init__(self, body_id, base_joint_id, tcp_id, sim_time_step = 1/240.):
         self.body_id = body_id
@@ -23,8 +24,17 @@ class URArm(object):
         # start position is along the x axis, in negative direction 
         start_positions = [0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0]
         for i in range(6):
-            pb.resetJointState(self.body_id, self.base_joint_id + i, start_positions[i])
+            pb.resetJointState(self.body_id, self.base_joint_id + i, start_positions[i])            
+            pb.setJointMotorControl2(self.body_id, 
+                                    self.base_joint_id + i, 
+                                    controlMode=pb.VELOCITY_CONTROL,
+                                    targetVelocity = 0,
+                                    force = URArm.SIM_MAX_JOINT_FORCE)
 
+        pb.enableJointForceTorqueSensor(self.body_id, self.ft_sensor_id, True)
+        self.ft_bias = np.zeros(6   )
+        pb.stepSimulation()
+        self.ft_bias[:] = self.ur_get_tcp_sensor_force()
         #self._debug_dump()
     
     def get_inverse_kin(self, pose):
@@ -69,7 +79,7 @@ class URArm(object):
         return self.get_actual_joint_speeds()
 
     def get_tcp_force(self):
-        return [0,0,0,0,0,0]
+        return self.ur_get_tcp_sensor_force()
 
     def ur_get_tcp_acceleration(self):
         return [0,0,0]
@@ -81,18 +91,19 @@ class URArm(object):
 
 
     def ur_get_tcp_sensor_force(self):
-        tcp_state = pb.getJointState(self.body_id, self.tcp_id)
-        return tcp_state[2]
+        ft_joint_state = pb.getJointState(self.body_id, self.ft_sensor_id)
+        ft_force = np.array(ft_joint_state[2]) * -1 # getJointState returns a reaction force, we need the action
+        # rotate to base coordinates
+        ft_link_state = pb.getLinkState(self.body_id, self.ft_sensor_id)
+        ft_orientation = ft_link_state[1]
+        rot = Rotation.from_quat(ft_orientation)
+        force = rot.apply(ft_force[:3])
+        moments = rot.apply(ft_force[3:])
+        return np.append(force, moments) - self.ft_bias
 
     def speedj(self, speed, max_acc):
-        current = self.get_actual_joint_speeds()
         for i in range(6):
-            if current[i] < speed[i]:
-                new_speed = min(speed[i], current[i] + max_acc*self.sim_time_step)    
-            elif current[i] > speed[i]:
-                new_speed = max(speed[i], current[i] - max_acc*self.sim_time_step)  
-            else:
-                new_speed = 0
+            new_speed = speed[i]
             pb.setJointMotorControl2(self.body_id, 
                                     self.base_joint_id + i, 
                                     controlMode=pb.VELOCITY_CONTROL,

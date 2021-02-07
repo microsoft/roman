@@ -12,7 +12,7 @@ import time
 RT_PORT = 30003 # real-time UR interface (RT)
 RT_PACKET_SIZE = 812
 
-class realtime_interface(object):
+class RealTimeInterface:
     """Implements functionality to read robot state."""
     def __init__(self, robot_ip, file = None):
         self.__rt_socket = None

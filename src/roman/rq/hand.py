@@ -11,20 +11,20 @@ from ..common import *
 from enum import Enum
 import random
 
-class GraspMode(object):
+class GraspMode:
     CURRENT = -1
     BASIC = 0
     PINCH = 2
     WIDE = 4
     SCISSOR = 6
 
-class Finger(object):
-    All = 0
-    A = 3
-    B = 6
-    C = 9
+class Finger:
+    A = 0
+    B = 1
+    C = 2
+    All = 3
 
-class Position(object):
+class Position:
     CURRENT = -1
     OPENED = 0
     CLOSED = 255
@@ -114,7 +114,7 @@ class Command(Vec):
     def speed(self): return self[Command._SPEED]
     def force(self): return self[Command._FORCE]
 
-class Hand(object):        
+class Hand:        
     _READ_CMD = Command()
 
     def __init__(self, controller):
@@ -131,7 +131,7 @@ class Hand(object):
         self.controller.execute(Hand._READ_CMD, self.state)
         return self.state
 
-    def move(self, finger, position, speed = 255, force = 0, blocking = True):
+    def move(self, position, finger = Finger.All, speed = 255, force = 0, blocking = True):
         self.command.make(Command._CMD_KIND_MOVE, finger, position, speed, force, GraspMode.CURRENT)
         self.__execute(blocking)
 

@@ -98,7 +98,11 @@ end
 
 # is the current force greater than the threshold?
 def ur_force_limit_exceeded(low_bound, high_bound):
-    ft = ur_get_tcp_sensor_force(True)
+    if UR_ROBOT_VERSION == UR_ROBOT_VERSION_CB2:
+        ft = ur_get_tcp_sensor_force(True)
+    else:
+        ft = get_tcp_force()
+    end
     exceeded =  
         (low_bound[0] > ft[0]) or 
         (low_bound[1] > ft[1]) or 

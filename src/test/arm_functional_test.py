@@ -68,7 +68,7 @@ def move_test2(con):
     arm.move(target_position=next, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
-    down = home + [0, 0, -0.3, 0, 0, 0]
+    down = home + [0, 0, -0.1, 0, 1, 0]
     arm.move(target_position=down, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
     
