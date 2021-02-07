@@ -31,7 +31,7 @@ def get_arm_state():
         ft = ur_get_tcp_sensor_force(True) #FT sensor reading
     else:
         ft = f # on e-series, the ft sensor is built in and the value reported by get_tcp_force()
-    end
+    #ur:end
 
     
     return [s[0], # time

@@ -2,10 +2,8 @@ import numpy as np
 import math
 import time
 from scipy.spatial.transform import Rotation
-from ..common import Vec
+from ..common import Vec, equal_angle
 from .realtime.constants import *
-
-TWO_PI = 2*math.pi
 
 class Joints(Vec): 
     
@@ -29,21 +27,9 @@ class Joints(Vec):
         if np.allclose(self.array, array, rtol=0, atol=tolerance):
             return True
         for i in range(len(array)):
-            a = Joints.clamp_angle(self.array[i])
-            b = Joints.clamp_angle(array[i])
-            if math.fabs(a-b) > tolerance \
-                and  math.fabs((a + TWO_PI) - b) > tolerance \
-                and math.fabs((b + TWO_PI) - a) > tolerance:
+            if not equal_angle(self.array[i], array[i], tolerance):
                 return False
         return True
-
-    @staticmethod
-    def clamp_angle(a):
-        if a > math.pi:
-            return  a - TWO_PI
-        if a < -math.pi:
-            return a + TWO_PI
-        return a 
 
 class Tool(Vec):     
     '''
@@ -65,9 +51,11 @@ class Tool(Vec):
             return False
 
         # normalize the two rotation vectors first
-        a = Rotation.from_rotvec(self.array[3:6]).as_rotvec()
-        b = Rotation.from_rotvec(array[3:6]).as_rotvec()
-        return np.allclose(a, b, rtol=0, atol=rotation_tolerance)
+        a = Rotation.from_rotvec(self.array[3:6]).as_euler("xyz")
+        b = Rotation.from_rotvec(array[3:6]).as_euler("xyz")
+        return  equal_angle(a[0], b[0], rotation_tolerance) \
+            and equal_angle(a[1], b[1], rotation_tolerance) \
+            and equal_angle(a[2], b[2], rotation_tolerance)
 
     @staticmethod
     def from_xyzrpy(xyzrpy):
@@ -271,7 +259,7 @@ class Command(Vec):
             raise Exception("Invalid command type")
 
 
-class Arm(object):
+class Arm:
     _READ_CMD = Command()
 
     def __init__(self, controller):

@@ -1,12 +1,37 @@
 import numpy as np
+import math
+
+################################################################
+## angle functions
+#################################################################
+
+TWO_PI = 2*math.pi
+
+def clamp_angle(a):
+    if a > math.pi:
+        return  a - TWO_PI
+    if a < -math.pi:
+        return a + TWO_PI
+    return a 
+
+def equal_angle(a, b, tolerance = 0):
+    a = clamp_angle(a)
+    b = clamp_angle(b)
+    if math.fabs(a-b) > tolerance \
+        and  math.fabs((a + TWO_PI) - b) > tolerance \
+        and math.fabs((b + TWO_PI) - a) > tolerance:
+        return False
+    return True
 
 ################################################################
 ## common types
 #################################################################
-class Vec(object):
+class Vec:
     '''
     Base class for types that wrap a one-dimensional numpy array.
     '''
+    __slots__ = ['array']
+
     def __init__(self, size, dtype=np.float):
         self.array = np.zeros(size, dtype)
 

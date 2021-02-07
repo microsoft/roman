@@ -12,7 +12,12 @@ from enum import Enum
 import random
 from .hand import *
 
-class Connection(object):
+class FingerRegister:
+    A = 3
+    B = 6
+    C = 9
+
+class Connection:
     '''Reads and commands the Robotiq 3-finger gripper'''
     
     def __init__(self, hand_ip='192.168.1.11'):
@@ -59,9 +64,9 @@ class Connection(object):
             self.__write_registers[0] = self.mode() | 1
             self.__write_registers[1] = 4 # individual finger control
             # make sure the command reflects the actual position when switching mode. 
-            self.__write_registers[Finger.A] = self.__read_registers[Finger.A+1]
-            self.__write_registers[Finger.B] = self.__read_registers[Finger.B+1]
-            self.__write_registers[Finger.C] = self.__read_registers[Finger.C+1]
+            self.__write_registers[FingerRegister.A] = self.__read_registers[FingerRegister.A+1]
+            self.__write_registers[FingerRegister.B] = self.__read_registers[FingerRegister.B+1]
+            self.__write_registers[FingerRegister.C] = self.__read_registers[FingerRegister.C+1]
             self.__send() # activate
         #print('Connected to hand.')
 
@@ -94,7 +99,7 @@ class Connection(object):
             + State._FLAG_OBJECT_DETECTED * self.object_detected() \
             + State._FLAG_MOVING * self.is_moving() 
         state[State._MODE] = self.mode()
-        state[State._TARGET_A:] = self.__read_registers[3]
+        state[State._TARGET_A:] = self.__read_registers[3:]
 
     def __send(self):
         """Sends the current gripper command and returns without waiting for completion"""
@@ -156,7 +161,7 @@ class Connection(object):
 
     
     def is_inconsistent(self): 
-        return ((self.__read_registers[0] & 0x07) != (self.__write_registers[0] & 0x07)) or self.__read_registers[Finger.A] != self.__write_registers[Finger.A] or self.__read_registers[Finger.B] != self.__write_registers[Finger.B] or self.__read_registers[Finger.C] != self.__write_registers[Finger.C]
+        return ((self.__read_registers[0] & 0x07) != (self.__write_registers[0] & 0x07)) or self.__read_registers[FingerRegister.A] != self.__write_registers[FingerRegister.A] or self.__read_registers[FingerRegister.B] != self.__write_registers[FingerRegister.B] or self.__read_registers[FingerRegister.C] != self.__write_registers[FingerRegister.C]
     def is_ready(self): return self.__read_registers[0] & 0x31 == 0x31 and not self.is_inconsistent()
     def is_faulted(self): return self.__read_registers[2] != 0
     def is_moving(self): return self.__read_registers[0] & 0xC8 == 0x08  
@@ -177,31 +182,32 @@ class Connection(object):
     def move(self, position, speed = 255, force = 0): 
         self.__write_registers[0] = self.__write_registers[0] | 8 # move
         self.__write_registers[1] = 0 # disable individual finger control
-        self.__write_registers[Finger.A] = position
-        self.__write_registers[Finger.A+1] = speed
-        self.__write_registers[Finger.A+2] = force
-        self.__write_registers[Finger.B] = 0
-        self.__write_registers[Finger.B+1] = 0
-        self.__write_registers[Finger.B+2] = 0
-        self.__write_registers[Finger.C] = 0
-        self.__write_registers[Finger.C+1] = 0
-        self.__write_registers[Finger.C+2] = 0
+        self.__write_registers[FingerRegister.A] = position
+        self.__write_registers[FingerRegister.A+1] = speed
+        self.__write_registers[FingerRegister.A+2] = force
+        self.__write_registers[FingerRegister.B] = 0
+        self.__write_registers[FingerRegister.B+1] = 0
+        self.__write_registers[FingerRegister.B+2] = 0
+        self.__write_registers[FingerRegister.C] = 0
+        self.__write_registers[FingerRegister.C+1] = 0
+        self.__write_registers[FingerRegister.C+2] = 0
 
     def move_finger(self, finger, position, speed = 255, force = 0):
         self.__write_registers[0] = self.__write_registers[0] | 8 # move
         if (self.__write_registers[1] != 4):
             self.__write_registers[1] = 4
             # make sure the command reflects the actual position when switching mode. 
-            self.__write_registers[Finger.A] = self.__read_registers[Finger.A+1]
-            self.__write_registers[Finger.A+1] = 0
-            self.__write_registers[Finger.A+2] = 0
-            self.__write_registers[Finger.B] = self.__read_registers[Finger.B+1]
-            self.__write_registers[Finger.B+1] = 0
-            self.__write_registers[Finger.B+2] = 0
-            self.__write_registers[Finger.C] = self.__read_registers[Finger.C+1]
-            self.__write_registers[Finger.C+1] = 0
-            self.__write_registers[Finger.C+2] = 0
+            self.__write_registers[FingerRegister.A] = self.__read_registers[FingerRegister.A+1]
+            self.__write_registers[FingerRegister.A+1] = 0
+            self.__write_registers[FingerRegister.A+2] = 0
+            self.__write_registers[FingerRegister.B] = self.__read_registers[FingerRegister.B+1]
+            self.__write_registers[FingerRegister.B+1] = 0
+            self.__write_registers[FingerRegister.B+2] = 0
+            self.__write_registers[FingerRegister.C] = self.__read_registers[FingerRegister.C+1]
+            self.__write_registers[FingerRegister.C+1] = 0
+            self.__write_registers[FingerRegister.C+2] = 0
         
-        self.__write_registers[finger] = position
-        self.__write_registers[finger+1] = speed
-        self.__write_registers[finger+2] = force
+        finger_register = FingerRegister.A if finger == Finger.A else (FingerRegister.B if finger == Finger.B else FingerRegister.C)
+        self.__write_registers[finger_register] = position
+        self.__write_registers[finger_register+1] = speed
+        self.__write_registers[finger_register+2] = force

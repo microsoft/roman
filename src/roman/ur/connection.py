@@ -21,7 +21,7 @@ from .realtime.constants import *
 ################################################################
 ## Real robot implementation
 ################################################################
-class Connection(object):
+class Connection:
     """Reads real robot state (arm and F/T sensor) and commands the robot in real-time."""
     def __init__(self, robot_ip=UR_ROBOT_IP, local_ip=UR_DEFAULT_CLIENT_IP, local_port=UR_DEFAULT_CLIENT_PORT):
         self.robot_ip = robot_ip

@@ -14,44 +14,54 @@ from roman.rq import *
 #############################################################
 # These tests require a real hand for now (no sim option)
 #############################################################
-def connection_test():
+def connection_test(con):
     print(f"Running {__file__}::{connection_test.__name__}()")
-    con = Connection()
-    con.connect()
     hand = Hand(con)
-    hand.close(blocking=False)
-    time.sleep(2)
-    hand.read()
+    hand.close()
     assert hand.state.position() == Position.CLOSED
-    hand.open(blocking=False)
-    time.sleep(2)
-    hand.read()
+    hand.open()
     assert hand.state.position() == Position.OPENED
-    con.disconnect()
     print("Passed.")
 
-def controller_test():
+def controller_test(con):
     print(f"Running {__file__}::{controller_test.__name__}()")
-    # check that a tight lop also works
-    con = Connection()    
-    con.connect()
+    # check that a tight loop also works
     hand = Hand(HandController(con))
+    
+    assert hand.state.position() == Position.OPENED
     hand.close()
     assert hand.state.position() == Position.CLOSED
 
     hand.open()
     assert hand.state.position() == Position.OPENED
-    con.disconnect()
     print("Passed.")
+
+def position_test(con):
+    print(f"Running {__file__}::{position_test.__name__}()")
+    hand = Hand(HandController(con))
+    for i in range(1, 16):
+        hand.move(16*i-1)
+        assert not hand.state.object_detected()
+        hand.open()
+        assert not hand.state.object_detected()
 
 #############################################################
 # Runner
 #############################################################
 def run(use_sim = False):
-    
     if not use_sim:
-        connection_test()
-        controller_test()
+        con = rq.Connection()
+    else:
+        env = SimEnv()
+        env.connect()
+        con = rq.SimConnection(env)
+    con.connect()
+    connection_test(con)
+    controller_test(con)
+    position_test(con)
+    con.disconnect()
+    if use_sim:
+        env.disconnect()
    
 if __name__ == '__main__':
-    run(False)
+    run(True)
