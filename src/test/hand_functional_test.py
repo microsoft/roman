@@ -45,6 +45,18 @@ def position_test(con):
         hand.open()
         assert not hand.state.object_detected()
 
+def mode_test(con):
+    print(f"Running {__file__}::{mode_test.__name__}()")
+    hand = Hand(HandController(con))
+    for i in [GraspMode.BASIC, GraspMode.PINCH, GraspMode.WIDE, GraspMode.SCISSOR]:
+        hand.set_mode(i)
+        hand.close()
+        assert not hand.state.object_detected()
+        assert hand.state.position() == Position.CLOSED
+        hand.open()
+        assert not hand.state.object_detected()
+        assert hand.state.position() == Position.OPENED
+
 #############################################################
 # Runner
 #############################################################
@@ -59,6 +71,7 @@ def run(use_sim = False):
     connection_test(con)
     controller_test(con)
     position_test(con)
+    mode_test(con)
     con.disconnect()
     if use_sim:
         env.disconnect()

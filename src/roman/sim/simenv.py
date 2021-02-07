@@ -41,7 +41,7 @@ class SimEnv:
         pb.disconnect()
 
     def loadURDF(self, urdf, basePosition=[0,0,0], baseOrientation = [0,0,0]):
-        return pb.loadURDF(urdf, basePosition = basePosition, baseOrientation=pb.getQuaternionFromEuler(baseOrientation))
+        return pb.loadURDF(urdf, basePosition = basePosition, baseOrientation=pb.getQuaternionFromEuler(baseOrientation), flags = pb.URDF_USE_SELF_COLLISION | pb.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS )
 
     def make_box(self, size, position=[0,0,0], orientation=[0,0,0,1], mass=0, tex=None, color=None):
         cid = pb.createCollisionShape(pb.GEOM_BOX, halfExtents = np.array(size)*0.5)
