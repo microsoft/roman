@@ -9,6 +9,8 @@ import functools
 import numpy as np
 
 class Robotiq3FGripper:
+    _PINCH_LIMIT = 175 # in pinch mode the fingers can only travel part way (until they touch). 
+
     '''PyBullet-specific implementation of the simulated gripper'''
     # names must match URDF.
     jointNames = [
@@ -51,9 +53,6 @@ class Robotiq3FGripper:
         joint3Stops = np.zeros(256)
         joint3Stops[:192] = np.array(range(0,-192,-1))/192.
         joint3Stops[192:] = np.array(range(-192, -128))/192.
-        # joint3Stops[:160] = range(0, -160, -1)
-        # joint3Stops[160:] = range(-160, 64)
-        # joint3Stops = joint3Stops / 256.
         self.jointStops = np.zeros((256, 9))
         self.jointStops[:, 0] = joint1Stops
         self.jointStops[:, 3] = joint1Stops
@@ -66,7 +65,12 @@ class Robotiq3FGripper:
         self.jointStops[:, 2] = joint3Stops
         self.jointStops[:, 5] = joint3Stops
         self.jointStops[:, 8] = joint3Stops
-        
+
+        # grasp modes: normal, pinch, wide, scissors
+        # urdf joint limit are [0.16, -0.25], but 0.16 causes a self collision in pinch mode, 
+        # which messes up the FT sensor reading, so we use 0.13 instead
+        self.modeStopsB = [0, 0.13, -0.25, -0.25] 
+        self.modeStopsC = [0, -0.13, 0.25, 0.25]
    
     def reset(self):
         self.read()
@@ -75,23 +79,26 @@ class Robotiq3FGripper:
 
     def move(self, position, speed, force):
         self.read()
+        self._targets[0] = self._targets[1] = self._targets[2] = position 
         # This is a very rough approximation of how the real hand moves. Needs more work.
         joints = self.jointIDs[self.fingerAll]
         cnt = len(joints)
-        positions = self.jointStops[position]
+        position = min(position, self._mode_limit) # account for pinch mode
+        positions = self.jointStops[position] 
         forces = [force+1] * cnt
         pb.setJointMotorControlArray(self.body_id, joints, pb.POSITION_CONTROL, targetPositions=positions, forces=forces) 
-        self._targets[0] = self._targets[1] = self._targets[2] = position 
+        
 
     def move_finger(self, finger, position, speed, force):
         self.read()
+        self._targets[finger] = position
         # This is a very rough approximation of how the real hand moves. Needs more work.
         joints = self.jointIDs[self.fingerIndices[finger]]
         cnt = len(joints)
+        position = min(position, self._mode_limit)  # account for pinch mode
         positions = self.jointStops[position, self.fingerIndices[finger]]
         forces = [force+1] * cnt
         pb.setJointMotorControlArray(self.body_id, joints, pb.POSITION_CONTROL, targetPositions=positions, forces=forces) 
-        self._targets[finger] = position
 
     def stop(self):
         self.read()
@@ -100,8 +107,15 @@ class Robotiq3FGripper:
         self._targets[:] = self.positions()
     
     def set_mode(self, mode):
-        # todo
+        self.read()
         self._mode = mode
+        ix = int(mode/2)
+        joints = [self.jointIDs[9], self.jointIDs[10]]
+        positions = [self.modeStopsB[ix], self.modeStopsC[ix]]
+        pb.setJointMotorControlArray(self.body_id, joints,  pb.POSITION_CONTROL, targetPositions=positions, forces=[100, 100])
+        
+        # in pinch mode the fingers can only travel part way (until they touch).  
+        self._mode_limit = self._PINCH_LIMIT if mode == 2 else 255
 
     def read(self):
         self.jointStates = pb.getJointStates(self.body_id, self.jointIDs)
@@ -112,14 +126,15 @@ class Robotiq3FGripper:
     def positions(self):
         # hackish way of computing the finger position, by considering only the base joint of each finger. 
         # Needs to be in sync with the implementaiton of "move" and the position tables
-        pos = [int(state[0]*256) for state in self.jointStates[:9:3]]
+        pos = [int(state[0] * 256) for state in self.jointStates[:9:3]]
+        pos = [255 if p >= self._mode_limit-1 else p for p in pos ]
         return pos
 
     def targets(self):
         return self._targets
 
     def object_detected(self):
-        return not self.is_moving() and not np.allclose(self._targets, self.positions(),1)
+        return not self.is_moving() and not np.allclose(self._targets, self.positions(), atol=1)
 
     def is_moving(self):
         return any((abs(state[1]) > 0.1 for state in self.jointStates)) # state[1] is velocity

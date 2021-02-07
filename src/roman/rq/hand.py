@@ -147,7 +147,7 @@ class Hand:
         self.command.make(Command._CMD_KIND_MOVE, Finger.All, Position.OPENED, speed, force, blocking)
         self.__execute(blocking)
 
-    def change(self, mode):
+    def set_mode(self, mode):
         self.command.make(Command._CMD_KIND_CHANGE, Finger.All, 0, 0, 0, mode)
         self.__execute(True)
 

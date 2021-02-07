@@ -55,7 +55,7 @@ def hand_move(use_sim):
     robot.hand.open()
     assert robot.hand.state.position() == hand.Position.OPENED
 
-    robot.hand.change(mode=hand.GraspMode.PINCH)
+    robot.hand.set_mode(mode=hand.GraspMode.PINCH)
     assert robot.hand.state.position() == hand.Position.OPENED
     assert robot.hand.state.mode() == hand.GraspMode.PINCH
     
@@ -67,7 +67,7 @@ def hand_move(use_sim):
     assert robot.hand.state.position() == hand.Position.OPENED
     assert robot.hand.state.mode() == hand.GraspMode.PINCH
 
-    robot.hand.change(mode=hand.GraspMode.BASIC)
+    robot.hand.set_mode(mode=hand.GraspMode.BASIC)
     assert robot.hand.state.mode() == hand.GraspMode.BASIC
     assert robot.hand.state.position() == hand.Position.OPENED
 
@@ -104,20 +104,18 @@ def arm_touch(use_sim):
     print(f"Running {__file__}::{arm_touch.__name__}()")
     robot = connect(use_sim = use_sim)
     robot.hand.open()
-    robot.hand.change(mode=hand.GraspMode.PINCH)
+    robot.hand.set_mode(mode=hand.GraspMode.PINCH)
     robot.hand.close()
-    time.sleep(1)
     home_pos = ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0)
     robot.arm.move(target_position=home_pos, max_speed=1, max_acc=0.5)
-    time.sleep(0.5)
     below_table = robot.arm.state.tool_pose().clone()
     below_table[2] = -0.2 # lower than the table
 
-    robot.arm.touch(below_table, max_speed = 0.05, max_acc=0.05)
+    robot.arm.touch(below_table, max_speed = 0.1, max_acc=0.1)
     assert robot.arm.state.is_goal_reached()
 
     # go back
-    robot.arm.move(target_position=home_pos, force_low_bound=[-30,-30, -30, -2, -2, -2], force_high_bound = [30, 30, 30, 2, 2, 2])
+    robot.arm.move(target_position=home_pos, max_speed = 1, max_acc = 1)
 
     robot.disconnect()
     print("Passed.")

@@ -323,7 +323,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
         <color rgba="0 1 0 1"/>
       </material>
     </visual>
-    <collision>
+    <!-- <collision>
       <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0414 0.036"/>
       <geometry>
         <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_0.STL"/>
@@ -331,7 +331,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
       <material name="yellow">
         <color rgba="0 1 1 1"/>
       </material>
-    </collision>
+    </collision> -->
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0.05"/>
@@ -437,7 +437,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
         <color rgba="0 1 0 1"/>
       </material>
     </visual>
-    <collision>
+    <!-- <collision>
       <origin rpy="0 3.1416 -1.57" xyz="-0.0455 0.0414 0.036"/>
       <geometry>
         <mesh filename="package://meshes/robotiq-3f-gripper/collision/link_0.STL"/>
@@ -445,7 +445,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
       <material name="yellow">
         <color rgba="0 1 1 1"/>
       </material>
-    </collision>
+    </collision> -->
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0.05"/>

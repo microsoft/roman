@@ -32,7 +32,7 @@ class URArm:
                                     force = URArm.SIM_MAX_JOINT_FORCE)
 
         pb.enableJointForceTorqueSensor(self.body_id, self.ft_sensor_id, True)
-        self.ft_bias = np.zeros(6   )
+        self.ft_bias = np.zeros(6)
         pb.stepSimulation()
         self.ft_bias[:] = self.ur_get_tcp_sensor_force()
         #self._debug_dump()
