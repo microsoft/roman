@@ -1,0 +1,8 @@
+attrdict
+gym
+matplotlib
+numpy
+pybullet
+pytest
+scipy
+

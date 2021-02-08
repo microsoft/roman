@@ -1,4 +1,3 @@
-
 # RoMan  
 This Python library provides real-time control of a robotic manipulator.
 The supported hardware is:

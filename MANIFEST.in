@@ -1,0 +1,3 @@
+recursive-include roman/ur/realtime *
+recursive-include roman/sim/meshes *
+include roman/sim/ur_rq3.urdf
