@@ -37,7 +37,9 @@ Roman requires numpy, scipy and pybullet. A real robot can come in handy too, bu
 For more examples, check out the examples directory.
 
 ## Further reading:
-[Arm](ur/readme.md)
-[Hand](rq/readme.md)
-[Sim](sim/readme.md)
+Arm: [ur/readme.md](ur/readme.md)
+
+Hand: [rq/readme.md](rq/readme.md)
+
+Sim: [sim/readme.md](sim/readme.md)
 
