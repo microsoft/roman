@@ -8,8 +8,20 @@ The supported hardware is:
 - Takktile fingertip sensors (NYI)
 
 The library is in active development and the APIs are still evolving. 
-Some documentation is available in [src/roman/readme.md](src/roman/readme.md). 
-For usage, refer to src/examples/simple.py
+
+Some documentation is available in [roman/readme.md](roman/README.md). 
+
+Sample scripts are available in the the [examples](examples) directory.
+
+# Installation
+
+**From source:**
+
+    python setup.py install
+
+**From source using pip:**
+
+    pip install git+https://github.com/microsoft/roman.git#egg=roman
 
 # Contributing
 

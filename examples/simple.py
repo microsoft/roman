@@ -8,7 +8,7 @@ from roman import *
 import math
 
 if __name__ == '__main__':
-    # connect to robot. Use connect_real() to start up the real robot. 
+    # connect to robot.
     robot = connect(use_sim=True)
 
     # arm poses can be expresses in tool space (carthesian coordinates xyzrpy) ...

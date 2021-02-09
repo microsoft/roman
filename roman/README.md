@@ -27,7 +27,7 @@ Roman requires numpy, scipy and pybullet. A real robot can come in handy too, bu
   robot.arm.move(p2, blocking=False)
 
   # close the gripper while the arm is moving, and wait for it to close
-  robot.arm.close()
+  robot.hand.close()
 
   # see whether the arm finished moving
   print(robot.arm.state.is_done())
@@ -37,7 +37,9 @@ Roman requires numpy, scipy and pybullet. A real robot can come in handy too, bu
 For more examples, check out the examples directory.
 
 ## Further reading:
-[Arm](ur/readme.md)
-[Hand](rq/readme.md)
-[Sim](sim/readme.md)
+Arm: [ur/readme.md](ur/README.md)
+
+Hand: [rq/readme.md](rq/README.md)
+
+Sim: [sim/readme.md](sim/README.md)
 

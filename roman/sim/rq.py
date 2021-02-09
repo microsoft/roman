@@ -85,7 +85,8 @@ class Robotiq3FGripper:
         cnt = len(joints)
         position = min(position, self._mode_limit) # account for pinch mode
         positions = self.jointStops[position] 
-        forces = [force+1] * cnt
+        force = force+1 # non-zero
+        forces = [force * 2] * 3 + [force] * 6 # middle finger has twice the force, to compensate for the other two
         pb.setJointMotorControlArray(self.body_id, joints, pb.POSITION_CONTROL, targetPositions=positions, forces=forces) 
         
 
