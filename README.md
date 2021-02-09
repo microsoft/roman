@@ -8,8 +8,10 @@ The supported hardware is:
 - Takktile fingertip sensors (NYI)
 
 The library is in active development and the APIs are still evolving. 
+
 Some documentation is available in [roman/readme.md](roman/README.md). 
-For more examples, take a look at teh scripts in the the "examples" directory.
+
+Sample scripts are available in the the "examples" directory.
 
 # Installation
 
