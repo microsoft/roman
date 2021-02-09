@@ -11,7 +11,7 @@ The library is in active development and the APIs are still evolving.
 
 Some documentation is available in [roman/readme.md](roman/README.md). 
 
-Sample scripts are available in the the "examples" directory.
+Sample scripts are available in the the [examples](examples) directory.
 
 # Installation
 
