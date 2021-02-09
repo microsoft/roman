@@ -9,7 +9,7 @@ The supported hardware is:
 
 The library is in active development and the APIs are still evolving. 
 Some documentation is available in [roman/readme.md](roman/README.md). 
-For usage, see the examples in the samples folder.
+For more examples, take a look at teh scripts in the the "examples" directory.
 
 # Installation
 
