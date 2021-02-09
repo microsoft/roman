@@ -11,6 +11,16 @@ The library is in active development and the APIs are still evolving.
 Some documentation is available in [src/roman/readme.md](src/roman/readme.md). 
 For usage, refer to src/examples/simple.py
 
+# Installation
+
+**From source:**
+
+    python setup.py install
+
+**From source using pip:**
+
+    pip install git+https://github.com/microsoft/roman.git#egg=roman
+
 # Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a

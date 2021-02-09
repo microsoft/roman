@@ -1,9 +1,17 @@
-from setuptools import setup
+# setup.py: install script for robot manipulator (roman)
+'''
+to install roman and its dependencies for development work,
+run this cmd from roman directory:
+    pip install -e .
+'''
+import setuptools
 
-setup(
+setuptools.setup(
     name='roman',
     version='1.0',
+    url = "https://github.com/microsoft/roman",
     install_requires=[
         "numpy", "scipy", "pybullet", "gym"
     ],
-    package_dir={'': 'src'})
+    packages=setuptools.find_packages(),
+)
