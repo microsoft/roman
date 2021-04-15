@@ -11,7 +11,7 @@ setuptools.setup(
     version='1.0',
     url = "https://github.com/microsoft/roman",
     install_requires=[
-        "numpy", "scipy", "pybullet", "gym"
+        "numpy", "scipy", "pybullet", "gym", "attrdict"
     ],
     packages=setuptools.find_packages(),
 )
