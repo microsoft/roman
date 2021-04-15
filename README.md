@@ -17,7 +17,7 @@ Sample scripts are available in the the [examples](examples) directory.
 
 **From source:**
 
-    python setup.py install
+    pip install -e .
 
 **From source using pip:**
 
