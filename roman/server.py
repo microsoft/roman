@@ -19,7 +19,7 @@ class InProcHost:
 
     def start(self):
         if self.use_sim:
-            self.env = self.config.get("sim.env", SimEnv)()
+            self.env = self.config.get("sim.env", SimEnv)(useGUI=self.config.get("use_gui", False))
             self.env.connect()
             self._arm_con = ur.SimConnection(self.env)
             self._hand_con = rq.SimConnection(self.env)
@@ -43,6 +43,18 @@ class InProcHost:
         self._hand_con.disconnect()
         if self.use_sim:
             self.env.disconnect()
+
+    def get_visual_obs_server(self):
+        """
+        TODO: this only works for the simulated robot. Implement it for the real robot as well.
+        """
+        return self.env
+
+    def get_world_state_server(self):
+        """
+        TODO: this only works for the simulated robot. Implement it for the real robot as well.
+        """ 
+        return self.env
 
 class RemoteHostProxy:
     class PipeConnection:
@@ -68,7 +80,12 @@ class RemoteHostProxy:
     def stop(self):
         self.__shutdown_event.set()
         self.__process.join()
-     
+
+    def get_visual_obs_server(self):
+        raise NotImplementedError
+
+    def get_world_state_server(self):
+        raise NotImplementedError
 
 #************************************************************************************************
 # Server loop

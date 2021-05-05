@@ -53,4 +53,14 @@ class SimEnv:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         #pb.changeDynamics(id, -1, restitution = 0.5)
         return id
+
+    def get_object_position_and_orientation(self, object_id):
+        return pb.getBasePositionAndOrientation(object_id)
+
+    def reset_object_position_and_orientation(self, object_id, position=[0,0,0], orientation=[0,0,0,1]):
+        pb.resetBasePositionAndOrientation(object_id, position, orientation)
+
+    def get_camera_image(self, width, height):
+        assert pb.isNumpyEnabled(), "Numpy is not enabled: getting images from pybullet will be too slow."
+        return pb.getCameraImage(width, height)
  
