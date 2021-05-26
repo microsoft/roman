@@ -3,8 +3,6 @@ import time
 import math
 import pybullet as pb
 import pybullet_data
-from collections import namedtuple
-from attrdict import AttrDict
 import functools
 import numpy as np
 
