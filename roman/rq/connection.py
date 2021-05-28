@@ -68,6 +68,12 @@ class Connection:
             self.__write_registers[FingerRegister.B] = self.__read_registers[FingerRegister.B+1]
             self.__write_registers[FingerRegister.C] = self.__read_registers[FingerRegister.C+1]
             self.__send() # activate
+
+            while not self.is_ready():
+                time.sleep(1)
+                self._debug_dump()
+                self.__read()
+                
         #print('Connected to hand.')
 
     def disconnect(self):

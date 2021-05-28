@@ -58,7 +58,7 @@ class Connection:
             self.__ctrl_socket, addr = reverse_conn.accept() 
             print('Controller is E-series')
             self.__ctrl_socket.close()
-        except TimeoutError:
+        except socket.timeout:
             main = "main_cb2" # CB2 entry point
             print('Controller is CB2')
 
