@@ -46,13 +46,13 @@ class InProcHost:
 
     def get_visual_obs_server(self):
         """
-        TODO: this only works for the simulated robot. Implement it for the real robot as well.
+        TODO: this only works for the simulated robot in-proc. Implement it to work out-of-proc and for the real robot as well.
         """
         return self.env
 
     def get_world_state_server(self):
         """
-        TODO: this only works for the simulated robot. Implement it for the real robot as well.
+        TODO: this only works for the simulated robot in-proc. Implement it to work out-of-proc and for the real robot as well.
         """ 
         return self.env
 

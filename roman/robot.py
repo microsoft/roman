@@ -41,15 +41,14 @@ class Robot:
         else:
             self.arm.move(pose, max_speed = max_speed)
 
-        self.arm.move(pose, max_speed = max_speed)
         self.hand.move(position = gripper_state)
 
     def step(self, dx, dy, dz, dyaw, gripper_state=hand.Position.OPENED, touch=False, max_speed=0.5, max_acc=0.5, blocking=True, dt=0.2):
         '''
         Moves the arm relative to the current position in carthesian coordinates, 
         assuming the gripper is vertical (aligned with the z-axis), pointing down.
-        This version returns after the amount of time specified by dt.
-        This supports the simplest Gym robotic manipulation environment.
+        This version returns after the amount of time specified by dt if blocking=True,
+        otherwise it waits for the motion to complete.
         '''
         self.arm.read()
         pose = self.arm.state.tool_pose()
@@ -63,8 +62,12 @@ class Robot:
         '''
         Moves the arm to the specified absolute position in carthesian coordinates, 
         assuming the gripper is vertical (aligned with the z-axis), pointing down.
-        This version returns after the amount of time specified by dt.
+        This version returns after the amount of time specified by dt if blocking=True,
+        otherwise it waits for the motion to complete.
         This supports the simplest Gym robotic manipulation environment.
+
+        TODO: If blocking=True and the desired configuration can't be reached, the method
+        never returns, breaking the interaction with the agent. Fix this.
         '''
         pose = self.arm.state.tool_pose().to_xyzrpy()
         pose = Tool.from_xyzrpy([x, y, z, pose[Tool.E1], pose[Tool.E2], yaw])
@@ -82,14 +85,19 @@ class Robot:
             while self.arm.state.time() < end and not (self.arm.state.is_done() and self.hand.state.is_done()):
                 arm_state, gripper_state = self.read()
 
-        return arm_state, gripper_state
+        return Robot.simplify_state(arm_state, gripper_state)
 
     def read(self):
         arm_state = self.arm.read()
-        arm_state = arm_state.tool_pose().to_xyzrpy()
         hand_state = self.hand.read()
-        gripper_state = hand_state.grasp_size()
-        return arm_state, gripper_state
+        return arm_state, hand_state
+
+    @staticmethod
+    def simplify_state(arm_state, hand_state):
+        '''
+        Converts state returned by arm.read() and hand.read() to a simplified form.
+        '''
+        return arm_state.tool_pose().to_xyzrpy(), hand_state.grasp_size()
 
 def connect(use_sim = True, use_gui = True, in_proc = False, sim_init = None):
     '''

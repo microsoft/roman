@@ -42,6 +42,9 @@ class Tool(Vec):
     RY = 4
     RZ = 5
 
+    '''
+    Use these macros instead when dealing with Euler angles rather than rotation vectors.
+    '''
     E1 = 3
     E2 = 4
     YAW = 5
