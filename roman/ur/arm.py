@@ -42,6 +42,13 @@ class Tool(Vec):
     RY = 4
     RZ = 5
 
+    '''
+    Use these macros instead when dealing with Euler angles rather than rotation vectors.
+    '''
+    E1 = 3
+    E2 = 4
+    YAW = 5
+
     def __init__(self, x=0, y=0, z=0, rx=0, ry=0, rz=0):
         super().__init__(6)
         self.array[:] = [x, y, z, rx, ry, rz]

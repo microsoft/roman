@@ -16,7 +16,7 @@ def setup_sim(simenv):
 
 if __name__ == '__main__':
     # start simulation
-    robot = connect(use_sim=True, sim_init=setup_sim)
+    robot = connect(use_sim=True, use_gui=True, in_proc=True, sim_init=setup_sim)
     home_pose = robot.arm.state.tool_pose().clone()
     stack_pose = home_pose.clone()
     grasp_depth = 0.01
