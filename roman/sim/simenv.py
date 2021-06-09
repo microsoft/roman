@@ -51,7 +51,7 @@ class SimEnv:
         # Overhead camera
         self._cameras.append(SimEnv.Camera(camera_fov=70, light_direction=light_direction, cameraEyePosition=[0,0,2], cameraTargetPosition=[0,0,0], cameraUpVector=[0,1,0]))
         # Side camera
-        self._cameras.append(SimEnv.Camera(camera_fov=70, light_direction=light_direction, cameraEyePosition=[-1.0,-0.6, 0.2], cameraTargetPosition=[0,0.3,0], cameraUpVector=[0,0,1]))
+        self._cameras.append(SimEnv.Camera(camera_fov=70, light_direction=light_direction, cameraEyePosition=[-1.0,-0.6, 0.2], cameraTargetPosition=[0,0.2,0], cameraUpVector=[0,0,1]))
 
     @property
     def num_cams(self):
@@ -103,6 +103,9 @@ class SimEnv:
 
     def reset_object_position_and_orientation(self, object_id, position=[0,0,0], orientation=[0,0,0,1]):
         pb.resetBasePositionAndOrientation(object_id, position, orientation)
+
+    def remove_object(self, object_id):
+        pb.removeBody(object_id)
 
     def get_camera_images(self):
         assert pb.isNumpyEnabled(), "Numpy is not enabled: getting images from pybullet will be too slow."
