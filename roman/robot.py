@@ -1,13 +1,12 @@
 import os
-import numpy as np 
+import numpy as np
 import threading
 import time
 from .rq import hand
 from . import rq
 from .ur import arm
 from . import ur
-from . import server 
-from .sim.ur_rq3 import SimEnv
+from . import server
 
 class Robot:
     '''
@@ -25,7 +24,7 @@ class Robot:
 
     def move_simple(self, dx, dy, dz, dyaw, gripper_state=hand.Position.OPENED, max_speed = 0.5):
         '''
-        Moves the arm relative to the current position in carthesian coordinates, 
+        Moves the arm relative to the current position in carthesian coordinates,
         assuming the gripper is vertical (aligned with the z-axis), pointing down.
         This supports the simplest Gym robotic manipulation environment.
         '''
@@ -37,7 +36,7 @@ class Robot:
 
     def step(self, dx, dy, dz, dyaw, gripper_state=hand.Position.OPENED, max_speed = 0.5, max_acc=0.5, dt = 0.2):
         '''
-        Moves the arm relative to the current position in carthesian coordinates, 
+        Moves the arm relative to the current position in carthesian coordinates,
         assuming the gripper is vertical (aligned with the z-axis), pointing down.
         This version returns after the amount of time specified by dt.
         This supports the simplest Gym robotic manipulation environment.
@@ -57,7 +56,7 @@ class Robot:
 
 def connect(use_sim = True, in_proc = False, sim_init = None):
     '''
-    Creates a robot instance with either sim or real (hardware) backing. 
+    Creates a robot instance with either sim or real (hardware) backing.
     By default, sim runs in-proc and real runs out-of-proc.
     Note that when running in-proc the async methods behave differently (since there's no server to execute them)
     and need to be called in a tight loop.

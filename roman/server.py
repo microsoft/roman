@@ -15,7 +15,7 @@ def start(config):
 class InProcHost:
     def __init__(self, config):
         self.config = config
-        self.use_sim = config.get("use_sim", True) 
+        self.use_sim = config.get("use_sim", True)
 
     def start(self):
         if self.use_sim:
@@ -26,18 +26,18 @@ class InProcHost:
             configurator = self.config.get("sim.init", None)
             if configurator is not None:
                 configurator(self.env)
-            
+
         else:
-            self._arm_con = ur.Connection() 
+            self._arm_con = ur.Connection()
             self._hand_con = rq.Connection()
 
         self._arm_con.connect()
-        activate_hand = self.config.get("hand.activate", True) 
+        activate_hand = self.config.get("hand.activate", True)
         self._hand_con.connect(activate_hand)
         self.arm = ur.ArmController(self._arm_con)
         self.hand = rq.HandController(self._hand_con)
         return (self.arm, self.hand)
-    
+
     def stop(self):
         self._arm_con.disconnect()
         self._hand_con.disconnect()
@@ -61,14 +61,14 @@ class RemoteHostProxy:
         self.__shutdown_event = Event()
         self.__process = Process(target=server_loop, args=(arm_client, hand_client, self.__shutdown_event, self.config))
         self.__process.start()
-        self.arm =  RemoteHostProxy.PipeConnection(arm_server)
+        self.arm = RemoteHostProxy.PipeConnection(arm_server)
         self.hand = RemoteHostProxy.PipeConnection(hand_server)
         return (self.arm, self.hand)
 
     def stop(self):
         self.__shutdown_event.set()
         self.__process.join()
-     
+
 
 #************************************************************************************************
 # Server loop
@@ -94,11 +94,11 @@ def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=Non
         arm_cmd_is_new = arm_client.poll()
         if arm_cmd_is_new:
             arm_client.recv_bytes_into(arm_cmd.array) # blocking
-        
+
         hand_cmd_is_new = hand_client.poll()
         if hand_cmd_is_new:
             hand_client.recv_bytes_into(hand_cmd.array) # blocking
-        
+
         hand_ctrl.execute(hand_cmd, hand_state)
         arm_ctrl.execute(arm_cmd, arm_state)
 

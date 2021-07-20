@@ -22,6 +22,7 @@ class SimEnv:
         if self._useGUI:
             pb.connect(pb.GUI)
             pb.resetDebugVisualizerCamera(1.5, -30, -15, cameraTargetPosition=[-0.4, 0, 0.3])
+            pb.configureDebugVisualizer(pb.COV_ENABLE_GUI, self._useGUI)
         else:
             pb.connect(pb.DIRECT)
         self.reset()
@@ -33,10 +34,10 @@ class SimEnv:
     def update(self):
         pb.stepSimulation()
         self.__time += SimEnv.TIME_STEP
-        
+
     def time(self):
         return self.__time
-   
+
     def disconnect(self):
         pb.disconnect()
 
@@ -53,4 +54,3 @@ class SimEnv:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         #pb.changeDynamics(id, -1, restitution = 0.5)
         return id
- 
