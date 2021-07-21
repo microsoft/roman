@@ -38,7 +38,7 @@ if __name__ == '__main__':
             robot.hand.move(255 - gps.right_trigger)
 
         if gps.buttons == 4096:
-            mode = hand.GraspMode.PINCH if robot.hand.state.mode() != hand.GraspMode.PINCH else hand.GraspMode.BASIC
+            mode = GraspMode.PINCH if robot.hand.state.mode() != GraspMode.PINCH else GraspMode.BASIC
             robot.hand.set_mode(mode)
 
         done = gps.buttons == 0x20 # back btn exits
