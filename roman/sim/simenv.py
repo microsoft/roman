@@ -17,6 +17,7 @@ class SimEnv:
     def __init__(self, useGUI=True):
         self._useGUI = useGUI
         self.__time = 0.0
+        self.__cameras = []
 
     def connect(self):
         if self._useGUI:
@@ -80,3 +81,38 @@ class SimEnv:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         return id
 
+    def set_light_position(self, light_position):
+        self.__light_position = light_position
+
+    def create_camera(self, img_w, img_h, cameraEyePosition, cameraTargetPosition=[0, 0, 0.2], cameraUpVector=[0, 0, 1], fov=50, camera_near=0.01, camera_far=100):
+        camera_cfg = {}
+        camera_cfg["viewMatrix"] = pb.computeViewMatrix(cameraEyePosition=cameraEyePosition, cameraTargetPosition=cameraTargetPosition, cameraUpVector=cameraUpVector)
+        camera_cfg["projectionMatrix"] = pb.computeProjectionMatrixFOV(fov, img_w / img_h, camera_near, camera_far)
+        camera_cfg["img_w"] = img_w
+        camera_cfg["img_h"] = img_h
+        self.__cameras += [camera_cfg]
+        return len(self.__cameras) - 1
+
+    def get_camera_image(self, camera_id):
+        camera_cfg = self.__cameras[camera_id]
+        img_arr = pb.getCameraImage(
+            camera_cfg["img_w"],
+            camera_cfg["img_h"],
+            camera_cfg["viewMatrix"] ,
+            camera_cfg["projectionMatrix"],
+            lightDirection=self.__light_position,
+            flags=pb.ER_NO_SEGMENTATION_MASK,
+            renderer=pb.ER_BULLET_HARDWARE_OPENGL)
+        #rgb
+        rgb = np.reshape(img_arr[2], (self.img_h, self.img_w, 4))[:, :, :3]
+
+        # depth
+        depth_buffer = np.reshape(img_arr[3], (self.img_h, self.img_w))
+        far = self.camera_far
+        near = self.camera_near
+        depth = far * near / (far - (far - near) * depth_buffer)
+
+        # segmentation mask
+        # TBD
+
+        return (rgb, depth)
