@@ -227,9 +227,9 @@ class Command(Vec):
         self[Command._KIND] = kind
         self[Command._MOVE_TARGET] = target
         self[Command._MOVE_MAX_SPEED] = max_speed
-        self[Command._MOVE_MAX_ACCELERATION]=max_acc
-        self[Command._MOVE_FORCE_LOW_BOUND] = force_low_bound
-        self[Command._MOVE_FORCE_HIGH_BOUND]=force_high_bound
+        self[Command._MOVE_MAX_ACCELERATION]  =max_acc
+        self[Command._MOVE_FORCE_LOW_BOUND] = force_low_bound if force_low_bound is not None else UR_FORCE_IGNORE_LOW
+        self[Command._MOVE_FORCE_HIGH_BOUND] = force_high_bound if force_high_bound is not None else UR_FORCE_IGNORE_HI
         self[Command._MOVE_CONTACT_HANDLING] = contact_handling
         self[Command._MOVE_CONTROLLER] = controller_flags
         return self
@@ -294,7 +294,7 @@ class Arm:
             cmd_type = UR_CMD_KIND_MOVE_TOOL_POSE
         else:
             raise TypeError("Argument target_position must be of type Tool or Joints. Use Joints.fromarray() or Tool.fromarray() to wrap an existing array.")
-     
+
         self.command.make(
             kind = cmd_type,
             target = target_position, 

@@ -112,8 +112,8 @@ def server_loop(arm_client, hand_client, shutdown_event, config={}, log_file=Non
         if log_file is not None:
             file.write(arm_cmd, hand_cmd, arm_state, hand_state)
 
-        if time.time()-start_time > 2*freq:
-            print("Server loop lagging: " + str(time.time()-start_time))
+        # if time.time()-start_time > 2*freq:
+        #     print("Server loop lagging: " + str(time.time()-start_time))
 
     # Disconnect the arm and gripper.
     host.stop()
