@@ -10,7 +10,7 @@ from .drive import *
 
 # Builds the complete state response returned to clients after each command.
 # !!! When running on UR, this function must be called from within a critical section.
-def get_arm_state():
+def get_arm_state(target_pose, target_joints):
     s = ur_get_status()
     # the order below mimics the UR's order (as defined by its RT interface))
     q = get_actual_joint_positions()
@@ -18,9 +18,9 @@ def get_arm_state():
     tp = get_actual_tcp_pose()
     tv = get_actual_tcp_speed()
   
-    q_t = get_target_joint_positions()
+    q_t = target_joints #get_target_joint_positions()
     qd_t = get_target_joint_speeds()
-    tp_t = get_target_tcp_pose()
+    tp_t = target_pose #get_target_tcp_pose()
     tv_t = get_target_tcp_speed()
     
     f = get_tcp_force()
@@ -64,11 +64,11 @@ def execute_arm_command(cmd, offset):
     # Rather than blocking for a full cycle, we simply return the previous state. 
     # To make that obvious (and enforce it in the sim case), we explicitly capture the state first. 
     # Note that the state vector contains the timestamp of the last command executed, and thus correctly reflects this behavior.
-    state = get_arm_state() 
+    # state = get_arm_state() 
 
     # READ
     if kind == UR_CMD_KIND_READ:
-        return state
+        return get_arm_state(UR_ZERO, UR_ZERO) 
     #ur:end
 
     # CONFIG: count, cmd code, payload (kg), tool center of gravity (vec3), tool tip (vec6), reset F/T sensor 
@@ -77,7 +77,7 @@ def execute_arm_command(cmd, offset):
         set_tcp(ur_pose(s_(cmd, UR_CMD_CONFIG_TOOL_TIP, offset))) 
         # todo: add support for setting workspace bounds
         # todo: add support for setting speed, acc and force bounds 
-        return state
+        return get_arm_state(UR_ZERO, UR_ZERO) 
     #ur:end
 
     # MOVE_XXX
@@ -92,11 +92,21 @@ def execute_arm_command(cmd, offset):
         # convert tool pose to joints position
         kind = UR_CMD_KIND_MOVE_JOINTS_POSITION
         #textmsg("target position",target_position)
-        target = get_inverse_kin(ur_pose(target))
+        pose_target = target
+        joint_target = get_inverse_kin(ur_pose(target))
+        target = joint_target
         #textmsg("joint position",target_position)
+    else:
+        joint_target = target
+        
+        if UR_ROBOT_VERSION == UR_ROBOT_VERSION_ESERIES:
+            pose_target = get_forward_kin(target)
+        else:
+            pose_target = UR_ZERO
+        #ur:end 
     #ur:end
     max_speed = cmd[UR_CMD_MOVE_MAX_SPEED + offset]
     ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, contact_handling)
-    return state
+    return get_arm_state(pose_target, joint_target)
 #ur:end
 
