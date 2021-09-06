@@ -22,8 +22,9 @@ class Joints(Vec):
         self.array[:] = [base, shoulder, elbow, wrist1, wrist2, wrist3]
 
     def allclose(self, array, tolerance = UR_JOINTS_POSITION_TOLERANCE):
-        # for i in range[6]:
-            # if self.array[i] != 
+        if type(array) is Tool:
+            raise TypeError("Cannot compare joint positions with tool pose.")
+
         if np.allclose(self.array, array, rtol=0, atol=tolerance):
             return True
         for i in range(len(array)):
@@ -47,6 +48,9 @@ class Tool(Vec):
         self.array[:] = [x, y, z, rx, ry, rz]
 
     def allclose(self, array, position_tolerance = UR_TOOL_POSITION_TOLERANCE, rotation_tolerance = UR_TOOL_ROTATION_TOLERANCE):
+        if type(array) is Joints:
+            raise TypeError("Cannot compare tool pose with joint positions.")
+
         if not np.allclose(self.array[:3], array[:3], rtol=0, atol=position_tolerance):
             return False
 
