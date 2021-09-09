@@ -2,27 +2,35 @@ import os
 import numpy as np
 import threading
 import time
-from .rq import hand
+from .rq.hand import Hand, Position
 from . import rq
-from .ur import arm
+from .ur.arm import Arm, Tool, Joints
 from . import ur
 from . import server
+from .sim.simscene import SimScene
 
 class Robot:
     '''
     Combines the manipulator components (arm, hand, FT and tactile sensors).
     '''
-    def connect(self, config):
-        self.host = server.start(config)
-        self.arm = arm.Arm(self.host.arm)
-        self.hand = hand.Hand(self.host.hand)
+    def connect(self, use_sim=True, config={}):
+        '''
+        Connects the robot instance to either sim or real (hardware) backing.
+        '''
+        self._use_sim = use_sim
+        self._config = config
+        self._server = server.create(use_sim, config)
+        self._server.connect()
+        self.arm = Arm(self._server.arm)
+        self.hand = Hand(self._server.hand)
         self.arm.read()
         self.hand.read()
+        return self
 
     def disconnect(self):
-        self.host.stop()
+        self._server.disconnect()
 
-    def move_simple(self, dx, dy, dz, dyaw, gripper_state=hand.Position.OPENED, max_speed = 0.5):
+    def move_simple(self, dx, dy, dz, dyaw, gripper_state=Position.OPENED, max_speed=0.5):
         '''
         Moves the arm relative to the current position in carthesian coordinates,
         assuming the gripper is vertical (aligned with the z-axis), pointing down.
@@ -30,11 +38,11 @@ class Robot:
         '''
         self.arm.read()
         pose = self.arm.state.tool_pose()
-        pose = arm.Tool.from_xyzrpy(pose.to_xyzrpy() + [dx,dy, dz,0,0, dyaw])
-        self.arm.move(pose, max_speed = max_speed)
-        self.hand.move(position = gripper_state)
+        pose = Tool.from_xyzrpy(pose.to_xyzrpy() + [dx, dy, dz, 0, 0, dyaw])
+        self.arm.move(pose, max_speed=max_speed)
+        self.hand.move(position=gripper_state)
 
-    def step(self, dx, dy, dz, dyaw, gripper_state=hand.Position.OPENED, max_speed = 0.5, max_acc=0.5, dt = 0.2):
+    def step(self, dx, dy, dz, dyaw, gripper_state=Position.OPENED, max_speed=0.5, max_acc=0.5, dt=0.2):
         '''
         Moves the arm relative to the current position in carthesian coordinates,
         assuming the gripper is vertical (aligned with the z-axis), pointing down.
@@ -43,9 +51,9 @@ class Robot:
         '''
         self.arm.read()
         pose = self.arm.state.tool_pose()
-        pose = arm.Tool.from_xyzrpy(pose.to_xyzrpy() + [dx,dy, dz,0,0, dyaw])
-        self.hand.move(position = gripper_state, blocking = False)
-        self.arm.move(pose, max_speed = max_speed, max_acc=max_acc, blocking = False)
+        pose = Tool.from_xyzrpy(pose.to_xyzrpy() + [dx, dy, dz, 0, 0, dyaw])
+        self.hand.move(position=gripper_state, blocking=False)
+        self.arm.move(pose, max_speed=max_speed, max_acc=max_acc, blocking=False)
         end = self.arm.state.time() + dt
         while self.arm.state.time() < end and not (self.arm.state.is_done() and self.hand.state.is_done()):
             self.read()
@@ -54,15 +62,18 @@ class Robot:
         self.arm.read()
         self.hand.read()
 
-def connect(use_sim = True, in_proc = False, sim_init = None):
+
+def connect(config={}):
     '''
-    Creates a robot instance with either sim or real (hardware) backing.
-    By default, sim runs in-proc and real runs out-of-proc.
-    Note that when running in-proc the async methods behave differently (since there's no server to execute them)
-    and need to be called in a tight loop.
+    Creates and returns a robot instance with real (hardware) backing.
     '''
-    m = Robot()
-    m.connect(config={"use_sim":use_sim , "in_proc":in_proc, "sim.init":sim_init})
-    return m
+    return Robot().connect(use_sim=False, config=config)
 
 
+def connect_sim(scene_init_fn=None, config={}):
+    '''
+    Creates and returns a simulated robot instance together with a sim scene manager.
+    '''
+    r = Robot().connect(use_sim=True, config=config)
+    s = SimScene(r, scene_init_fn).connect()
+    return r, s

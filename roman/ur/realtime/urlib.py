@@ -1,7 +1,6 @@
 ################################################################################################################################
-## Redirects the UR functions needed by the control script to the simulator. 
+## Redirects the UR functions needed by the control script to the simulator.
 ################################################################################################################################
-import pybullet as pb
 import numpy as np
 from scipy.spatial.transform import Rotation
 import math
@@ -49,7 +48,7 @@ def get_tcp_force():
 def get_joint_torques():
     return sim.arm.get_joint_torques()
 
-def ur_get_tcp_sensor_force(__unused = 0):
+def ur_get_tcp_sensor_force(_=0):
     return sim.arm.ur_get_tcp_sensor_force()
 
 def ur_get_tcp_acceleration():
@@ -69,7 +68,7 @@ def set_tcp(pose):
 #******************************************************************************
 
 def textmsg(s1, s2=""):
-    print(str(s1)+str(s2))
+    print(str(s1) + str(s2))
 
 def norm(v):
     ''' Norm function, as defined by urscript'''
@@ -95,13 +94,13 @@ def pose_add(p1, p2):
     t = np.add(p1[:3], p2[:3])
     r1 = Rotation.from_rotvec(p1[3:])
     r2 = Rotation.from_rotvec(p2[3:])
-    r = (r1*r2).as_rotvec()
+    r = (r1 * r2).as_rotvec()
     return np.concatenate((t, r))
 
 def interpolate_pose(p_from, p_to, alpha):
     ''' Linear interpolation of tool position and orientation, as defined by urscript.'''
     delta = pose_sub(p_to, p_from)
-    return pose_add(p_from, delta*alpha)
+    return pose_add(p_from, delta * alpha)
 
 def sqrt(a):
     return math.sqrt(a)

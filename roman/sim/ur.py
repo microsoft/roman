@@ -1,5 +1,5 @@
 ################################################################################################################################
-## pybullet implementation of the URScript functions needed by the control layer. 
+## pybullet implementation of the URScript functions needed by the control layer.
 ################################################################################################################################
 import math
 import pybullet as pb
@@ -21,22 +21,22 @@ class URArm:
         self.sim_time_step = sim_time_step
 
     def reset(self):
-        # start position is along the x axis, in negative direction 
-        start_positions = [0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0]
+        # start position is along the x axis, in negative direction
+        start_positions = [0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0]
         for i in range(6):
-            pb.resetJointState(self.body_id, self.base_joint_id + i, start_positions[i])            
-            pb.setJointMotorControl2(self.body_id, 
-                                    self.base_joint_id + i, 
-                                    controlMode=pb.VELOCITY_CONTROL,
-                                    targetVelocity = 0,
-                                    force = URArm.SIM_MAX_JOINT_FORCE)
+            pb.resetJointState(self.body_id, self.base_joint_id + i, start_positions[i])
+            pb.setJointMotorControl2(self.body_id,
+                                     self.base_joint_id + i,
+                                     controlMode=pb.VELOCITY_CONTROL,
+                                     targetVelocity=0,
+                                     force=URArm.SIM_MAX_JOINT_FORCE)
 
         pb.enableJointForceTorqueSensor(self.body_id, self.ft_sensor_id, True)
         self.ft_bias = np.zeros(6)
         pb.stepSimulation()
         self.ft_bias[:] = self.ur_get_tcp_sensor_force()
         #self._debug_dump()
-    
+
     def get_inverse_kin(self, pose):
         '''Calculates the joint angles that corespond to the specified tool pose.'''
         rot = Rotation.from_rotvec(pose[3:6]).as_quat()
@@ -44,14 +44,14 @@ class URArm:
         return joints[:6]
 
     def get_actual_tcp_pose(self):
-        link_state = pb.getLinkState(self.body_id, self.tcp_id, computeLinkVelocity = 0, computeForwardKinematics = 1)
+        link_state = pb.getLinkState(self.body_id, self.tcp_id, computeLinkVelocity=0, computeForwardKinematics=1)
         pos = link_state[4]
         q = link_state[5]
         rot = Rotation.from_quat(q).as_rotvec()
         return [pos[0], pos[1], pos[2], rot[0], rot[1], rot[2]]
 
     def get_actual_tcp_speed(self):
-        link_state = pb.getLinkState(self.body_id, self.tcp_id, computeLinkVelocity = 1, computeForwardKinematics = 1)
+        link_state = pb.getLinkState(self.body_id, self.tcp_id, computeLinkVelocity=1, computeForwardKinematics=1)
         pos = link_state[6]
         rot = link_state[7]
         return [pos[0], pos[1], pos[2], rot[0], rot[1], rot[2]]
@@ -104,11 +104,11 @@ class URArm:
     def speedj(self, speed, max_acc):
         for i in range(6):
             new_speed = speed[i]
-            pb.setJointMotorControl2(self.body_id, 
-                                    self.base_joint_id + i, 
-                                    controlMode=pb.VELOCITY_CONTROL,
-                                    targetVelocity = new_speed,
-                                    force = URArm.SIM_MAX_JOINT_FORCE)
+            pb.setJointMotorControl2(self.body_id,
+                                     self.base_joint_id + i,
+                                     controlMode=pb.VELOCITY_CONTROL,
+                                     targetVelocity=new_speed,
+                                     force=URArm.SIM_MAX_JOINT_FORCE)
 
     def set_payload(self, m, cog):
         pass

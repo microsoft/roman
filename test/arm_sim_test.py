@@ -1,20 +1,16 @@
-import sys
 import numpy as np
-import math 
+import math
 import time
-import random
-import os
-import time
+
 import pybullet as pb
-rootdir = os.path.dirname(os.path.dirname(__file__))
-os.sys.path.insert(0, rootdir)
+
 from roman.ur import *
-from roman.sim.ur_rq3 import SimEnv
+from roman.sim.simenv import SimEnv
 from roman.ur.realtime import urlib
 from roman.ur.realtime.interface import *
 
 #############################################################
-# Low-level unit tests using the simulated arm. 
+# Low-level unit tests using the simulated arm.
 #############################################################
 
 def pose_op_test():
@@ -37,7 +33,7 @@ def pose_op_test():
 def get_arm_state_test(env):
     print(f"Running {__file__}::{get_arm_state_test.__name__}()")
     urlib.sim = env
-    state = State.fromarray(get_arm_state())
+    state = State.fromarray(get_arm_state(UR_ZERO, UR_ZERO))
     #print(state)
     print("Passed.")
 
@@ -74,8 +70,8 @@ def move_arm_test(env):
         # leftover = 1/240. - latency
         # if leftover > 0:
         #     time.sleep(leftover)
-    
-    print("Passed.")    
+
+    print("Passed.")
 
 
 #############################################################
@@ -90,6 +86,6 @@ def run():
     execute_arm_command_test(env)
     move_arm_test(env)
     env.disconnect()
-   
+
 if __name__ == '__main__':
     run()

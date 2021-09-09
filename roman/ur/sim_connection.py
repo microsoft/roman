@@ -10,7 +10,6 @@ class SimConnection:
         urlib.sim = env
 
     def connect(self):
-
         print('System ready.')
 
     def disconnect(self):

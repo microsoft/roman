@@ -26,17 +26,19 @@ class SimConnection:
             if cmd[Command._FINGER] == Finger.All:
                 self.env.hand.move(cmd[Command._POSITION], cmd[Command._SPEED], cmd[Command._FORCE])
             else:
-                self.env.hand.move_finger(cmd[Command._FINGER], cmd[Command._POSITION], cmd[Command._SPEED], cmd[Command._FORCE]) 
-
+                self.env.hand.move_finger(cmd[Command._FINGER], cmd[Command._POSITION], cmd[Command._SPEED], cmd[Command._FORCE])
 
         # prepare the state
-        self.env.update() # note that the sim update is called twice, once here and once by the arm's sim_connection
+        # note that we need to call update in order for joint states to reflect the command
+        # otherwise object_detected would return true immediately after issuing a move command
+        # because the joints would appear to not move
+        self.env.update()
         self.env.hand.read()
         state[State._TIME] = self.env.time()
         state[State._FLAGS] = State._FLAG_READY \
                             + State._FLAG_MOVING * self.env.hand.is_moving() \
                             + State._FLAG_OBJECT_DETECTED * self.env.hand.object_detected()
-        
+
         state[State._MODE] = self.env.hand.mode()
         positions = self.env.hand.positions()
         state[State._POSITION_A] = positions[0]
@@ -49,4 +51,3 @@ class SimConnection:
 
         return state
 
- 
