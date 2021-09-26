@@ -11,7 +11,7 @@ from interface import *
 
 # Main loop.
 # Reads commands from the com channel and executes them.
-# Sends back a response for each command received. 
+# Sends back a response for each command received.
 def start():
     popup("roman is active")
 
@@ -27,7 +27,7 @@ def start():
     ur_calibrate_accelerometer()
 
     # start the timer thread
-    timer_thread = run timer_thread_fn() 
+    timer_thread = run timer_thread_fn()
 
     if UR_ROBOT_VERSION < UR_ROBOT_VERSION_ESERIES:
         # start the FT sensor thread
@@ -38,22 +38,22 @@ def start():
     if UR_ROBOT_VERSION == UR_ROBOT_VERSION_CB2:
         # start the drive thread
         textmsg("starting CB2 drive thread.")
-        ur_drive_thread = run ur_cb2_drive_thread_fn()   
+        ur_drive_thread = run ur_cb2_drive_thread_fn()
     else:
         # start the drive thread
         textmsg("starting CB3/E-Series drive thread.")
-        ur_drive_thread = run ur_drive_thread_fn()   
+        ur_drive_thread = run ur_drive_thread_fn()
     end
     # forever, read commands and write responses
-    textmsg("ready, listening for commands.")    
-    while connected:    
-        cmd = socket_read_ascii_float(UR_CMD_ENTRIES_COUNT, "ctrl") 
+    textmsg("ready, listening for commands.")
+    while connected:
+        cmd = socket_read_ascii_float(UR_CMD_ENTRIES_COUNT, "ctrl")
         #acquire the critical section as early as possible, to preempt the drive thread. This ensures everything takes place in one timestep.
         enter_critical
         # We expect a vector of UR_CMD_ENTRIES_COUNT+1 values (UR requires that the total must stay under 30+1)
         # The first value is the count, followed by command code
         if UR_CMD_ENTRIES_COUNT == cmd[0]:
-            response = execute_arm_command(cmd, 1) 
+            response = execute_arm_command(cmd, 1)
         end
         exit_critical
         if cmd[0] == 0:
@@ -66,8 +66,8 @@ def start():
             break
         end
 
-        # Note: the response below has been generated before the drive command was actually executed, 
-        # and thus the returned state does not reflect the command. 
+        # Note: the response below has been generated before the drive command was actually executed,
+        # and thus the returned state does not reflect the command.
         # However, the response time and command time fields should properly reflect the discrepancy (cmd time < response time)
         # To get the result of the command, the client can send a READ request immediately after sending the command.
         socket_send_string(response, "ctrl")

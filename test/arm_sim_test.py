@@ -42,7 +42,7 @@ def execute_arm_command_test(env):
     urlib.sim = env
     cmd = Command()
     state = State.fromarray(execute_arm_command(cmd, 0))
-    cmd.make(kind = UR_CMD_KIND_MOVE_JOINTS_POSITION, target=Joints(1,1,1,1,1,1))
+    cmd.make(kind = UR_CMD_KIND_MOVE_JOINT_POSITIONS, target=Joints(1, 1, 1, 1, 1, 1))
     state = State.fromarray(execute_arm_command(cmd, 0))
     #print(state)
     print("Passed.")

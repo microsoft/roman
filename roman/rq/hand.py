@@ -48,7 +48,7 @@ class State(Vec):
     _CURRENT_S = 14
     _RESERVED = 15
     _BUFFER_SIZE = 16
-    
+
     _FLAG_READY = 1
     _FLAG_INCONSISTENT = 2
     _FLAG_FAULTED = 4
@@ -64,7 +64,7 @@ class State(Vec):
     def is_faulted(self): return self[State._FLAGS] & State._FLAG_FAULTED
     def is_moving(self): return self[State._FLAGS] & State._FLAG_MOVING
     def is_done(self): return self.is_ready() and not self.is_moving()
-    def object_detected(self): return self[State._FLAGS] & State._FLAG_OBJECT_DETECTED  
+    def object_detected(self): return self[State._FLAGS] & State._FLAG_OBJECT_DETECTED
     def mode(self): return self[State._MODE]
     def target(self): return self[State._TARGET_A]
     def position(self): return self[State._POSITION_A]
@@ -100,7 +100,7 @@ class Command(Vec):
 
     def make(self, kind, finger, position, speed, force, mode):
         self[Command._KIND] = kind
-        self[Command._MODE] = mode 
+        self[Command._MODE] = mode
         self[Command._FINGER] = finger
         self[Command._POSITION] = position
         self[Command._SPEED] = speed
@@ -114,22 +114,28 @@ class Command(Vec):
     def speed(self): return self[Command._SPEED]
     def force(self): return self[Command._FORCE]
 
-class Hand:        
+class Hand:
     _READ_CMD = Command()
 
     def __init__(self, controller):
         self.controller = controller
         self.command = Command()
-        self.state = State() 
+        self.state = State()
 
     def __execute(self, blocking):
         self.controller.execute(self.command, self.state)
         while blocking and not self.state.is_done():
             self.read()
 
+    def execute(self, command, blocking):
+        self.command[:] = command
+        self.__execute(blocking)
+
+    def step(self):
+        self.read()
+
     def read(self):
         self.controller.execute(Hand._READ_CMD, self.state)
-        return self.state
 
     def move(self, position, finger = Finger.All, speed = 255, force = 0, blocking = True):
         self.command.make(Command._CMD_KIND_MOVE, finger, position, speed, force, GraspMode.CURRENT)
