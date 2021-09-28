@@ -33,9 +33,9 @@ def get_arm_state(target_pose, target_joints):
         ft = f # on e-series, the ft sensor is built in and the value reported by get_tcp_force()
     #ur:end
 
-    return [s[0], # time
+    return [s[0], # read time
             s[1], # cmd_id
-            0 + s[2] * UR_STATUS_FLAG_MOVING + s[3] * UR_STATUS_FLAG_CONTACT + s[4] * UR_STATUS_FLAG_DEADMAN, #status
+            0 + s[3] * UR_STATUS_FLAG_MOVING + s[4] * UR_STATUS_FLAG_CONTACT + s[5] * UR_STATUS_FLAG_DEADMAN, #status
 
             q[0], q[1], q[2], q[3], q[4], q[5],
             qd[0], qd[1], qd[2], qd[3], qd[4], qd[5],
@@ -86,7 +86,7 @@ def execute_arm_command(cmd, offset):
     contact_handling = cmd[UR_CMD_MOVE_CONTACT_HANDLING + offset]
     if kind == UR_CMD_KIND_MOVE_TOOL_POSE:
         # convert tool pose to joints position
-        kind = UR_CMD_KIND_MOVE_JOINTS_POSITION
+        kind = UR_CMD_KIND_MOVE_JOINT_POSITIONS
         #textmsg("target position",target_position)
         pose_target = target
         joint_target = get_inverse_kin(ur_pose(target))
