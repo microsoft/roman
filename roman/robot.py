@@ -36,7 +36,7 @@ class Robot:
         self.active_force_limit = self.config.get("force_limit", FORCE_LIMIT_DEFAULT)
         self.arm = Arm(self._server.arm)
         self.hand = Hand(self._server.hand)
-        self.arm.read()
+        self.arm.stop()
         self.hand.read()
         return self
 
@@ -138,6 +138,9 @@ class Robot:
 
     def last_command(self):
         return self.arm.command.clone(), self.hand.command.clone()
+
+    def last_state(self):
+        return self.arm.state.clone(), self.hand.state.clone()
 
     def is_done(self):
         return self.arm.state.is_done() and self.hand.state.is_done()

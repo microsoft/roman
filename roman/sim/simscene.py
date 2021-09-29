@@ -152,7 +152,8 @@ class SimScene:
         # segmentation mask
         # TBD
 
-        return (rgb, depth)
+        #return (rgb, depth)
+        return rgb
 
     def get_world_state(self):
         '''Enumerates and returns the state of the objects that have a tag.'''
