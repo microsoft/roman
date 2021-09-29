@@ -57,7 +57,7 @@ if __name__ == '__main__':
             # D-PAD controls wrists
             wrist2 = 1 if gps.buttons == DPAD_LEFT else -1 if gps.buttons == DPAD_RIGHT else 0
             wrist3 = 1 if gps.buttons == DPAD_UP else -1 if gps.buttons == DPAD_DOWN else 0
-            target = Joints(base=base, shoulder=shoulder, elbow=elbow, wrist1=wrist1, wrist2=wrist2, wrist3=wrist3)
+            target = JointSpeeds(base=base, shoulder=shoulder, elbow=elbow, wrist1=wrist1, wrist2=wrist2, wrist3=wrist3)
             robot.arm.speed(target, acc=1, blocking=False)
         else:
             # position control
