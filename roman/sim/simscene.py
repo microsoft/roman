@@ -12,10 +12,11 @@ from . import rq
 ## Provides access to the sim environment.
 ################################################################
 class SimScene:
-    def __init__(self, robot, scene_setup_fn):
-        if not robot._use_sim:
+    def __init__(self, robot, scene_setup_fn=None, **kwargs):
+        if not robot.use_sim:
             raise ValueError("Simulated scenes can only be used with a simulated robot.")
         self._cameras = {}
+        self.__light_position = [10, 10, 10]
         self._scene_setup_fn = scene_setup_fn or SimScene.make_table
         self._server = robot._server
         self.__tag_map = {}
@@ -44,7 +45,7 @@ class SimScene:
                  flags=pb.URDF_USE_SELF_COLLISION | pb.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS,
                  tag=None):
         id = pb.loadURDF(urdf, basePosition=basePosition, baseOrientation=pb.getQuaternionFromEuler(baseOrientation), flags=flags)
-        if tag:
+        if tag is not None:
             self.__tag_map[id] = tag
         return id
 
@@ -58,7 +59,7 @@ class SimScene:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         pb.changeDynamics(id, -1, restitution=restitution)
 
-        if tag:
+        if tag is not None:
             self.__tag_map[id] = tag
         return id
 
@@ -71,7 +72,7 @@ class SimScene:
         if color is not None:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         pb.changeDynamics(id, -1, restitution=restitution)
-        if tag:
+        if tag is not None:
             self.__tag_map[id] = tag
         return id
 
@@ -88,7 +89,7 @@ class SimScene:
         if color is not None:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         pb.changeDynamics(id, -1, restitution=restitution)
-        if tag:
+        if tag is not None:
             self.__tag_map[id] = tag
         return id
 
@@ -97,7 +98,7 @@ class SimScene:
 
     def create_camera(self,
                       cameraEyePosition,
-                      img_res=(84, 84),
+                      img_res=[84, 84],
                       cameraTargetPosition=[0, 0, 0.2],
                       cameraUpVector=[0, 0, 1],
                       fov=90,
@@ -116,25 +117,34 @@ class SimScene:
         self._cameras[tag] = camera_cfg
         return tag
 
+    def get_camera_count(self):
+        return len(self._cameras)
+
+    def get_camera_images(self):
+        return list(self.get_camera_image(id) for id in self._cameras.keys())
+
     def get_camera_image(self, id):
-        if id not in self._cameras.keys and type(id) is int and id > 0 and id < len(self.cameras):
-            id = self._cameras.keys[id]
-        else:
-            raise ValueError(f"{id} is not a valid camera identifier.")
+        if id not in self._cameras.keys():
+            if type(id) is int and id > 0 and id < len(self._cameras):
+                id = self._cameras.keys[id]
+            else:
+                raise ValueError(f"{id} is not a valid camera identifier.")
         camera_cfg = self._cameras[id]
+        img_w = camera_cfg["img_w"]
+        img_h = camera_cfg["img_h"]
         img_arr = pb.getCameraImage(
-            camera_cfg["img_w"],
-            camera_cfg["img_h"],
+            img_w,
+            img_h,
             camera_cfg["viewMatrix"],
             camera_cfg["projectionMatrix"],
             lightDirection=self.__light_position,
             flags=pb.ER_NO_SEGMENTATION_MASK,
             renderer=pb.ER_BULLET_HARDWARE_OPENGL)
         #rgb
-        rgb = np.reshape(img_arr[2], (self.img_h, self.img_w, 4))[:, :, :3]
+        rgb = np.reshape(img_arr[2], (img_h, img_w, 4))[:, :, :3]
 
         # depth
-        depth_buffer = np.reshape(img_arr[3], (self.img_h, self.img_w))
+        depth_buffer = np.reshape(img_arr[3], (img_h, img_w))
         far = camera_cfg["far"]
         near = camera_cfg["near"]
         depth = far * near / (far - (far - near) * depth_buffer)
@@ -144,9 +154,11 @@ class SimScene:
 
         return (rgb, depth)
 
-    def get_state(self):
+    def get_world_state(self):
         '''Enumerates and returns the state of the objects that have a tag.'''
-        state = list((tag, self._get_object_state(id)) for id, tag in self.__tag_map.items())
+        state = dict()
+        for id, tag in self.__tag_map.items():
+            state[tag] = self._get_object_state(id)
         return state
 
     def _get_object_state(self, id):
