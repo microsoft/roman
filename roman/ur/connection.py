@@ -13,8 +13,8 @@ import time
 import math
 from enum import Enum
 import os
-from ..common import *
-from .loader import *
+from ..common import socket_send_retry
+from .loader import load_script
 from .arm import *
 from .realtime.constants import *
 
@@ -23,7 +23,7 @@ from .realtime.constants import *
 ################################################################
 class Connection:
     """Reads real robot state (arm and F/T sensor) and commands the robot in real-time."""
-    def __init__(self, arm_ip=UR_arm_ip, local_ip=UR_DEFAULT_CLIENT_IP, local_port=UR_DEFAULT_CLIENT_PORT):
+    def __init__(self, arm_ip=UR_ROBOT_IP, local_ip=UR_DEFAULT_CLIENT_IP, local_port=UR_DEFAULT_CLIENT_PORT):
         self.arm_ip = arm_ip
         self.local_ip = local_ip
         self.local_port = local_port
@@ -31,7 +31,7 @@ class Connection:
         self.__raw_state = bytearray(2048)
         self.__raw_cmd = bytearray(512)
 
-    def __generate_urscript(self, name = "main"):
+    def __generate_urscript(self, name="main"):
         constants = [f"UR_CLIENT_IP=\"{self.local_ip}\"", f"UR_CLIENT_PORT={self.local_port}"]
         script_folder = os.path.join(os.path.dirname(__file__), 'realtime')
         script = load_script(script_folder, name, defs=constants)
@@ -91,18 +91,18 @@ class Connection:
         """Private. Encodes and sends the command to the robot. Must be followed by a call to __receive_state."""
         assert len(cmd) == UR_CMD_ENTRIES_COUNT
         i = 0
-        self.__raw_cmd[0]=ord('(')
+        self.__raw_cmd[0] = ord('(')
 
         for val in cmd.array:
             i = i + 1
-            bytes = b'%f'%val
+            bytes = b'%f' % val
             length = len(bytes)
-            self.__raw_cmd[i:i+length] = bytes
+            self.__raw_cmd[i: i + length] = bytes
             i = i + length
             self.__raw_cmd[i] = 44 # ord(',') == 44
 
-        self.__raw_cmd[i] =ord(')')
-        length = i+1
+        self.__raw_cmd[i] = ord(')')
+        length = i + 1
         #print(self.__raw_cmd[:length])
         return socket_send_retry(self.__ctrl_socket, self.__raw_cmd, length)
 
@@ -116,7 +116,7 @@ class Connection:
             if received == 0:
                 return False
             total = total + received
-            if(view[received-1] == 93): #line ends with ']', ord(']')==93
+            if(view[received - 1] == 93): # line ends with ']', ord(']')==93
                 break
             view = view[received:]
 
@@ -128,8 +128,9 @@ class Connection:
         while found:
             end = self.__raw_state.find(44, start, total) # ord(',') == 44
             found = end > 0
-            if not found: end = total - 1 #skip ending ]
+            if not found:
+                end = total - 1 # skip ending ]
             state_buffer[i] = float(view[start:end])
             i = i + 1
             start = end + 1
-        return i==UR_STATE_ENTRIES_COUNT
+        return i == UR_STATE_ENTRIES_COUNT

@@ -347,7 +347,7 @@ class Arm:
         self.__execute(blocking)
 
     def stop(self, acc = UR_FAST_STOP_ACCELERATION, blocking = True):
-        self.speed(target_speed = UR_ZERO, acc=acc)
+        self.speed(target_speed = JointSpeeds(*UR_ZERO), acc=acc)
 
     def touch(self,
             target_position,

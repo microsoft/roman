@@ -55,13 +55,13 @@ def state_test():
     assert not s.is_moving()
     assert not s.is_goal_reached()
     assert type(s.joint_positions()) is Joints
-    assert type(s.joint_speeds()) is Joints
+    assert type(s.joint_speeds()) is JointSpeeds
     assert type(s.tool_pose()) is Tool
-    assert type(s.tool_speed()) is Tool
+    assert type(s.tool_speed()) is ToolSpeed
     assert type(s.target_joint_positions()) is Joints
-    assert type(s.target_joint_speeds()) is Joints
+    assert type(s.target_joint_speeds()) is JointSpeeds
     assert type(s.target_tool_pose()) is Tool
-    assert type(s.target_tool_speed()) is Tool
+    assert type(s.target_tool_speed()) is ToolSpeed
     assert type(s.tool_force()) is Tool
     assert type(s.joint_torques()) is Joints
     assert type(s.tool_acceleration()) is np.ndarray

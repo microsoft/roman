@@ -14,7 +14,7 @@ FORCE_LIMIT_DEFAULT = (UR_DEFAULT_FORCE_LOW_BOUND, UR_DEFAULT_FORCE_HI_BOUND)
 FORCE_LIMIT_TOUCH = ([-5, -5, -5, -0.5, -0.5, -0.5], [5, 5, 5, 0.5, 0.5, 0.5])
 NO_FORCE_LIMIT = (None, None)
 
-def __default_completion_condition(arm_state, hand_state):
+def _default_completion_condition(arm_state, hand_state):
     return arm_state.is_done() and hand_state.is_done()
 
 class Robot:
@@ -43,17 +43,15 @@ class Robot:
     def disconnect(self):
         self._server.disconnect()
 
-    def move_simple(self, dx, dy, dz, dyaw, gripper_state=Position.OPENED, max_speed=0.5, max_acc=0.5, timeout=0.2):
+    def move_simple(self, dx, dy, dz, dyaw, max_speed=0.5, max_acc=0.5, timeout=0.2):
         '''
         Moves the arm relative to the current position in carthesian coordinates,
         assuming the gripper is vertical (aligned with the z-axis), pointing down.
         This version returns after the amount of time specified by dt.
-        This supports the simplest Gym robotic manipulation environment.
         '''
         self.arm.read()
         pose = self.arm.state.tool_pose()
         pose = Tool.from_xyzrpy(pose.to_xyzrpy() + [dx, dy, dz, 0, 0, dyaw])
-        self.hand.move(position=gripper_state, blocking=False)
         self.arm.move(pose, max_speed=max_speed, max_acc=max_acc, blocking=False)
         self.__complete_move(timeout, None)
 
@@ -67,14 +65,14 @@ class Robot:
     def move(self,
              target,
              max_speed=UR_DEFAULT_MAX_SPEED,
-             acc=UR_DEFAULT_ACCELERATION,
+             max_acc=UR_DEFAULT_ACCELERATION,
              force_limit=None,
              timeout=None,
              completion=None):
         force_limit = force_limit or self.active_force_limit
         self.arm.move(target,
                       max_speed=max_speed,
-                      acc=acc,
+                      max_acc=max_acc,
                       force_low_bound=force_limit[0],
                       force_high_bound=force_limit[1],
                       blocking=False)
@@ -127,7 +125,7 @@ class Robot:
         self.hand.stop(blocking=False)
         return self.__complete_move(timeout, None)
 
-    def execute(self, arm_cmd: ur.arm.Command, hand_cmd: rq.hand.Command, timeout=0, completion=None):
+    def execute(self, arm_cmd=ur.arm.Command(), hand_cmd=rq.hand.Command(), timeout=0, completion=None):
         self.arm.execute(arm_cmd, blocking=False)
         self.hand.execute(hand_cmd, blocking=False)
         return self.__complete_move(timeout, completion)
@@ -147,7 +145,7 @@ class Robot:
     def step(self):
         self.arm.step()
         self.hand.step()
-        self._log()
+        self.__log()
 
     def wait(self, timeout):
         self.arm.read()
@@ -156,16 +154,15 @@ class Robot:
             self.read()
 
     def __complete_move(self, timeout, completion):
-        completion = completion or __default_completion_condition
+        completion = completion or _default_completion_condition
         self.__log()
-        endtime = self.arm.state.time() + timeout
+        endtime = self.arm.state.time() + timeout if timeout is not None else inf
         while not completion(self.arm.state, self.hand.state) and self.arm.state.time() < endtime:
             self.step()
-
         return completion(self.arm.state, self.hand.state)
 
     def __log(self):
-        if self.writer is not None:
+        if self._writer is not None:
             self._writer(self.arm.state, self.hand.state, self.arm.command, self.hand.command)
 
 
