@@ -43,27 +43,27 @@ class Robot:
     def disconnect(self):
         self._server.disconnect()
 
-    @property()
+    @property
     def tool_pose(self):
         return self.arm.state.tool_pose().clone()
 
-    @property()
+    @property
     def tool_speed(self):
         return self.arm.state.tool_speed().clone()
 
-    @property()
+    @property
     def joint_positions(self):
         return self.arm.state.joint_positions().clone()
 
-    @property()
+    @property
     def joint_speeds(self):
         return self.arm.state.joint_speeds()().clone()
 
-    @property()
+    @property
     def force(self):
         return self.arm.state.sensor_force().clone()
 
-    @property()
+    @property
     def has_object(self):
         return self.hand.state.object_detected()
 
