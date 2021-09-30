@@ -63,6 +63,10 @@ class Robot:
     def force(self):
         return self.arm.state.sensor_force().clone()
 
+    @property()
+    def has_object(self):
+        return self.hand.state.object_detected()
+
     def move_simple(self, dx, dy, dz, dyaw, max_speed=0.5, max_acc=0.5, timeout=0.2):
         '''
         Moves the arm relative to the current position in carthesian coordinates,
