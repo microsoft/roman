@@ -43,6 +43,26 @@ class Robot:
     def disconnect(self):
         self._server.disconnect()
 
+    @property()
+    def tool_pose(self):
+        return self.arm.state.tool_pose().clone()
+
+    @property()
+    def tool_speed(self):
+        return self.arm.state.tool_speed().clone()
+
+    @property()
+    def joint_positions(self):
+        return self.arm.state.joint_positions().clone()
+
+    @property()
+    def joint_speeds(self):
+        return self.arm.state.joint_speeds()().clone()
+
+    @property()
+    def force(self):
+        return self.arm.state.sensor_force().clone()
+
     def move_simple(self, dx, dy, dz, dyaw, max_speed=0.5, max_acc=0.5, timeout=0.2):
         '''
         Moves the arm relative to the current position in carthesian coordinates,
