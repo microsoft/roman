@@ -14,14 +14,16 @@ class SimScene:
         self._scene_setup_fn = scene_setup_fn
         self._server = robot._server
         self.__tag_map = {}
-        if data_dir:
-            pb.setAdditionalSearchPath(data_dir)
-        if tex_dir:
-            files = os.listdir(tex_dir)
-            self.textures = [pb.loadTexture(os.path.join(tex_dir, f)) for f in files]
+        self.data_dir = data_dir
+        self.tex_dir = tex_dir
 
     def connect(self):
         pb.connect(pb.SHARED_MEMORY)
+        if self.data_dir:
+            pb.setAdditionalSearchPath(self.data_dir)
+        if self.tex_dir:
+            files = os.listdir(self.tex_dir)
+            self.textures = [pb.loadTexture(os.path.join(self.tex_dir, f)) for f in files]
         if self._scene_setup_fn:
             self._scene_setup_fn(self)
         return self
