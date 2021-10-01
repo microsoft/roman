@@ -1,25 +1,24 @@
-from multiprocessing import Value
-from typing import KeysView
 import numpy as np
-import pybullet as pb
 import os
-import math
-from . import ur
-from . import rq
-
+import pybullet as pb
 
 ################################################################
 ## Provides access to the sim environment.
 ################################################################
 class SimScene:
-    def __init__(self, robot, scene_setup_fn=None, **kwargs):
+    def __init__(self, robot, scene_setup_fn=None, data_dir=None, tex_dir=None, **kwargs):
         if not robot.use_sim:
             raise ValueError("Simulated scenes can only be used with a simulated robot.")
         self._cameras = {}
         self.__light_position = [10, 10, 10]
-        self._scene_setup_fn = scene_setup_fn or SimScene.make_table
+        self._scene_setup_fn = scene_setup_fn
         self._server = robot._server
         self.__tag_map = {}
+        if data_dir:
+            pb.setAdditionalSearchPath(data_dir)
+        if tex_dir:
+            files = os.listdir(tex_dir)
+            self.textures = [pb.loadTexture(os.path.join(tex_dir, f)) for f in files]
 
     def connect(self):
         pb.connect(pb.SHARED_MEMORY)
@@ -29,14 +28,23 @@ class SimScene:
 
     def reset(self):
         self._server.reset()
+        self.setup_scene()
+
+    def setup_scene(self):
+        '''
+        Method called after each reset to rebuild the 3D scene.
+        Override this method in a derived class to add content to the scene beyond the robot and the table.
+        '''
         if self._scene_setup_fn:
             self._scene_setup_fn(self)
+        else:
+            self.make_table()
 
     def disconnect(self):
         pb.disconnect()
 
-    def make_table(self):
-        self.make_box([1, 2, 0.05], [-0.25, 0, -0.025], color=(0.2, 0.2, 0.2, 1))
+    def make_table(self, tex=None, color=(0.2, 0.2, 0.2, 1), restitution=0):
+        self.make_box([1, 2, 0.05], [-0.25, 0, -0.025], tex=tex, color=color, restitution=restitution)
 
     def loadURDF(self,
                  urdf,

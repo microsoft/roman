@@ -1,10 +1,8 @@
 from math import inf
-from multiprocessing import Value
 import numpy as np
-import time
 from .rq.hand import GraspMode, Hand, Position
 from . import rq
-from .ur.arm import Arm, JointSpeeds, Tool, Joints
+from .ur.arm import Arm, Tool, Joints
 from . import ur
 from . import server
 from .sim.simscene import SimScene
@@ -193,17 +191,17 @@ class Robot:
             self._writer(self.arm.state, self.hand.state, self.arm.command, self.hand.command)
 
 
-def connect(config={}):
+def connect(use_sim=False, config={}):
     '''
-    Creates and returns a robot instance with real (hardware) backing.
+    Creates and returns a robot instance with either real (hardware) or sim backing.
     '''
-    return Robot(use_sim=False, config=config).connect()
+    return Robot(use_sim=use_sim, config=config).connect()
 
 
 def connect_sim(scene_init_fn=None, config={}):
     '''
-    Creates and returns a simulated robot instance together with a sim scene manager.
+    Creates and returns a simulated robot instance together with the default sim scene manager.
     '''
-    r = Robot(use_sim=True, config=config).connect()
+    r = connect(use_sim=True, config=config)
     s = SimScene(r, scene_init_fn).connect()
     return r, s
