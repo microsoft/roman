@@ -19,17 +19,17 @@ class SimScene:
 
     def connect(self):
         pb.connect(pb.SHARED_MEMORY)
-        if self.data_dir:
-            pb.setAdditionalSearchPath(self.data_dir)
         if self.tex_dir:
             files = os.listdir(self.tex_dir)
             self.textures = [pb.loadTexture(os.path.join(self.tex_dir, f)) for f in files]
-        if self._scene_setup_fn:
-            self._scene_setup_fn(self)
+        if self.data_dir:
+            pb.setAdditionalSearchPath(self.data_dir)
         return self
 
     def reset(self):
         self._server.reset()
+        self.__tag_map = {}
+        self._cameras = {}
         self.setup_scene()
 
     def setup_scene(self):
@@ -73,7 +73,7 @@ class SimScene:
             self.__tag_map[id] = tag
         return id
 
-    def make_ball(self, radius, position=[0, 0, 0], mass=0, tex=None, color=None, restitution=1, tag=None):
+    def make_ball(self, radius, position=[0, 0, 0], mass=0, tex=None, color=None, restitution=0, tag=None):
         cid = pb.createCollisionShape(pb.GEOM_SPHERE, radius=radius)
         vid = pb.createVisualShape(pb.GEOM_SPHERE, radius=radius)
         id = pb.createMultiBody(mass, baseCollisionShapeIndex=cid, baseVisualShapeIndex=vid, basePosition=position)
@@ -86,7 +86,7 @@ class SimScene:
             self.__tag_map[id] = tag
         return id
 
-    def load_obj(self, mesh_file, position, orientation, scale, mass, vhacd_file=None, tex=None, color=None, restitution=1, tag=None):
+    def load_obj(self, mesh_file, position, orientation, scale, mass, vhacd_file=None, tex=None, color=None, restitution=0, tag=None):
         '''Like loadURDF, but simpler and without requiring a urdf file. Supports concave objects (requires a vhacd file).
         Use pb.vhacd(in_mesh_file, out_vhacd_file, log_file, alpha=0.04,resolution=50000 ) to generate a vhacd file. '''
 

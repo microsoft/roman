@@ -14,6 +14,7 @@ class SimEnv():
         self.__tcp_id = config.get('sim.tcp_id', 23)
         self.__time_step = config.get('sim.time_step', 1. / 240)
         self._useGUI = config.get('sim.use_gui', True)
+        self._arm_pos = config.get('sim.start_config', [0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0])
         self.__time = 0.0
         self.__cameras = []
         self.__robot_id = None
@@ -49,7 +50,6 @@ class SimEnv():
             flags=pb.URDF_USE_SELF_COLLISION | pb.URDF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS)
         self.arm = ur.URArm(self.__robot_id, self.__base_joint_id, self.__tcp_id, self.__time_step)
         self.hand = rq.Robotiq3FGripper(self.__robot_id)
-        pb.stepSimulation()
-        self.arm.reset()
+        self.arm.reset(self._arm_pos)
         self.hand.reset()
 

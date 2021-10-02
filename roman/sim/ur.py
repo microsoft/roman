@@ -5,24 +5,22 @@ import math
 import pybullet as pb
 import numpy as np
 from scipy.spatial.transform import Rotation
-from ..ur.realtime.constants import *
 
 class URArm:
     '''PyBullet-specific implementation of the simulated arm'''
     # sim-specific constants
     SIM_MAX_JOINT_FORCE = 100
 
-    def __init__(self, body_id, base_joint_id, tcp_id, sim_time_step = 1/240.):
+    def __init__(self, body_id, base_joint_id, tcp_id, sim_time_step=1 / 240.):
         self.body_id = body_id
         self.base_joint_id = base_joint_id
-        self.ft_sensor_id = base_joint_id+7
+        self.ft_sensor_id = base_joint_id + 7
         self.tcp_id = tcp_id
-        self.joint_ids = range(base_joint_id, base_joint_id+6)
+        self.joint_ids = range(base_joint_id, base_joint_id + 6)
         self.sim_time_step = sim_time_step
 
-    def reset(self):
+    def reset(self, start_positions=[0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0]):
         # start position is along the x axis, in negative direction
-        start_positions = [0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0]
         for i in range(6):
             pb.resetJointState(self.body_id, self.base_joint_id + i, start_positions[i])
             pb.setJointMotorControl2(self.body_id,
@@ -89,7 +87,6 @@ class URArm:
         joint_torques = [state[3] for state in joint_states]
         return joint_torques
 
-
     def ur_get_tcp_sensor_force(self):
         ft_joint_state = pb.getJointState(self.body_id, self.ft_sensor_id)
         ft_force = np.array(ft_joint_state[2]) * -1 # getJointState returns a reaction force, we need the action
@@ -121,7 +118,7 @@ class URArm:
 
         for i in range(pb.getNumJoints(self.body_id)):
             ji = pb.getJointInfo(self.body_id, i)
-            print(f"{i}: ix={ji[0]}, name={ji[1]}, type={ji[2]}, link={ji[12]}, link={ji[12]}, , llim={ji[8]}, ulim={ji[9]}, force={ji[10]}, vel={ji[11]} ")
+            print(f'{i}: ix={ji[0]}, name={ji[1]}, type={ji[2]}, link={ji[12]}, llim={ji[8]}, ulim={ji[9]}, force={ji[10]}, vel={ji[11]}')
 
         print("dynamics:")
         for i in range(pb.getNumJoints(self.body_id)):
