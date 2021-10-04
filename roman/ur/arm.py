@@ -73,6 +73,12 @@ class Tool(Vec):
         r = Rotation.from_rotvec(self.array[3:]).as_euler("xyz")
         return np.concatenate((self.array[:3], r))
 
+    def position(self):
+        return self.array[:3]
+
+    def orientation(self):
+        return Rotation.from_rotvec(self.array[3:]).as_quat()
+
 class ToolSpeed(Tool):
     pass
 
