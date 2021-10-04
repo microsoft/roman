@@ -176,4 +176,4 @@ class SimScene:
         pos, orn = pb.getBasePositionAndOrientation(id)
         orn = pb.getEulerFromQuaternion(orn)
         lv, av = pb.getBaseVelocity(id)
-        return np.array(pos + orn + lv + av)
+        return {"position": pos, "orientation": orn, "lin_vel": lv, "ang_vel": av}
