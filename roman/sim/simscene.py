@@ -45,8 +45,8 @@ class SimScene:
     def disconnect(self):
         pb.disconnect()
 
-    def make_table(self, tex=None, color=(0.2, 0.2, 0.2, 1), restitution=0):
-        self.make_box([1, 2, 0.05], [-0.25, 0, -0.025], tex=tex, color=color, restitution=restitution)
+    def make_table(self, height = 0, tex=None, color=(0.2, 0.2, 0.2, 1), restitution=0):
+        self.make_box([1, 2, 0.05], [-0.25, 0, height - 0.025], tex=tex, color=color, restitution=restitution)
 
     def loadURDF(self,
                  urdf,
