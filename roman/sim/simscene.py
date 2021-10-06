@@ -31,6 +31,7 @@ class SimScene:
         self.__tag_map = {}
         self._cameras = {}
         self.setup_scene()
+        return self.get_world_state()
 
     def setup_scene(self):
         '''
@@ -174,6 +175,7 @@ class SimScene:
 
     def _get_object_state(self, id):
         pos, orn = pb.getBasePositionAndOrientation(id)
+        size = pb.getVisualShapeData(id)[0][3]
         orn = pb.getEulerFromQuaternion(orn)
         lv, av = pb.getBaseVelocity(id)
-        return {"position": pos, "orientation": orn, "lin_vel": lv, "ang_vel": av}
+        return {"position": np.array(pos), "size":np.array(size), "orientation": np.array(orn), "lin_vel": np.array(lv), "ang_vel": np.array(av)}
