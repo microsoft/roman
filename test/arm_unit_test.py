@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-import math 
+import math
 import time
 import random
 import os
@@ -10,7 +10,7 @@ from roman.ur import *
 from roman.ur.realtime.interface import *
 
 #############################################################
-# State, Command and Controller unit tests 
+# State, Command and Controller unit tests
 #############################################################
 def vec_test():
     print(f"Running {__file__}::{vec_test.__name__}()")
@@ -55,13 +55,13 @@ def state_test():
     assert not s.is_moving()
     assert not s.is_goal_reached()
     assert type(s.joint_positions()) is Joints
-    assert type(s.joint_speeds()) is Joints
+    assert type(s.joint_speeds()) is JointSpeeds
     assert type(s.tool_pose()) is Tool
-    assert type(s.tool_speed()) is Tool
+    assert type(s.tool_speed()) is ToolSpeed
     assert type(s.target_joint_positions()) is Joints
-    assert type(s.target_joint_speeds()) is Joints
+    assert type(s.target_joint_speeds()) is JointSpeeds
     assert type(s.target_tool_pose()) is Tool
-    assert type(s.target_tool_speed()) is Tool
+    assert type(s.target_tool_speed()) is ToolSpeed
     assert type(s.tool_force()) is Tool
     assert type(s.joint_torques()) is Joints
     assert type(s.tool_acceleration()) is np.ndarray
@@ -90,9 +90,9 @@ def state_test():
 
 def command_test():
     print(f"Running {__file__}::{command_test.__name__}()")
-    c = Command().make(kind =UR_CMD_KIND_MOVE_JOINTS_POSITION)
+    c = Command().make(kind =UR_CMD_KIND_MOVE_JOINT_POSITIONS)
     assert c.id() == 0
-    assert c.kind() == UR_CMD_KIND_MOVE_JOINTS_POSITION
+    assert c.kind() == UR_CMD_KIND_MOVE_JOINT_POSITIONS
     assert c.max_acceleration() == UR_DEFAULT_ACCELERATION
     assert type(c.force_low_bound()) is Tool
     assert type(c.force_high_bound()) is Tool
@@ -103,7 +103,7 @@ def command_test():
 
     c = Command.fromarray(np.arange(UR_CMD_ENTRIES_COUNT))
     assert c.id() == 0
-    assert c.kind() == UR_CMD_KIND_MOVE_JOINTS_SPEED
+    assert c.kind() == UR_CMD_KIND_MOVE_JOINT_SPEEDS
     assert c.max_acceleration() == UR_CMD_MOVE_MAX_ACCELERATION
     assert np.all(c.force_low_bound().array == np.arange(*UR_CMD_MOVE_FORCE_LOW_BOUND))
     assert np.all(c.force_high_bound().array == np.arange(*UR_CMD_MOVE_FORCE_HIGH_BOUND))
@@ -114,7 +114,7 @@ def command_test():
     print("Passed.")
 
 #############################################################
-# Controller unit tests. 
+# Controller unit tests.
 # These don't actually interact with the arm (sim or real)
 #############################################################
 class Connection:
@@ -154,20 +154,20 @@ def arm_controller_test():
     arm_ctrl.execute(cmd, state)
     assert state.is_goal_reached()
 
-    cmd.make(kind =UR_CMD_KIND_MOVE_JOINTS_POSITION, target=Joints(1,1,1,0,0,0))
+    cmd.make(kind =UR_CMD_KIND_MOVE_JOINT_POSITIONS, target=Joints(1,1,1,0,0,0))
     arm_ctrl.execute(cmd, state)
     assert not state.is_goal_reached()
-    cmd.make(kind =UR_CMD_KIND_MOVE_JOINTS_POSITION, target=Joints(0,0,0,0,0,0))
+    cmd.make(kind =UR_CMD_KIND_MOVE_JOINT_POSITIONS, target=Joints(0,0,0,0,0,0))
     arm_ctrl.execute(cmd, state)
     assert state.is_goal_reached()
 
-    cmd.make(kind =UR_CMD_KIND_MOVE_JOINTS_POSITION, target=Joints(1,1,1,0,0,0))
+    cmd.make(kind =UR_CMD_KIND_MOVE_JOINT_POSITIONS, target=Joints(1,1,1,0,0,0))
     arm_ctrl.execute(cmd, state)
     assert not state.is_goal_reached()
-    cmd.make(kind =UR_CMD_KIND_MOVE_JOINTS_SPEED, target=Joints(0,0,0,0,0,0))
+    cmd.make(kind =UR_CMD_KIND_MOVE_JOINT_SPEEDS, target=Joints(0,0,0,0,0,0))
     arm_ctrl.execute(cmd, state)
     assert state.is_goal_reached()
-    
+
     print("Passed.")
 
 def force_calibration_controller_test():
@@ -180,7 +180,7 @@ def force_calibration_controller_test():
     state = State()
     ctrl.execute(cmd, state)
     assert np.all(ctrl.force_average.array == 0)
-    
+
     arm_state.sensor_force()[:] = [2,2,2,2,2,2]
     ctrl.execute(cmd, state)
     assert np.all(ctrl.force_average.array != 0)
@@ -199,7 +199,7 @@ def force_calibration_controller_test():
         ctrl.execute(cmd, state)
     assert ctrl.force_average.allclose([0,0,0,0,0,0], 0.001)
     assert state.sensor_force().allclose([0,0,0,0,0,0], 0.001)
-   
+
     print("Passed.")
 
 def touch_controller_test():
@@ -207,7 +207,7 @@ def touch_controller_test():
     print(f"Running {__file__}::{touch_controller_test.__name__}()")
     arm_state = State()
     arm_state[State._STATUS] = State._STATUS_FLAG_GOAL_REACHED
-    cmd = Command().make(kind =UR_CMD_KIND_MOVE_JOINTS_POSITION, target=Joints(0,0,0,0,0,0), contact_handling=3)
+    cmd = Command().make(kind =UR_CMD_KIND_MOVE_JOINT_POSITIONS, target=Joints(0,0,0,0,0,0), contact_handling=3)
     ctrl = TouchController(Connection(arm_state))
     state = State()
     ctrl.execute(cmd, state)
@@ -215,7 +215,7 @@ def touch_controller_test():
     assert state.is_done()
 
     arm_state[State._STATUS] = State._STATUS_FLAG_CONTACT
-    cmd.make(kind =UR_CMD_KIND_MOVE_JOINTS_POSITION, target=Joints(1,1,1,1,1,1), contact_handling=3)
+    cmd.make(kind =UR_CMD_KIND_MOVE_JOINT_POSITIONS, target=Joints(1,1,1,1,1,1), contact_handling=3)
     ctrl.execute(cmd, state)
     assert not state.is_goal_reached()
     assert not state.is_done()
@@ -239,6 +239,6 @@ def run():
     arm_controller_test()
     force_calibration_controller_test()
     touch_controller_test()
-   
+
 if __name__ == '__main__':
     run()

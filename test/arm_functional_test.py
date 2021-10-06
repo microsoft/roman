@@ -1,14 +1,6 @@
-import sys
-import numpy as np
-import math 
-import time
-import random
-import os
-import time
-rootdir = os.path.dirname(os.path.dirname(__file__))
-os.sys.path.insert(0, rootdir)
+import math
 from roman import ur
-from roman.sim.ur_rq3 import SimEnv 
+from roman.sim.simenv import SimEnv
 
 #############################################################
 # Arm unit tests that bypass the manipulator server.
@@ -23,8 +15,8 @@ def read_test(con):
     arm_ctrl.execute(cmd, state)
     print("Tool pose:" + str(state.tool_pose()))
     print("Joint positions:" + str(state.joint_positions()))
-    print("Passed.")   
-    
+    print("Passed.")
+
 def move_test(con):
     print(f"Running {__file__}::{move_test.__name__}()")
     arm_ctrl = ur.BasicController(con)
@@ -32,28 +24,27 @@ def move_test(con):
     arm = ur.Arm(arm_ctrl)
     ms = 1
     ma = 0.5
-    arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=ms, max_acc=ma)
+    arm.move(target_position=ur.Joints(0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
     arm.move(target_position=ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
-    arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=ms, max_acc=ma)
+    arm.move(target_position=ur.Joints(0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
-    arm.move(target_position=ur.Tool(-0.2, -0.2, 0.3, 0, math.pi, math.pi/2), max_speed=ms, max_acc=ma)
+    arm.move(target_position=ur.Tool(-0.2, -0.2, 0.3, 0, math.pi, math.pi / 2), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
-    arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0), max_speed=ms, max_acc=ma)
+    arm.move(target_position=ur.Joints(0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
-    
 
     print("Tool pose:" + str(arm.state.tool_pose()))
     print("Joint positions:" + str(arm.state.joint_positions()))
-    print("Passed.")    
+    print("Passed.")
 
 def move_test2(con):
     print(f"Running {__file__}::{move_test.__name__}()")
     arm_ctrl = ur.BasicController(con)
 
     arm = ur.Arm(arm_ctrl)
-    arm.move(target_position=ur.Joints(0, -math.pi/2, math.pi/2, -math.pi/2, -math.pi/2, 0))
+    arm.move(target_position=ur.Joints(0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0))
     assert arm.state.is_goal_reached()
 
     home = arm.state.tool_pose() + 0
@@ -63,7 +54,7 @@ def move_test2(con):
     ms = 1
     ma = 0.5
 
-    next = home + [0, 0, 0.1, 0, 0, math.pi/2]
+    next = home + [0, 0, 0.1, 0, 0, math.pi / 2]
     #next = home + [0, 0, 0.25, 0, 0, 0]
     arm.move(target_position=next, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
@@ -71,20 +62,19 @@ def move_test2(con):
     down = home + [0, 0, -0.1, 0, 1, 0]
     arm.move(target_position=down, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
-    
+
     arm.move(target_position=next, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
     arm.move(target_position=down, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
-    arm.move(target_position=home,
-     max_speed=ms, max_acc=ma)
+    arm.move(target_position=home, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
 
     print("Tool pose:" + str(arm.state.tool_pose()))
     print("Joint positions:" + str(arm.state.joint_positions()))
-    print("Passed.")  
+    print("Passed.")
 
 #############################################################
 # Runner
@@ -106,7 +96,6 @@ def run(use_sim):
     if use_sim:
         env.disconnect()
 
-if __name__ == '__main__':
-    run(False)
 
-    
+if __name__ == '__main__':
+    run(use_sim=True)

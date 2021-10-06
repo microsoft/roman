@@ -10,7 +10,6 @@ class SimConnection:
         urlib.sim = env
 
     def connect(self):
-
         print('System ready.')
 
     def disconnect(self):
@@ -20,5 +19,4 @@ class SimConnection:
         """Sends the command to control layer and reads back the state, emulating the wire protocol used with the real robot."""
         state[:] = interface.execute_arm_command(cmd, 0)
         self.env.update() # note that the sim update is called twice, once here and once by the hand's sim_connection
-        
- 
+

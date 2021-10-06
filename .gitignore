@@ -347,8 +347,5 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
-src/roman.egg-info/dependency_links.txt
-src/roman.egg-info/PKG-INFO
-src/roman.egg-info/requires.txt
-src/roman.egg-info/SOURCES.txt
-src/roman.egg-info/top_level.txt
+src/roman.egg-info/*
+roman.egg-info/*

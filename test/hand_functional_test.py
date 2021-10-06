@@ -1,15 +1,6 @@
-import sys
-import numpy as np
-import math 
-import time
-import random
-import os
-import socket
-rootdir = os.path.dirname(os.path.dirname(__file__))
-os.sys.path.insert(0, rootdir)
-print(rootdir)
-from roman import *
-from roman.rq import *
+
+from roman.rq import Hand, Position, GraspMode, HandController, Connection, SimConnection
+from roman.sim.simenv import SimEnv
 
 #############################################################
 # These tests require a real hand for now (no sim option)
@@ -27,7 +18,7 @@ def controller_test(con):
     print(f"Running {__file__}::{controller_test.__name__}()")
     # check that a tight loop also works
     hand = Hand(HandController(con))
-    
+
     assert hand.state.position() == Position.OPENED
     hand.close()
     assert hand.state.position() == Position.CLOSED
@@ -40,7 +31,7 @@ def position_test(con):
     print(f"Running {__file__}::{position_test.__name__}()")
     hand = Hand(HandController(con))
     for i in range(1, 16):
-        hand.move(16*i-1)
+        hand.move(16 * i - 1)
         assert not hand.state.object_detected()
         hand.open()
         assert not hand.state.object_detected()
@@ -60,13 +51,13 @@ def mode_test(con):
 #############################################################
 # Runner
 #############################################################
-def run(use_sim = False):
+def run(use_sim=False):
     if not use_sim:
-        con = rq.Connection()
+        con = Connection()
     else:
         env = SimEnv()
         env.connect()
-        con = rq.SimConnection(env)
+        con = SimConnection(env)
     con.connect()
     connection_test(con)
     controller_test(con)
@@ -75,6 +66,7 @@ def run(use_sim = False):
     con.disconnect()
     if use_sim:
         env.disconnect()
-   
+
+
 if __name__ == '__main__':
     run(True)
