@@ -280,7 +280,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
   <joint name="gripper_fixed_mount_joint" type="fixed">
     <parent link="ft_sensor"/>
     <child link="gripper_mount"/>
-    <origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.034"/>
+    <origin rpy="0.0 0.0 0.262" xyz="0.0 0.0 0.034"/> <!--INSTALL-SPECIFIC. Should be 0-->
   </joint>
   <link name="gripper_mount">
     <visual>
@@ -776,7 +776,7 @@ https://github.com/utecrobotics/ur5/tree/master/ur5_description/urdf
     </inertial>
   </link>
   <joint name="wrist_3_link-tool0_fixed_joint" type="fixed">
-    <origin rpy="-1.570796325 0 0" xyz="0 0.0823 0"/>
+    <origin rpy="-1.570796325 0 0" xyz="0 0.0623 0"/> <!--INSTALL-SPECIFIC. Should be 0.0823 -->
     <parent link="wrist_3_link"/>
     <child link="tool0"/>
   </joint>
