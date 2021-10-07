@@ -64,10 +64,10 @@ class SimScene:
         cid = pb.createCollisionShape(pb.GEOM_BOX, halfExtents=np.array(size) * 0.5)
         vid = pb.createVisualShape(pb.GEOM_BOX, halfExtents=np.array(size) * 0.5)
         id = pb.createMultiBody(mass, baseCollisionShapeIndex=cid, baseVisualShapeIndex=vid, basePosition=position, baseOrientation=orientation)
-        if tex is not None:
-            pb.changeVisualShape(id, -1, textureUniqueId=tex)
         if color is not None:
             pb.changeVisualShape(id, -1, rgbaColor=color)
+        if tex is not None:
+            pb.changeVisualShape(id, -1, textureUniqueId=tex)
         pb.changeDynamics(id, -1, restitution=restitution)
 
         if tag is not None:
@@ -78,10 +78,10 @@ class SimScene:
         cid = pb.createCollisionShape(pb.GEOM_SPHERE, radius=radius)
         vid = pb.createVisualShape(pb.GEOM_SPHERE, radius=radius)
         id = pb.createMultiBody(mass, baseCollisionShapeIndex=cid, baseVisualShapeIndex=vid, basePosition=position)
-        if tex is not None:
-            pb.changeVisualShape(id, -1, textureUniqueId=tex)
         if color is not None:
             pb.changeVisualShape(id, -1, rgbaColor=color)
+        if tex is not None:
+            pb.changeVisualShape(id, -1, textureUniqueId=tex)
         pb.changeDynamics(id, -1, restitution=restitution)
         if tag is not None:
             self.__tag_map[id] = tag
@@ -95,10 +95,10 @@ class SimScene:
         cid = pb.createCollisionShape(pb.GEOM_MESH, fileName=vhacd_file, meshScale=scale, collisionFrameOrientation=orientation)
         vid = pb.createVisualShape(pb.GEOM_MESH, fileName=mesh_file, meshScale=scale, visualFrameOrientation=orientation)
         id = pb.createMultiBody(mass, baseCollisionShapeIndex=cid, baseVisualShapeIndex=vid, basePosition=position)
-        if tex is not None:
-            pb.changeVisualShape(id, -1, textureUniqueId=tex)
         if color is not None:
             pb.changeVisualShape(id, -1, rgbaColor=color)
+        if tex is not None:
+            pb.changeVisualShape(id, -1, textureUniqueId=tex)
         pb.changeDynamics(id, -1, restitution=restitution)
         if tag is not None:
             self.__tag_map[id] = tag
