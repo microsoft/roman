@@ -21,7 +21,7 @@ class SimScene:
         pb.connect(pb.SHARED_MEMORY)
         if self.tex_dir:
             files = os.listdir(self.tex_dir)
-            self.textures = [pb.loadTexture(os.path.join(self.tex_dir, f)) for f in files]
+            self.textures = [os.path.join(self.tex_dir, f) for f in files]
         if self.data_dir:
             pb.setAdditionalSearchPath(self.data_dir)
         return self
@@ -67,6 +67,8 @@ class SimScene:
         if color is not None:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         if tex is not None:
+            if type(tex) is str:
+                tex = pb.loadTexture(tex)
             pb.changeVisualShape(id, -1, textureUniqueId=tex)
         pb.changeDynamics(id, -1, restitution=restitution)
 
@@ -81,6 +83,8 @@ class SimScene:
         if color is not None:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         if tex is not None:
+            if type(tex) is str:
+                tex = pb.loadTexture(tex)
             pb.changeVisualShape(id, -1, textureUniqueId=tex)
         pb.changeDynamics(id, -1, restitution=restitution)
         if tag is not None:
@@ -98,6 +102,8 @@ class SimScene:
         if color is not None:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         if tex is not None:
+            if type(tex) is str:
+                tex = pb.loadTexture(tex)
             pb.changeVisualShape(id, -1, textureUniqueId=tex)
         pb.changeDynamics(id, -1, restitution=restitution)
         if tag is not None:
