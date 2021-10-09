@@ -7,7 +7,7 @@ import functools
 import numpy as np
 
 class Robotiq3FGripper:
-    _PINCH_LIMIT = 175 # in pinch mode the fingers can only travel part way (until they touch).
+    _PINCH_LIMIT = 255 #175 # in pinch mode the fingers can only travel part way (until they touch).
 
     '''PyBullet-specific implementation of the simulated gripper'''
     # names must match URDF.
@@ -116,7 +116,7 @@ class Robotiq3FGripper:
 
     def read(self):
         self.jointStates = pb.getJointStates(self.body_id, self.jointIDs)
-
+   
     def mode(self):
         return self._mode
 
