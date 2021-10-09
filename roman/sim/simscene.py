@@ -46,8 +46,8 @@ class SimScene:
     def disconnect(self):
         pb.disconnect()
 
-    def make_table(self, height = 0, tex=None, color=(0.2, 0.2, 0.2, 1), restitution=0):
-        self.make_box([1, 2, 0.05], [-0.25, 0, height - 0.025], tex=tex, color=color, restitution=restitution)
+    def make_table(self, height = 0, tex=None, color=(0.2, 0.2, 0.2, 1), **kwargs):
+        self.make_box([1, 2, 0.05], [-0.25, 0, height - 0.025], tex=tex, color=color, **kwargs)
 
     def loadURDF(self,
                  urdf,
@@ -60,7 +60,7 @@ class SimScene:
             self.__tag_map[id] = tag
         return id
 
-    def make_box(self, size, position=[0, 0, 0], orientation=[0, 0, 0, 1], mass=0, tex=None, color=None, restitution=0, tag=None):
+    def make_box(self, size, position=[0, 0, 0], orientation=[0, 0, 0, 1], mass=0, tex=None, color=None, tag=None, **kwargs):
         cid = pb.createCollisionShape(pb.GEOM_BOX, halfExtents=np.array(size) * 0.5)
         vid = pb.createVisualShape(pb.GEOM_BOX, halfExtents=np.array(size) * 0.5)
         id = pb.createMultiBody(mass, baseCollisionShapeIndex=cid, baseVisualShapeIndex=vid, basePosition=position, baseOrientation=orientation)
@@ -68,13 +68,14 @@ class SimScene:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         if tex is not None:
             pb.changeVisualShape(id, -1, textureUniqueId=tex)
-        pb.changeDynamics(id, -1, restitution=restitution)
+        if len(kwargs):
+            pb.changeDynamics(id, -1, **kwargs)
 
         if tag is not None:
             self.__tag_map[id] = tag
         return id
 
-    def make_ball(self, radius, position=[0, 0, 0], mass=0, tex=None, color=None, restitution=0, tag=None):
+    def make_ball(self, radius, position=[0, 0, 0], mass=0, tex=None, color=None, tag=None, **kwargs):
         cid = pb.createCollisionShape(pb.GEOM_SPHERE, radius=radius)
         vid = pb.createVisualShape(pb.GEOM_SPHERE, radius=radius)
         id = pb.createMultiBody(mass, baseCollisionShapeIndex=cid, baseVisualShapeIndex=vid, basePosition=position)
@@ -82,12 +83,13 @@ class SimScene:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         if tex is not None:
             pb.changeVisualShape(id, -1, textureUniqueId=tex)
-        pb.changeDynamics(id, -1, restitution=restitution)
+        if len(kwargs):
+            pb.changeDynamics(id, -1, **kwargs)
         if tag is not None:
             self.__tag_map[id] = tag
         return id
 
-    def load_obj(self, mesh_file, position, orientation, scale, mass, vhacd_file=None, tex=None, color=None, restitution=0, tag=None):
+    def load_obj(self, mesh_file, position, orientation, scale, mass, vhacd_file=None, tex=None, color=None, tag=None,  **kwargs):
         '''Like loadURDF, but simpler and without requiring a urdf file. Supports concave objects (requires a vhacd file).
         Use pb.vhacd(in_mesh_file, out_vhacd_file, log_file, alpha=0.04,resolution=50000 ) to generate a vhacd file. '''
 
@@ -99,7 +101,8 @@ class SimScene:
             pb.changeVisualShape(id, -1, rgbaColor=color)
         if tex is not None:
             pb.changeVisualShape(id, -1, textureUniqueId=tex)
-        pb.changeDynamics(id, -1, restitution=restitution)
+        if len(kwargs):
+            pb.changeDynamics(id, -1, **kwargs)
         if tag is not None:
             self.__tag_map[id] = tag
         return id
