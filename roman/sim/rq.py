@@ -7,7 +7,7 @@ import functools
 import numpy as np
 
 class Robotiq3FGripper:
-    _PINCH_LIMIT = 255 #175 # in pinch mode the fingers can only travel part way (until they touch).
+    _PINCH_LIMIT = 175 # in pinch mode the fingers can only travel part way (until they touch).
 
     '''PyBullet-specific implementation of the simulated gripper'''
     # names must match URDF.
@@ -64,11 +64,13 @@ class Robotiq3FGripper:
         self.jointStops[:, 5] = joint3Stops
         self.jointStops[:, 8] = joint3Stops
 
-        # grasp modes: normal, pinch, wide, scissors
+        # grasp modes: normal, pinch, wide, scissors, narrow
         # urdf joint limit are [0.16, -0.25], but 0.16 causes a self collision in pinch mode,
         # which messes up the FT sensor reading, so we use 0.13 instead
-        self.modeStopsB = [0, 0.13, -0.25, -0.25]
-        self.modeStopsC = [0, -0.13, 0.25, 0.25]
+        self.modeStopsB = [0, 0.13, -0.25, -0.25, 0.13]
+        self.modeStopsC = [0, -0.13, 0.25, 0.25, -0.13]
+        self.last_joint_positions  = np.zeros(len(self.jointNames))
+        self.last_joint_speeds  = np.zeros(len(self.jointNames))
 
     def reset(self):
         self.read()
@@ -115,7 +117,11 @@ class Robotiq3FGripper:
         self._mode_limit = self._PINCH_LIMIT if mode == 2 else 255
 
     def read(self):
-        self.jointStates = pb.getJointStates(self.body_id, self.jointIDs)
+        newStates = pb.getJointStates(self.body_id, self.jointIDs)
+        jointPos = np.array([s[0] for s in newStates])
+        self._is_moving = not np.allclose(jointPos, self.last_joint_positions, atol=0.001)
+        self.last_joint_speeds[:] = [s[1] for s in newStates]
+        self.last_joint_positions = jointPos
    
     def mode(self):
         return self._mode
@@ -123,7 +129,7 @@ class Robotiq3FGripper:
     def positions(self):
         # hackish way of computing the finger position, by considering only the base joint of each finger.
         # Needs to be in sync with the implementaiton of "move" and the position tables
-        pos = [int(state[0] * 256) for state in self.jointStates[:9:3]]
+        pos = np.int32(self.last_joint_positions[:9:3] * 256)
         pos = [255 if p >= self._mode_limit - 1 else p for p in pos]
         return pos
 
@@ -131,11 +137,11 @@ class Robotiq3FGripper:
         return self._targets
 
     def object_detected(self):
-        d = not self.is_moving() and not np.allclose(self._targets, self.positions(), atol=1)
+        d = not self._is_moving and not np.allclose(self._targets, self.positions(), atol=1)
         return d
 
     def is_moving(self):
-        return any((abs(state[1]) > 0.01 for state in self.jointStates)) # state[1] is velocity
+        return self._is_moving
 
 
 

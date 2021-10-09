@@ -120,7 +120,6 @@ class Robot:
         self.hand.set_mode(mode)
 
     def grasp(self, position=Position.CLOSED, speed=255, force=0, timeout=None, completion=None):
-        self.hand.set_mode(GraspMode.BASIC)
         self.hand.move(position=position, speed=speed, force=force, blocking=False)
         return self.__complete_move(timeout, completion)
 

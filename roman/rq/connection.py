@@ -180,6 +180,8 @@ class Connection:
 
     # sets the mode to one of GraspMode values
     def set_mode(self, mode):
+        if mode == GraspMode.NARROW:
+            mode = GraspMode().PINCH
         self.__write_registers[0] = mode | 1 # include the activation bit, and move
 
     def stop(self):
