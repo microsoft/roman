@@ -17,6 +17,8 @@ class GraspMode:
     PINCH = 2
     WIDE = 4
     SCISSOR = 6
+    NARROW = 8  # this is for sim support. On real hardware this is just PINCH.  
+    
 
 class Finger:
     A = 0

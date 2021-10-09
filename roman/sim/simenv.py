@@ -41,6 +41,8 @@ class SimEnv():
         return self.__time
 
     def reset(self):
+        if self._useGUI:
+            pb.configureDebugVisualizer(pb.COV_ENABLE_RENDERING, 0)
         pb.resetSimulation()
         pb.setGravity(0, 0, -10)
         self.__robot_id = pb.loadURDF(
@@ -52,4 +54,6 @@ class SimEnv():
         self.hand = rq.Robotiq3FGripper(self.__robot_id)
         self.arm.reset(self._arm_pos)
         self.hand.reset()
+        if self._useGUI:
+            pb.configureDebugVisualizer(pb.COV_ENABLE_RENDERING, 1)
 
