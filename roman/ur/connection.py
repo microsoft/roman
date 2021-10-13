@@ -73,7 +73,6 @@ class Connection:
 
     def disconnect(self):
         if self.__ctrl_socket is not None:
-            #__ctrl_socket.send("stop")
             self.__ctrl_socket.close()
             self.__ctrl_socket = None
 

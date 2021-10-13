@@ -8,19 +8,22 @@ UR_STATE_ENTRIES_COUNT = 72 # This is how many numbers we expect to receive with
 UR_PROTOCOL_VERSION = 0.1
 
 # Possible types of commands
-UR_CMD_KIND_READ = 0
+UR_CMD_KIND_ESTOP = 0
 UR_CMD_KIND_MOVE_JOINT_SPEEDS = 1 # Accelerate to and maintain the specified speed
 UR_CMD_KIND_MOVE_TOOL_POSE = 2 # Move towards an absolute goal position expressed as a tool pose.
 UR_CMD_KIND_MOVE_JOINT_POSITIONS = 3 # Move towards an absolute goal position expressed in joint angles.
 UR_CMD_KIND_MOVE_TOOL_LINEAR = 4 # Move in a straight line towards an absolute goal position expressed as a tool pose.
+UR_CMD_KIND_READ = 8
 UR_CMD_KIND_CONFIG = 9
+UR_CMD_KIND_IK_QUERY = 10
+UR_CMD_KIND_INVALID = 11
 
 # Command field indices
 UR_CMD_ID = 0
 UR_CMD_KIND = 1
 UR_CMD_CONFIG_MASS = 2
 UR_CMD_CONFIG_TOOL_COG = [3, 6]
-UR_CMD_CONFIG_TOOL_TIP = [6 , 12]
+UR_CMD_CONFIG_TOOL_TIP = [6, 12]
 UR_CMD_MOVE_TARGET = [2, 8]
 UR_CMD_MOVE_MAX_SPEED = 8
 UR_CMD_MOVE_MAX_ACCELERATION = 9
