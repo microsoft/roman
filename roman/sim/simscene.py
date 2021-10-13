@@ -31,7 +31,7 @@ class SimScene:
     def reset(self):
         if self.__connected:
             self.disconnect()
-            self.robot.disconnect()
+        self.robot.disconnect()
         self.robot.connect()
         self.connect()
         self.__tag_map = {}

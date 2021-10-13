@@ -26,6 +26,7 @@ def replay_speed(use_sim, iterations=1):
         robot.move(target)
         robot.stop()
         robot.stop()
+        assert(not robot.is_moving())
         print(len(writer.frames))
         print(robot.last_state()[0].time() - start)
 
@@ -42,14 +43,14 @@ def replay_speed(use_sim, iterations=1):
             assert(robot.joint_speeds.allclose(target_speeds))
 
         print(robot.last_state()[0].time() - start)
-        assert(robot.tool_pose.allclose(target, position_tolerance=0.002))
+        assert(robot.tool_pose.allclose(target, position_tolerance=0.003))
         assert(not robot.is_moving())
         robot.disconnect()
 
     print("Passed.")
 
 def run(use_sim):
-    replay_speed(use_sim)
+    replay_speed(use_sim, 10)
 
 if __name__ == '__main__':
     run(use_sim=True)

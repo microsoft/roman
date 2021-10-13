@@ -26,14 +26,19 @@ def move_test(con):
     ma = 0.5
     arm.move(target_position=ur.Joints(0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
     arm.move(target_position=ur.Tool(-0.4, -0.4, 0.2, 0, math.pi, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
     arm.move(target_position=ur.Joints(0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
     arm.move(target_position=ur.Tool(-0.2, -0.2, 0.3, 0, math.pi, math.pi / 2), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
     arm.move(target_position=ur.Joints(0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0), max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
 
     print("Tool pose:" + str(arm.state.tool_pose()))
     print("Joint positions:" + str(arm.state.joint_positions()))
@@ -46,10 +51,12 @@ def move_test2(con):
     arm = ur.Arm(arm_ctrl)
     arm.move(target_position=ur.Joints(0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0))
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
 
     home = arm.state.tool_pose() + 0
     arm.move(target_position=home)
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
 
     ms = 1
     ma = 0.5
@@ -58,19 +65,24 @@ def move_test2(con):
     #next = home + [0, 0, 0.25, 0, 0, 0]
     arm.move(target_position=next, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
 
     down = home + [0, 0, -0.1, 0, 1, 0]
     arm.move(target_position=down, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
 
     arm.move(target_position=next, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
 
     arm.move(target_position=down, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
 
     arm.move(target_position=home, max_speed=ms, max_acc=ma)
     assert arm.state.is_goal_reached()
+    assert not arm.state.is_moving()
 
     print("Tool pose:" + str(arm.state.tool_pose()))
     print("Joint positions:" + str(arm.state.joint_positions()))
