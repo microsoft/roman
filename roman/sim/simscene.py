@@ -12,22 +12,28 @@ class SimScene:
         self._cameras = {}
         self.__light_position = [10, 10, 10]
         self._scene_setup_fn = scene_setup_fn
-        self._server = robot._server
+        self.robot = robot
         self.__tag_map = {}
         self.data_dir = data_dir
-        self.tex_dir = tex_dir
+        if tex_dir:
+            files = os.listdir(tex_dir)
+            self.textures = [os.path.join(tex_dir, f) for f in files]
+
+        self.__connected = False
 
     def connect(self):
         pb.connect(pb.SHARED_MEMORY)
-        if self.tex_dir:
-            files = os.listdir(self.tex_dir)
-            self.textures = [os.path.join(self.tex_dir, f) for f in files]
         if self.data_dir:
             pb.setAdditionalSearchPath(self.data_dir)
+        self.__connected = True
         return self
 
     def reset(self):
-        self._server.reset()
+        if self.__connected:
+            self.disconnect()
+            self.robot.disconnect()
+        self.robot.connect()
+        self.connect()
         self.__tag_map = {}
         self._cameras = {}
         self.setup_scene()
@@ -45,8 +51,9 @@ class SimScene:
 
     def disconnect(self):
         pb.disconnect()
+        self.__connected = False
 
-    def make_table(self, height = 0, tex=None, color=(0.2, 0.2, 0.2, 1), **kwargs):
+    def make_table(self, height=0, tex=None, color=(0.2, 0.2, 0.2, 1), **kwargs):
         self.make_box([1, 2, 0.05], [-0.25, 0, height - 0.025], tex=tex, color=color, **kwargs)
 
     def loadURDF(self,

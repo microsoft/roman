@@ -58,9 +58,22 @@ def get_arm_state(target_pose, target_joints):
 def execute_arm_command(cmd, offset):
     kind = cmd[UR_CMD_KIND + offset]
 
+    # ESTOP
+    if kind == UR_CMD_KIND_ESTOP or kind >= UR_CMD_KIND_INVALID:
+        ur_drive(ur_get_time(), 0, UR_CMD_KIND_MOVE_JOINT_SPEEDS, UR_ZERO, 0, 10, UR_FORCE_IGNORE_LOW, UR_FORCE_IGNORE_HI, 0)
+        return get_arm_state(UR_ZERO, UR_ZERO)
+    #ur:end
+
     # READ
     if kind == UR_CMD_KIND_READ:
         return get_arm_state(UR_ZERO, UR_ZERO)
+    #ur:end
+
+    # IK_QUERY
+    if kind == UR_CMD_KIND_IK_QUERY:
+        target = s_(cmd, UR_CMD_MOVE_TARGET, offset)
+        joint_target = get_inverse_kin(ur_pose(target))
+        return get_arm_state(target, joint_target)
     #ur:end
 
     # CONFIG: payload (kg), tool center of gravity (vec3), tool tip (vec6)

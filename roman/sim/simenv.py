@@ -28,7 +28,6 @@ class SimEnv():
             pb.configureDebugVisualizer(pb.COV_ENABLE_GUI, self._useGUI)
         else:
             pb.connect(pb.SHARED_MEMORY_SERVER)
-        self.reset()
 
     def disconnect(self):
         pb.disconnect()

@@ -227,7 +227,7 @@ class Command(Vec):
 
     def __init__(self):
         super().__init__(Command._BUFFER_SIZE)
-        self[Command._KIND]  = UR_CMD_KIND_READ
+        self[Command._KIND]  = UR_CMD_KIND_ESTOP
 
     def make(self,
             kind = UR_CMD_KIND_READ,
@@ -263,8 +263,7 @@ class Command(Vec):
     def force_high_bound(self): return Tool.fromarray(self[Command._MOVE_FORCE_HIGH_BOUND], False)
     def contact_handling(self): return self[Command._MOVE_CONTACT_HANDLING]
     def controller_flags(self): return self[Command._MOVE_CONTROLLER]
-    def is_move_command(self): return self[Command._KIND] > UR_CMD_KIND_READ and self[Command._KIND] < UR_CMD_KIND_CONFIG
-
+    def is_move_command(self): return self[Command._KIND] > UR_CMD_KIND_ESTOP and self[Command._KIND] < UR_CMD_KIND_READ
     def _goal_reached(self, state):
         if self[Command._KIND] == UR_CMD_KIND_MOVE_JOINT_SPEEDS:
             return self.target().allclose(state.joint_speeds(), UR_SPEED_TOLERANCE)
@@ -299,6 +298,15 @@ class Arm:
 
     def read(self):
         self.execute(Arm._READ_CMD, False)
+
+    def get_inverse_kinematics(self, target_position):
+        if type(target_position) is not Tool:
+            raise TypeError('Argument target_position must be of type Tool.')
+        self.command.make(
+            kind = UR_CMD_KIND_IK_QUERY,
+            target = target_position)
+        self.__execute(blocking=False)
+        return self.state.target_joint_positions().clone()
 
     def move(self,
             target_position,

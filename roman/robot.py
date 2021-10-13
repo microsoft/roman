@@ -55,7 +55,7 @@ class Robot:
 
     @property
     def joint_speeds(self):
-        return self.arm.state.joint_speeds()().clone()
+        return self.arm.state.joint_speeds().clone()
 
     @property
     def force(self):
@@ -77,12 +77,8 @@ class Robot:
         self.arm.move(pose, max_speed=max_speed, max_acc=max_acc, blocking=False)
         self.__complete_move(timeout, None)
 
-    def convert(self, target):
-        self.arm.move(target, max_speed=0, blocking=False)
-        self.arm.read()
-        if type(target) is Joints:
-            return self.arm.state.target_tool_pose()
-        return self.arm.state.target_joint_positions()
+    def get_inverse_kinematics(self, target):
+        return self.arm.get_inverse_kinematics(target)
 
     def move(self,
              target,
@@ -165,6 +161,9 @@ class Robot:
 
     def is_done(self):
         return self.arm.state.is_done() and self.hand.state.is_done()
+
+    def is_moving(self):
+        return self.arm.state.is_moving() or self.hand.state.is_moving()
 
     def step(self):
         self.arm.step()

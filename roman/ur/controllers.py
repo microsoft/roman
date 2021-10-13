@@ -20,7 +20,7 @@ class BasicController:
         self.connection = connection
 
     def execute(self, cmd, state):
-        if cmd.kind() > UR_CMD_KIND_CONFIG:
+        if cmd.kind() >= UR_CMD_KIND_INVALID:
             raise Exception(f"Invalid command: {cmd.id()}")
         self.connection.execute(cmd, state)
         if cmd.is_move_command():

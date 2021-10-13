@@ -168,6 +168,10 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
     #ur:end
     global ctrl_is_moving
     ctrl_is_moving = (norm(cmd) > UR_SPEED_TOLERANCE) or (norm(get_actual_joint_speeds()) > UR_SPEED_TOLERANCE)
+    if not ctrl_is_moving:
+        cmd = UR_ZERO
+        acc = UR_FAST_STOP_ACCELERATION
+    #ur:end
 
     # update state
     return [cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], acc]
