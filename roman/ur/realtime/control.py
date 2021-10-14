@@ -91,6 +91,7 @@ def ur_speed_joint_linear(target, max_speed, max_acc):
 # state globals
 ctrl_last_cmd_id = 0
 ctrl_last_cmd_time = 0
+ctrl_last_cmd = UR_ZERO
 ctrl_last_loop_time = 0
 ctrl_is_contact = False
 ctrl_is_moving = False
@@ -168,7 +169,8 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
         acc = max_acc
     #ur:end
 
-    if norm(cmd) < UR_SPEED_NORM_ZERO and norm(get_actual_joint_speeds()) > UR_SPEED_NORM_ZERO:
+    global ctrl_last_cmd
+    if (norm(cmd) < UR_SPEED_NORM_ZERO) and (norm(cmd) <= norm(ctrl_last_cmd)):
         cmd = UR_ZERO
         acc = UR_FAST_STOP_ACCELERATION
     #ur:end

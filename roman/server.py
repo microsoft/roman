@@ -1,4 +1,4 @@
-#import time
+import time
 from multiprocessing import Process, Pipe, Event
 from . import rq
 from . import ur
@@ -17,8 +17,8 @@ class InProcRobotServer():
         self.activate_hand = config.get("hand.activate", True)
 
     def connect(self):
-        self._arm_con.connect()
         self._hand_con.connect(self.activate_hand)
+        self._arm_con.connect()
         self.arm = ur.ArmController(self._arm_con)
         self.hand = rq.HandController(self._hand_con)
 
@@ -114,6 +114,7 @@ def server_loop(arm_client, hand_client, shutdown_event, reset_event, robot_type
     arm_state = ur.State()
     hand_cmd = rq.Command()
     hand_state = rq.State()
+    deadman_timer = time.time()
     while not shutdown_event.is_set():
         #start_time = time.time()
 
@@ -125,14 +126,16 @@ def server_loop(arm_client, hand_client, shutdown_event, reset_event, robot_type
         arm_cmd_is_new = arm_client.poll()
         if arm_cmd_is_new:
             arm_client.recv_bytes_into(arm_cmd.array) # blocking
+            deadman_timer = time.time()
 
         hand_cmd_is_new = hand_client.poll()
         if hand_cmd_is_new:
             hand_client.recv_bytes_into(hand_cmd.array) # blocking
+            deadman_timer = time.time()
 
-        robot.hand.execute(hand_cmd, hand_state)
-        robot.arm.execute(arm_cmd, arm_state)
-        # robot.update()  # the hand (rq.sim_connection) already calls update()
+        if time.time() - deadman_timer < ur.UR_DEADMAN_SWITCH_LIMIT:
+            robot.hand.execute(hand_cmd, hand_state)
+            robot.arm.execute(arm_cmd, arm_state)
 
         if arm_cmd_is_new:
             arm_client.send_bytes(arm_state.array)

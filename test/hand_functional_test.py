@@ -8,7 +8,9 @@ from roman.sim.simenv import SimEnv
 def connection_test(con):
     print(f"Running {__file__}::{connection_test.__name__}()")
     hand = Hand(con)
+    hand.open()
     hand.close()
+    assert hand.state.is_done()
     assert hand.state.position() == Position.CLOSED
     hand.open()
     assert hand.state.position() == Position.OPENED
