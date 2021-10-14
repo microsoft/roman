@@ -119,10 +119,10 @@ class Robotiq3FGripper:
     def read(self):
         newStates = pb.getJointStates(self.body_id, self.jointIDs)
         jointPos = np.array([s[0] for s in newStates])
-        self._is_moving = not np.allclose(jointPos, self.last_joint_positions, atol=0.001)
+        self._is_moving = not np.allclose(jointPos, self.last_joint_positions, atol=0.0001)
         self.last_joint_speeds[:] = [s[1] for s in newStates]
         self.last_joint_positions = jointPos
-   
+
     def mode(self):
         return self._mode
 

@@ -24,6 +24,9 @@ class Robot:
         self.use_sim = use_sim
         self.config = config
         self._writer = writer
+        self._server = None
+        self.arm = None
+        self.hand = None
 
     def connect(self):
         '''
@@ -39,30 +42,45 @@ class Robot:
         return self
 
     def disconnect(self):
-        self._server.disconnect()
+        if self._server:
+            self._server.disconnect()
+            self._server = None
+            self.arm = None
+            self.hand = None
+
+    def __check_connected(self):
+        if not self._server:
+            raise ConnectionError("A robot connection was not yet established. Did you forget to call connect()?")
+
 
     @property
     def tool_pose(self):
+        self.__check_connected()
         return self.arm.state.tool_pose().clone()
 
     @property
     def tool_speed(self):
+        self.__check_connected()
         return self.arm.state.tool_speed().clone()
 
     @property
     def joint_positions(self):
+        self.__check_connected()
         return self.arm.state.joint_positions().clone()
 
     @property
     def joint_speeds(self):
+        self.__check_connected()
         return self.arm.state.joint_speeds().clone()
 
     @property
     def force(self):
+        self.__check_connected()
         return self.arm.state.sensor_force().clone()
 
     @property
     def has_object(self):
+        self.__check_connected()
         return self.hand.state.object_detected()
 
     def move_simple(self, dx, dy, dz, dyaw, max_speed=0.5, max_acc=0.5, timeout=0.2):
@@ -71,6 +89,7 @@ class Robot:
         assuming the gripper is vertical (aligned with the z-axis), pointing down.
         This version returns after the amount of time specified by dt.
         '''
+        self.__check_connected()
         self.arm.read()
         pose = self.arm.state.tool_pose()
         pose = Tool.from_xyzrpy(pose.to_xyzrpy() + [dx, dy, dz, 0, 0, dyaw])
@@ -78,6 +97,7 @@ class Robot:
         self.__complete_move(timeout, None)
 
     def get_inverse_kinematics(self, target):
+        self.__check_connected()
         return self.arm.get_inverse_kinematics(target)
 
     def move(self,
@@ -87,6 +107,7 @@ class Robot:
              force_limit=None,
              timeout=None,
              completion=None):
+        self.__check_connected()
         force_limit = force_limit or self.active_force_limit
         self.arm.move(target,
                       max_speed=max_speed,
@@ -103,6 +124,7 @@ class Robot:
               force_limit=FORCE_LIMIT_TOUCH,
               timeout=None,
               completion=None):
+        self.__check_connected()
         force_limit = force_limit or self.active_force_limit
         self.arm.touch(target,
                        max_speed=max_speed,
@@ -113,64 +135,79 @@ class Robot:
         return self.__complete_move(timeout, completion)
 
     def set_hand_mode(self, mode=GraspMode.BASIC):
+        self.__check_connected()
         self.hand.set_mode(mode)
 
     def grasp(self, position=Position.CLOSED, speed=255, force=0, timeout=None, completion=None):
+        self.__check_connected()
         self.hand.move(position=position, speed=speed, force=force, blocking=False)
         return self.__complete_move(timeout, completion)
 
     def pinch(self, position=Position.CLOSED, speed=255, force=0, timeout=None, completion=None):
+        self.__check_connected()
         self.hand.set_mode(GraspMode.PINCH)
         self.hand.move(position=position, speed=speed, force=force, blocking=False)
         return self.__complete_move(timeout, completion)
 
     def open(self, position=Position.OPENED, speed=255, force=0, timeout=None, completion=None):
+        self.__check_connected()
         self.hand.move(position=position, speed=speed, force=force, blocking=False)
         return self.__complete_move(timeout, completion)
 
     def release(self, position=Position.OPENED, speed=0, force=255, timeout=None, completion=None):
+        self.__check_connected()
         self.hand.move(position=position, speed=speed, force=force, blocking=False)
         return self.__complete_move(timeout, completion)
 
     def move_finger(self, position, finger=rq.hand.Finger.All, speed=255, force=0, timeout=None, completion=None):
+        self.__check_connected()
         timeout = timeout if timeout is not None else np.inf
         self.hand.move(position=position, finger=finger, speed=speed, force=force, blocking=False)
         return self.__complete_move(timeout, completion)
 
     def stop(self, timeout=None):
+        self.__check_connected()
         self.arm.stop(blocking=False)
         self.hand.stop(blocking=False)
         return self.__complete_move(timeout, None)
 
     def execute(self, arm_cmd=ur.arm.Command(), hand_cmd=rq.hand.Command(), timeout=0, completion=None):
+        self.__check_connected()
         self.arm.execute(arm_cmd, blocking=False)
         self.hand.execute(hand_cmd, blocking=False)
         return self.__complete_move(timeout, completion)
 
     def read(self):
+        self.__check_connected()
         self.arm.read()
         self.hand.read()
         self.__log()
         return self.arm.state.clone(), self.hand.state.clone()
 
     def last_command(self):
+        self.__check_connected()
         return self.arm.command.clone(), self.hand.command.clone()
 
     def last_state(self):
+        self.__check_connected()
         return self.arm.state.clone(), self.hand.state.clone()
 
     def is_done(self):
+        self.__check_connected()
         return self.arm.state.is_done() and self.hand.state.is_done()
 
     def is_moving(self):
+        self.__check_connected()
         return self.arm.state.is_moving() or self.hand.state.is_moving()
 
     def step(self):
+        self.__check_connected()
         self.arm.step()
         self.hand.step()
         self.__log()
 
     def wait(self, timeout):
+        self.__check_connected()
         self.arm.read()
         end = self.arm.state.time() + timeout
         while self.arm.state.time() < end:
@@ -200,6 +237,7 @@ def connect_sim(scene_init_fn=None, config={}):
     '''
     Creates and returns a simulated robot instance together with the default sim scene manager.
     '''
-    r = connect(use_sim=True, config=config)
-    s = SimScene(r, scene_init_fn).connect()
+    r = Robot(use_sim=True, config=config)
+    s = SimScene(r, scene_init_fn)
+    s.reset()
     return r, s

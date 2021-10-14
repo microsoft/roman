@@ -17,12 +17,13 @@ def touch():
     # go back
     robot.arm.move(target_position=home_pose, force_low_bound=None, force_high_bound=None)
 
+    scene.disconnect()
     robot.disconnect()
     print("Passed.")
 
 def setup_sim(simenv):
     simenv.make_table()
-    simenv.make_box([0.1, 0.1, 0.1], [-0.5, -0.1, 0.05], color=(0.8, 0.2, 0.2, 1), mass=0.1)
+    simenv.make_box([0.1, 0.1, 0.1], [-0.49, -0.1, 0.05], color=(0.8, 0.2, 0.2, 1), mass=0.01, lateralFriction=1)
 
 def pick():
     print(f"Running {__file__}::{pick.__name__}()")
@@ -45,6 +46,7 @@ def pick():
     robot.hand.close()
     assert not robot.hand.state.object_detected()
 
+    scene.disconnect()
     robot.disconnect()
     print("Passed.")
 
@@ -52,7 +54,7 @@ def pick():
 # Runner
 #############################################################
 def run():
-    touch()
+    # touch()
     pick()
 
 

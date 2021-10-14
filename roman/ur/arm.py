@@ -268,9 +268,9 @@ class Command(Vec):
         if self[Command._KIND] == UR_CMD_KIND_MOVE_JOINT_SPEEDS:
             return self.target().allclose(state.joint_speeds(), UR_SPEED_TOLERANCE)
         elif self[Command._KIND] == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
-            return self.target().allclose(state.joint_positions())
+            return self.target().allclose(state.joint_positions()) and not state.is_moving()
         elif self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE or self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_LINEAR:
-            return self.target().allclose(state.tool_pose())
+            return self.target().allclose(state.tool_pose()) and not state.is_moving()
         else:
             raise Exception("Invalid command type")
 

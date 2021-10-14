@@ -22,6 +22,7 @@ def get_joint_distance(current, target):
             i = i + 1
         #ur:end
     #ur:end
+
     return delta
 #ur:end
 
@@ -166,12 +167,14 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
         cmd = ur_speed_joint_linear(target, max_speed, max_acc)
         acc = max_acc
     #ur:end
-    global ctrl_is_moving
-    ctrl_is_moving = (norm(cmd) > UR_SPEED_TOLERANCE) or (norm(get_actual_joint_speeds()) > UR_SPEED_TOLERANCE)
-    if not ctrl_is_moving:
+
+    if norm(cmd) < UR_SPEED_NORM_ZERO and norm(get_actual_joint_speeds()) > UR_SPEED_NORM_ZERO:
         cmd = UR_ZERO
         acc = UR_FAST_STOP_ACCELERATION
     #ur:end
+
+    global ctrl_is_moving
+    ctrl_is_moving = norm(cmd) > UR_SPEED_NORM_ZERO or norm(get_actual_joint_speeds()) > UR_SPEED_NORM_ZERO
 
     # update state
     return [cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], acc]

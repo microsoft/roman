@@ -1,7 +1,7 @@
 
 import math
 
-from roman import Robot, connect, connect_sim
+from roman import Robot, SimScene, connect, connect_sim
 from roman import Joints, Tool, Position, GraspMode
 
 def arm_move(use_sim):
@@ -11,13 +11,16 @@ def arm_move(use_sim):
     position = Joints(0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0)
     arm.move(target_position=position, max_speed=1, max_acc=0.5)
     assert arm.state.joint_positions().allclose(position)
+    assert not arm.state.is_moving()
 
     pose = Tool(-0.4, -0.4, 0.2, 0, math.pi, 0)
     arm.move(target_position=pose, max_speed=1, max_acc=0.5)
     assert arm.state.tool_pose().allclose(pose)
+    assert not arm.state.is_moving()
 
     arm.move(target_position=position, max_speed=1, max_acc=0.5)
     assert arm.state.joint_positions().allclose(position)
+    assert not arm.state.is_moving()
 
     robot.disconnect()
     print("Passed.")
@@ -99,7 +102,7 @@ def arm_touch(use_sim):
 
     # go back
     robot.arm.move(target_position=home_pos, max_speed=1, max_acc=1)
-
+    scene.disconnect()
     robot.disconnect()
     print("Passed.")
 
