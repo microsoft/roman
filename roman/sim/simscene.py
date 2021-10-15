@@ -194,4 +194,8 @@ class SimScene:
         size = pb.getVisualShapeData(id)[0][3]
         orn = pb.getEulerFromQuaternion(orn)
         lv, av = pb.getBaseVelocity(id)
-        return {"position": np.array(pos), "size":np.array(size), "orientation": np.array(orn), "lin_vel": np.array(lv), "ang_vel": np.array(av)}
+        return {"position": np.array(pos),
+                "size": np.array(size),
+                "orientation": np.array(orn),
+                "lin_vel": np.array(lv),
+                "ang_vel": np.array(av)}
