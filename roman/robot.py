@@ -27,6 +27,7 @@ class Robot:
         self._server = None
         self.arm = None
         self.hand = None
+        self.active_force_limit = self.config.get("force_limit", FORCE_LIMIT_DEFAULT)
 
     def connect(self):
         '''
@@ -34,7 +35,6 @@ class Robot:
         '''
         self._server = server.create(self.use_sim, self.config)
         self._server.connect()
-        self.active_force_limit = self.config.get("force_limit", FORCE_LIMIT_DEFAULT)
         self.arm = Arm(self._server.arm)
         self.hand = Hand(self._server.hand)
         self.arm.stop()

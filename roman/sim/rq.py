@@ -41,6 +41,7 @@ class Robotiq3FGripper:
             jointID = info[0]
             pb.resetJointState(self.body_id, jointID, 0)
             pb.setJointMotorControl2(body_id, jointID, pb.VELOCITY_CONTROL, targetVelocity=0, force=100)
+            pb.enableJointForceTorqueSensor(self.body_id, jointID, True)
 
         self.jointIDs = [self.joints[name][0] for name in Robotiq3FGripper.jointNames]
         self._targets = [0, 0, 0]
@@ -81,6 +82,10 @@ class Robotiq3FGripper:
         self.read()
         self._targets[0] = self._targets[1] = self._targets[2] = position
         # This is a very rough approximation of how the real hand moves. Needs more work.
+        speed = 2 + speed // 8 # min 2 to avoid stall
+        current = self.positions()[0]
+        inc = 0 if position == current else speed if position > current else -speed
+        position = current + inc
         joints = self.jointIDs[self.fingerAll]
         position = min(position, self._mode_limit) # account for pinch mode
         positions = self.jointStops[position]

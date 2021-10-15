@@ -134,7 +134,7 @@ class Hand:
         self.__execute(blocking)
 
     def step(self):
-        self.read()
+        self.controller.execute(self.command, self.state)
 
     def read(self):
         self.controller.execute(Hand._READ_CMD, self.state)
