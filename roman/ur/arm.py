@@ -235,7 +235,7 @@ class Command(Vec):
             max_speed=UR_DEFAULT_MAX_SPEED,
             max_acc=UR_DEFAULT_ACCELERATION,
             force_low_bound:Tool=UR_DEFAULT_FORCE_LOW_BOUND,
-            force_high_bound:Tool=UR_DEFAULT_FORCE_HI_BOUND,
+            force_high_bound:Tool=UR_DEFAULT_FORCE_HIGH_BOUND,
             contact_handling=0,
             controller_flags=0):
 
@@ -244,7 +244,7 @@ class Command(Vec):
         self[Command._MOVE_MAX_SPEED] = max_speed
         self[Command._MOVE_MAX_ACCELERATION]  =max_acc
         self[Command._MOVE_FORCE_LOW_BOUND] = force_low_bound if force_low_bound is not None else UR_FORCE_IGNORE_LOW
-        self[Command._MOVE_FORCE_HIGH_BOUND] = force_high_bound if force_high_bound is not None else UR_FORCE_IGNORE_HI
+        self[Command._MOVE_FORCE_HIGH_BOUND] = force_high_bound if force_high_bound is not None else UR_FORCE_IGNORE_HIGH
         self[Command._MOVE_CONTACT_HANDLING] = contact_handling
         self[Command._MOVE_CONTROLLER] = controller_flags
         return self
@@ -313,7 +313,7 @@ class Arm:
             max_speed=UR_DEFAULT_MAX_SPEED,
             max_acc=UR_DEFAULT_ACCELERATION,
             force_low_bound=UR_DEFAULT_FORCE_LOW_BOUND,
-            force_high_bound=UR_DEFAULT_FORCE_HI_BOUND,
+            force_high_bound=UR_DEFAULT_FORCE_HIGH_BOUND,
             contact_handling=0,
             controller_flags=0,
             blocking=True):
@@ -343,7 +343,7 @@ class Arm:
             target_speed,
             acc=UR_DEFAULT_ACCELERATION,
             force_low_bound=UR_DEFAULT_FORCE_LOW_BOUND,
-            force_high_bound=UR_DEFAULT_FORCE_HI_BOUND,
+            force_high_bound=UR_DEFAULT_FORCE_HIGH_BOUND,
             contact_handling=0,
             controller_flags=0,
             blocking=True):

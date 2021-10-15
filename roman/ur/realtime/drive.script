@@ -11,7 +11,7 @@ ur_cmd_target = UR_ZERO
 ur_cmd_max_speed = 0
 ur_cmd_max_acceleration = 0
 ur_cmd_force_low_bound = UR_DEFAULT_FORCE_LOW_BOUND
-ur_cmd_force_high_bound = UR_DEFAULT_FORCE_HI_BOUND
+ur_cmd_force_high_bound = UR_DEFAULT_FORCE_HIGH_BOUND
 ur_cmd_contact_handling = 0
 
 def ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, contact_handling):

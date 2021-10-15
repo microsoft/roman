@@ -60,7 +60,7 @@ def execute_arm_command(cmd, offset):
 
     # ESTOP
     if kind == UR_CMD_KIND_ESTOP or kind >= UR_CMD_KIND_INVALID:
-        ur_drive(ur_get_time(), 0, UR_CMD_KIND_MOVE_JOINT_SPEEDS, UR_ZERO, 0, 10, UR_FORCE_IGNORE_LOW, UR_FORCE_IGNORE_HI, 0)
+        ur_drive(ur_get_time(), 0, UR_CMD_KIND_MOVE_JOINT_SPEEDS, UR_ZERO, 0, 10, UR_FORCE_IGNORE_LOW, UR_FORCE_IGNORE_HIGH, 0)
         return get_arm_state(UR_ZERO, UR_ZERO)
     #ur:end
 
