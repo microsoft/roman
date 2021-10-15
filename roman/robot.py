@@ -216,7 +216,7 @@ class Robot:
     def __complete_move(self, timeout, completion):
         completion = completion or _default_completion_condition
         self.__log()
-        endtime = self.arm.state.time() + timeout if timeout is not None else inf
+        endtime = (self.arm.state.time() + timeout) if timeout is not None else inf
         while not completion(self.arm.state, self.hand.state) and self.arm.state.time() < endtime:
             self.step()
         return completion(self.arm.state, self.hand.state)

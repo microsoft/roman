@@ -24,7 +24,7 @@ class SimEnv():
 
     def connect(self):
         if self._useGUI:
-            pb.connect(pb.GUI_SERVER, options="--logtostderr")
+            pb.connect(pb.GUI_SERVER)
             pb.configureDebugVisualizer(pb.COV_ENABLE_RENDERING, 0)
             pb.resetDebugVisualizerCamera(1.5, -30, -15, cameraTargetPosition=[-0.4, 0, 0.3])
         else:
