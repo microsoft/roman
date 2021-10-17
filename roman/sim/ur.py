@@ -39,7 +39,7 @@ class URArm:
     def get_inverse_kin(self, pose):
         '''Calculates the joint angles that corespond to the specified tool pose.'''
         rot = Rotation.from_rotvec(pose[3:6]).as_quat()
-        joints = pb.calculateInverseKinematics(self.body_id, self.tcp_id, pose[0:3], rot)
+        joints = pb.calculateInverseKinematics(self.body_id, self.tcp_id, pose[0:3], rot, maxNumIterations=1000, residualThreshold=1e-7)
         return joints[:6]
 
     def get_actual_tcp_pose(self):
