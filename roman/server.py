@@ -136,6 +136,9 @@ def server_loop(arm_client, hand_client, shutdown_event, reset_event, robot_type
         if time.time() - deadman_timer < ur.UR_DEADMAN_SWITCH_LIMIT:
             robot.hand.execute(hand_cmd, hand_state)
             robot.arm.execute(arm_cmd, arm_state)
+        else:
+            robot.arm.execute(ur.Command(), arm_state) # ESTOP, but keep the communication alive
+
 
         if arm_cmd_is_new:
             arm_client.send_bytes(arm_state.array)

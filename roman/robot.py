@@ -122,6 +122,7 @@ class Robot:
               max_speed=UR_DEFAULT_MAX_SPEED,
               max_acc=UR_DEFAULT_ACCELERATION,
               force_limit=FORCE_LIMIT_TOUCH,
+              contact_force_multiplier=2,
               timeout=None,
               completion=None):
         self.__check_connected()

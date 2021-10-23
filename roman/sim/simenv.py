@@ -1,8 +1,11 @@
-import pybullet as pb
+
 import os
 import math
 from . import ur
 from . import rq
+import pybullet as pb
+import pybullet_data
+import pkgutil
 
 ################################################################
 ## configures the simulator
@@ -18,6 +21,7 @@ class SimEnv():
         self.__time = 0.0
         self.__cameras = []
         self.__robot_id = None
+        self._egl_plugin = None
 
         if not os.path.exists(self.__urdf):
             self.__urdf = os.path.join(os.path.dirname(__file__), self.__urdf)
@@ -25,17 +29,26 @@ class SimEnv():
     def connect(self):
         if self._useGUI:
             pb.connect(pb.GUI_SERVER)
-            pb.configureDebugVisualizer(pb.COV_ENABLE_RENDERING, 0)
             pb.resetDebugVisualizerCamera(1.5, -30, -15, cameraTargetPosition=[-0.4, 0, 0.3])
         else:
             pb.connect(pb.SHARED_MEMORY_SERVER)
+            pB.setAdditionalSearchPath(pybullet_data.getDataPath())
+            if sys.platform == 'linux':
+                egl = pkgutil.get_loader('eglRenderer')
+                if egl:
+                    self._egl_plugin = pB.loadPlugin(egl.get_filename(), '_eglRendererPlugin')
+                else:
+                    self._egl_plugin = pB.loadPlugin('eglRendererPlugin')
 
+        pb.configureDebugVisualizer(pb.COV_ENABLE_RENDERING, 0)
         self.__load_robot()
 
         if self._useGUI:
             pb.configureDebugVisualizer(pb.COV_ENABLE_RENDERING, 1)
 
     def disconnect(self):
+        if self._egl_plugin is not None:
+            pB.unloadPlugin(self._egl_plugin)
         pb.disconnect()
 
     def update(self):

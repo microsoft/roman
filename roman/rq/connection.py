@@ -114,7 +114,7 @@ class Connection:
             self.connect(False)
 
         # update the cmd id
-        struct.pack_into('>H', self.__write_buf, 0, random.randint(0, 65536)) 
+        struct.pack_into('>H', self.__write_buf, 0, random.randint(0, 65535)) 
 
         #send the request
         try:

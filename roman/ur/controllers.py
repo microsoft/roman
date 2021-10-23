@@ -72,10 +72,17 @@ class TouchController:
         self.validation_count = 1
         self.cmd_id = 0
         self.force_sum = np.zeros(6)
+        self.cmd_stop = Command()
 
     def execute(self, cmd, state):
 
-        self.next.execute(cmd, state)
+        if self.count == 0 and cmd.id() == self.cmd_id:
+            self.next.execute(self.cmd_stop, state)
+            state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 1)
+            state._set_state_flag(State._STATUS_FLAG_DONE, 1)
+            return state
+        else:    
+            self.next.execute(cmd, state)
 
         if state.is_goal_reached():
             # stopped because the arm reached the goal but didn't detect contact, so this is a failure
@@ -95,6 +102,7 @@ class TouchController:
         if self.count == 0 or np.any(self.force_sum < cmd.force_low_bound()*cmd.contact_handling()) or np.any(self.force_sum > cmd.force_high_bound()*cmd.contact_handling()):
             state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 1)
             state._set_state_flag(State._STATUS_FLAG_DONE, 1)
+            self.count = 0
             return state
 
         if not state.is_contact():
