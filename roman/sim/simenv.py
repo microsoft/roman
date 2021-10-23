@@ -5,8 +5,6 @@ from . import ur
 from . import rq
 import pybullet as pb
 import pybullet_data
-import pkgutil
-import sys
 
 ################################################################
 ## configures the simulator
@@ -22,7 +20,6 @@ class SimEnv():
         self.__time = 0.0
         self.__cameras = []
         self.__robot_id = None
-        self._egl_plugin = None
 
         if not os.path.exists(self.__urdf):
             self.__urdf = os.path.join(os.path.dirname(__file__), self.__urdf)
@@ -34,13 +31,6 @@ class SimEnv():
         else:
             pb.connect(pb.SHARED_MEMORY_SERVER)
             pb.setAdditionalSearchPath(pybullet_data.getDataPath())
-            if sys.platform == 'linux':
-                egl = pkgutil.get_loader('eglRenderer')
-                if egl:
-                    self._egl_plugin = pb.loadPlugin(egl.get_filename(), '_eglRendererPlugin')
-                else:
-                    self._egl_plugin = pb.loadPlugin('eglRendererPlugin')
-
         pb.configureDebugVisualizer(pb.COV_ENABLE_RENDERING, 0)
         self.__load_robot()
 
@@ -48,8 +38,6 @@ class SimEnv():
             pb.configureDebugVisualizer(pb.COV_ENABLE_RENDERING, 1)
 
     def disconnect(self):
-        if self._egl_plugin is not None:
-            pb.unloadPlugin(self._egl_plugin)
         pb.disconnect()
 
     def update(self):

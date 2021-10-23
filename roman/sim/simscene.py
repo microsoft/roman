@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import sys
 import pybullet as pb
 
 ################################################################
@@ -20,11 +21,24 @@ class SimScene:
             self.textures = [os.path.join(tex_dir, f) for f in files]
 
         self.__connected = False
+        self._egl_plugin = None
+        self._renderer = pb.ER_BULLET_HARDWARE_OPENGL
 
     def connect(self):
         pb.connect(pb.SHARED_MEMORY)
         if self.data_dir:
             pb.setAdditionalSearchPath(self.data_dir)
+        if sys.platform == 'linux':
+            try:
+                import pkgutil
+                egl = pkgutil.get_loader('eglRenderer')
+                if egl:
+                    self._egl_plugin = pb.loadPlugin(egl.get_filename(), '_eglRendererPlugin')
+                else:
+                    self._egl_plugin = pb.loadPlugin('eglRendererPlugin')
+            except:
+                self._renderer = pb.ER_TINY_RENDERER
+                pass # we'll use the CPU renderer
         self.__connected = True
         return self
 
@@ -50,6 +64,8 @@ class SimScene:
             self.make_table()
 
     def disconnect(self):
+        if self._egl_plugin is not None:
+            pb.unloadPlugin(self._egl_plugin)
         pb.disconnect()
         self.__connected = False
 
@@ -166,8 +182,8 @@ class SimScene:
             camera_cfg["projectionMatrix"],
             lightDirection=self.__light_position,
             flags=pb.ER_NO_SEGMENTATION_MASK,
-            renderer=pb.ER_BULLET_HARDWARE_OPENGL)  # renderer=p.ER_TINY_RENDERER
-            
+            renderer=self._renderer)
+
         #rgb
         rgb = np.reshape(img_arr[2], (img_h, img_w, 4))[:, :, :3]
 
