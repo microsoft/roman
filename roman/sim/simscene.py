@@ -167,6 +167,7 @@ class SimScene:
             lightDirection=self.__light_position,
             flags=pb.ER_NO_SEGMENTATION_MASK,
             renderer=pb.ER_BULLET_HARDWARE_OPENGL)  # renderer=p.ER_TINY_RENDERER
+            
         #rgb
         rgb = np.reshape(img_arr[2], (img_h, img_w, 4))[:, :, :3]
 
