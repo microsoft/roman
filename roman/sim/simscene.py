@@ -29,16 +29,16 @@ class SimScene:
         if self.data_dir:
             pb.setAdditionalSearchPath(self.data_dir)
         if sys.platform == 'linux':
-            try:
-                import pkgutil
-                egl = pkgutil.get_loader('eglRenderer')
-                if egl:
-                    self._egl_plugin = pb.loadPlugin(egl.get_filename(), '_eglRendererPlugin')
-                else:
-                    self._egl_plugin = pb.loadPlugin('eglRendererPlugin')
-            except:
-                self._renderer = pb.ER_TINY_RENDERER
-                pass # we'll use the CPU renderer
+            # try:
+            #     import pkgutil
+            #     egl = pkgutil.get_loader('eglRenderer')
+            #     if egl:
+            #         self._egl_plugin = pb.loadPlugin(egl.get_filename(), '_eglRendererPlugin')
+            #     else:
+            #         self._egl_plugin = pb.loadPlugin('eglRendererPlugin')
+            # except:
+            self._renderer = pb.ER_TINY_RENDERER
+            # pass # we'll use the CPU renderer
         self.__connected = True
         return self
 
