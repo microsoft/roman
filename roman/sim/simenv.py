@@ -6,6 +6,7 @@ from . import rq
 import pybullet as pb
 import pybullet_data
 import pkgutil
+import sys
 
 ################################################################
 ## configures the simulator
