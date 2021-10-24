@@ -7,7 +7,7 @@ import pybullet as pb
 ## Provides access to the sim environment.
 ################################################################
 class SimScene:
-    def __init__(self, robot, scene_setup_fn=None, data_dir=None, tex_dir=None, **kwargs):
+    def __init__(self, robot, scene_setup_fn=None, data_dir=None, tex_dir=None, instance_key=0, **kwargs):
         if not robot.use_sim:
             raise ValueError("Simulated scenes can only be used with a simulated robot.")
         self._cameras = {}
@@ -20,12 +20,13 @@ class SimScene:
             files = os.listdir(tex_dir)
             self.textures = [os.path.join(tex_dir, f) for f in files]
 
+        self.__instance_key = instance_key
         self.__connected = False
-        self._egl_plugin = None
+        self.__egl_plugin = None
         self._renderer = pb.ER_BULLET_HARDWARE_OPENGL
 
     def connect(self):
-        pb.connect(pb.SHARED_MEMORY)
+        pb.connect(pb.SHARED_MEMORY, key=self.__instance_key)
         if self.data_dir:
             pb.setAdditionalSearchPath(self.data_dir)
         if sys.platform == 'linux':
@@ -33,9 +34,9 @@ class SimScene:
             #     import pkgutil
             #     egl = pkgutil.get_loader('eglRenderer')
             #     if egl:
-            #         self._egl_plugin = pb.loadPlugin(egl.get_filename(), '_eglRendererPlugin')
+            #         self.__egl_plugin = pb.loadPlugin(egl.get_filename(), '_eglRendererPlugin')
             #     else:
-            #         self._egl_plugin = pb.loadPlugin('eglRendererPlugin')
+            #         self.__egl_plugin = pb.loadPlugin('eglRendererPlugin')
             # except:
             self._renderer = pb.ER_TINY_RENDERER
             # pass # we'll use the CPU renderer
@@ -64,8 +65,8 @@ class SimScene:
             self.make_table()
 
     def disconnect(self):
-        if self._egl_plugin is not None:
-            pb.unloadPlugin(self._egl_plugin)
+        if self.__egl_plugin is not None:
+            pb.unloadPlugin(self.__egl_plugin)
         pb.disconnect()
         self.__connected = False
 
