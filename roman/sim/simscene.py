@@ -43,7 +43,7 @@ class SimScene:
         self.__connected = True
         return self
 
-    def reset(self):
+    def reset(self, home_pose=None):
         if self.__connected:
             self.disconnect()
         self.robot.disconnect()
@@ -51,6 +51,8 @@ class SimScene:
         self.connect()
         self.__tag_map = {}
         self._cameras = {}
+        if home_pose:
+            self.robot.move(home_pose)
         self.setup_scene()
         return self.get_world_state()
 
