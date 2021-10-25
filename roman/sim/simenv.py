@@ -17,7 +17,7 @@ class SimEnv():
         self.__time_step = config.get('sim.time_step', 1. / 240)
         self._useGUI = config.get('sim.use_gui', True)
         self._arm_pos = config.get('sim.start_config', [0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0])
-        self._instance_key = config.get('sim.instance_key', 0)
+        self._instance_key = config.get('sim.instance_key', None)
         self.__time = 0.0
         self.__cameras = []
         self.__robot_id = None
@@ -28,9 +28,15 @@ class SimEnv():
     def connect(self):
         if self._useGUI:
             pb.connect(pb.GUI_SERVER)
+            if self._instance_key is not None:
+                raise Exception("Invalid simulator configuration. instance_key cannot be specified together with use_gui.")
             pb.resetDebugVisualizerCamera(1.5, -30, -15, cameraTargetPosition=[-0.4, 0, 0.3])
         else:
-            pb.connect(pb.SHARED_MEMORY_SERVER, key=self._instance_key)
+            if self._instance_key is None:
+                pb.connect(pb.SHARED_MEMORY_SERVER)
+            else:
+                pb.connect(pb.SHARED_MEMORY_SERVER, key=self._instance_key)
+            
             pb.setAdditionalSearchPath(pybullet_data.getDataPath())
         pb.configureDebugVisualizer(pb.COV_ENABLE_RENDERING, 0)
         self.__load_robot()
