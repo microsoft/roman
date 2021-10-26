@@ -20,8 +20,10 @@ class URArm:
         self.sim_time_step = sim_time_step
 
     def reset(self, start_positions=None):
-        start_positions = start_positions or [0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0]
-        # start position is along the x axis, in negative direction
+        if start_positions is None:
+            start_positions = [0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0]
+
+        # default start position is along the x axis, in negative direction
         for i in range(6):
             pb.resetJointState(self.body_id, self.base_joint_id + i, start_positions[i])
             pb.setJointMotorControl2(self.body_id,

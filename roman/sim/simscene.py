@@ -206,6 +206,8 @@ class SimScene:
         state = dict()
         for id, tag in self.__tag_map.items():
             state[tag] = self._get_object_state(id)
+            if state[tag]["size"][1] == 0: # sphere
+                state[tag]["size"] = [state[tag]["size"][0] * 2] * 3
         return state
 
     def _get_object_state(self, id):
