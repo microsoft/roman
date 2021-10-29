@@ -72,6 +72,7 @@ class Robotiq3FGripper:
         self.modeStopsC = [0, -0.13, 0.25, 0.25, -0.13]
         self.last_joint_positions  = np.zeros(len(self.jointNames))
         self.last_joint_speeds  = np.zeros(len(self.jointNames))
+        self._mode_limit = 255
 
     def reset(self):
         self.read()
@@ -84,7 +85,9 @@ class Robotiq3FGripper:
         # This is a very rough approximation of how the real hand moves. Needs more work.
         speed = 2 + speed // 8 # min 2 to avoid stall
         current = self.positions()[0]
-        inc = 0 if position == current else speed if position > current else -speed
+        inc = min(abs(position - current), speed) 
+        if position < current:
+            inc = -inc
         position = current + inc
         joints = self.jointIDs[self.fingerAll]
         position = min(position, self._mode_limit) # account for pinch mode
@@ -125,6 +128,7 @@ class Robotiq3FGripper:
         newStates = pb.getJointStates(self.body_id, self.jointIDs)
         jointPos = np.array([s[0] for s in newStates])
         self._is_moving = not np.allclose(jointPos, self.last_joint_positions, atol=0.0001)
+        self._object_detected = not self._is_moving and not np.allclose(self._targets, self.positions(), atol=1)
         self.last_joint_speeds[:] = [s[1] for s in newStates]
         self.last_joint_positions = jointPos
 
@@ -142,8 +146,7 @@ class Robotiq3FGripper:
         return self._targets
 
     def object_detected(self):
-        d = not self._is_moving and not np.allclose(self._targets, self.positions(), atol=1)
-        return d
+        return self._object_detected
 
     def is_moving(self):
         return self._is_moving

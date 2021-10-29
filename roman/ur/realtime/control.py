@@ -179,5 +179,6 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
     ctrl_is_moving = norm(cmd) > UR_SPEED_NORM_ZERO or norm(get_actual_joint_speeds()) > UR_SPEED_NORM_ZERO
 
     # update state
+    ctrl_last_cmd = cmd
     return [cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], acc]
 #ur:end
