@@ -72,7 +72,7 @@ class SimScene:
         self.__connected = False
 
     def make_table(self, height=0, tex=None, color=(0.2, 0.2, 0.2, 1), **kwargs):
-        self.make_box([1, 2, 0.05], [-0.25, 0, height - 0.05], tex=tex, color=color, **kwargs)
+        self.make_box([1, 2, 0.05], [-0.25, 0, height - 0.025], tex=tex, color=color, **kwargs)
 
     def loadURDF(self,
                  urdf,
