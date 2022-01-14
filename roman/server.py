@@ -84,7 +84,9 @@ class RemoteRobotProxy():
                                        self.__shutdown_event,
                                        self.__reset_event,
                                        self.__robot_type,
-                                       self.__config))
+                                       self.__config),
+                                 name="roman_controller",
+                                 daemon=True)
         self.__process.start()
         self.arm = RemoteRobotProxy.PipeConnection(arm_server)
         self.hand = RemoteRobotProxy.PipeConnection(hand_server)

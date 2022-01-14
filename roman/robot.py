@@ -239,6 +239,6 @@ def connect_sim(scene_init_fn=None, config={}):
     Creates and returns a simulated robot instance together with the default sim scene manager.
     '''
     r = Robot(use_sim=True, config=config)
-    s = SimScene(r, scene_init_fn)
+    s = SimScene(r, scene_init_fn, gpu_rendering=config.get('sim.use_gpu', True))
     s.reset()
     return r, s
