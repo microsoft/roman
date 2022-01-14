@@ -44,7 +44,7 @@ class SimScene:
         self.__tag_map = {}
         self._cameras = {}
         if home_pose:
-            self.robot.move(home_pose)
+            self.robot.move(home_pose, 0.5, 0.5)
         self.setup_scene()
         return self.get_world_state()
 
