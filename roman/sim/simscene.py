@@ -7,7 +7,7 @@ import pybullet as pb
 ## Provides access to the sim environment.
 ################################################################
 class SimScene:
-    def __init__(self, robot, scene_setup_fn=None, data_dir=None, tex_dir=None, instance_key=None, cpu_rendering=False, **kwargs):
+    def __init__(self, robot, scene_setup_fn=None, data_dir=None, tex_dir=None, instance_key=None, gpu_rendering=True, **kwargs):
         if not robot.use_sim:
             raise ValueError("Simulated scenes can only be used with a simulated robot.")
         self._cameras = {}
@@ -22,8 +22,7 @@ class SimScene:
 
         self.__instance_key = instance_key
         self.__connected = False
-        self.__egl_plugin = None
-        self._renderer = pb.ER_TINY_RENDERER if cpu_rendering else pb.ER_BULLET_HARDWARE_OPENGL
+        self._renderer = pb.ER_BULLET_HARDWARE_OPENGL if gpu_rendering else pb.ER_TINY_RENDERER
 
     def connect(self):
         if self.__instance_key is None:
@@ -32,13 +31,7 @@ class SimScene:
             pb.connect(pb.SHARED_MEMORY, self.__instance_key)
         if self.data_dir:
             pb.setAdditionalSearchPath(self.data_dir)
-        if sys.platform == 'linux' and self._renderer == pb.ER_BULLET_HARDWARE_OPENGL:
-            import pkgutil
-            egl = pkgutil.get_loader('eglRenderer')
-            if egl:
-                self.__egl_plugin = pb.loadPlugin(egl.get_filename(), '_eglRendererPlugin')
-            else:
-                self.__egl_plugin = pb.loadPlugin('eglRendererPlugin')
+
         self.__connected = True
         return self
 
@@ -66,8 +59,6 @@ class SimScene:
             self.make_table()
 
     def disconnect(self):
-        if self.__egl_plugin is not None:
-            pb.unloadPlugin(self.__egl_plugin)
         pb.disconnect()
         self.__connected = False
 

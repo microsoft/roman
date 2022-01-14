@@ -2,6 +2,25 @@
 import time
 from roman import connect_sim
 
+def pybullet_test():
+    print(f"Running {__file__}::{pybullet_test.__name__}()")
+    import pybullet as pb
+    import pkgutil
+    egl = pkgutil.get_loader('eglRenderer')
+    pb.connect(pb.DIRECT) # EGL is not supported in GUI mode, obviously, since it's about headless support
+    pb.loadPlugin(egl.get_filename(), '_eglRendererPlugin')
+
+    print("EGL ON")
+    print("Passed.")
+
+def camera_test():
+    print(f"Running {__file__}::{camera_test.__name__}()")
+    (robot, scene) = connect_sim(scene_init_fn=setup_sim)
+    scene.create_camera(cameraEyePosition=[1,1,1], tag="cam1")
+    scene.get_camera_image("cam1")
+    scene.disconnect()
+    robot.disconnect()
+    print("Passed.")
 
 def touch():
     '''This requires a horizontal surface that the arm can touch.'''
@@ -54,8 +73,10 @@ def pick():
 # Runner
 #############################################################
 def run():
-    # touch()
-    pick()
+    pybullet_test()
+    camera_test()
+    touch()
+    #pick()
 
 
 if __name__ == '__main__':

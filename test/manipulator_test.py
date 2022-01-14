@@ -111,8 +111,8 @@ def arm_touch(use_sim):
 #############################################################
 def run(use_sim):
     arm_move(use_sim)
-    hand_move(use_sim)
-    arm_hand_move(use_sim)
+    #hand_move(use_sim)
+    #arm_hand_move(use_sim)
     arm_touch(use_sim)
 
 
