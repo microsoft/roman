@@ -17,14 +17,18 @@ class InProcRobotServer():
         self.activate_hand = config.get("hand.activate", True)
 
     def connect(self):
-        self._hand_con.connect(self.activate_hand)
+        if self.activate_hand:
+            self._hand_con.connect()
+            self.hand = rq.HandController(self._hand_con)
+        else:
+            self.hand = rq.NoHandController(self._hand_con)
         self._arm_con.connect()
         self.arm = ur.ArmController(self._arm_con)
-        self.hand = rq.HandController(self._hand_con)
 
     def disconnect(self):
         self._arm_con.disconnect()
-        self._hand_con.disconnect()
+        if self.activate_hand:
+            self._hand_con.disconnect()
 
     def update(self):
         pass

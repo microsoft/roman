@@ -26,3 +26,14 @@ class HandController:
             self.lastcmd[:] = cmd
 
         return state
+
+class NoHandController:
+    '''
+    Use when a hand is not available
+    '''
+    def __init__(self, connection):
+        pass
+
+    def execute(self, cmd, state):
+        state[State._FLAGS] = State._FLAG_READY
+        return state

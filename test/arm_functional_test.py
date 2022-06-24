@@ -23,7 +23,7 @@ def move_test(con):
 
     variants = [(ur.BasicController, 2),
                 (ur.ArmController, 1)]
-    for variant in variants: 
+    for variant in variants:
         arm_ctrl = variant[0](con)
         arm = ur.Arm(arm_ctrl)
         ms = 1
@@ -54,7 +54,7 @@ def move_test2(con):
     print(f"Running {__file__}::{move_test2.__name__}()")
     variants = [(ur.BasicController, 2),
                 (ur.ArmController, 1)]
-    for variant in variants: 
+    for variant in variants:
         arm_ctrl = variant[0](con)
         arm = ur.Arm(arm_ctrl)
         ms = 1
@@ -124,4 +124,4 @@ def run(use_sim):
 
 
 if __name__ == '__main__':
-    run(use_sim=True)
+    run(use_sim=False)

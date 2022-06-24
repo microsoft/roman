@@ -81,7 +81,7 @@ class TouchController:
             state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 1)
             state._set_state_flag(State._STATUS_FLAG_DONE, 1)
             return state
-        else:    
+        else:
             self.next.execute(cmd, state)
 
         if state.is_goal_reached():

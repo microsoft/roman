@@ -21,8 +21,9 @@ def get_joint_distance(current, target):
             alt = alt + 2 * pi
             i = i + 1
         #ur:end
+    elif fabs(delta)<UR_JOINTS_POSITION_TOLERANCE:
+        delta=0
     #ur:end
-
     return delta
 #ur:end
 
@@ -126,7 +127,7 @@ def ur_get_status():
 def ur_check_loop_delay(loop_time):
     time = ur_get_time()
     delay = time - loop_time
-    if delay >= 0.016:
+    if delay >= UR_TIME_SLICE*2:
         textmsg("drive loop delayed: ", delay)
     #ur:end
     return time

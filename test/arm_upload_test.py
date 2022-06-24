@@ -1,6 +1,6 @@
 import sys
 import numpy as np
-import math 
+import math
 import time
 import random
 import os
@@ -41,7 +41,7 @@ def validate_script_syntax():
     reverse_conn.bind((ur.UR_DEFAULT_CLIENT_IP, ur.UR_DEFAULT_CLIENT_PORT))
     reverse_conn.listen(1)
     print('Waiting for robot to confirm... ')
-    ctrl_socket, addr = reverse_conn.accept() 
+    ctrl_socket, addr = reverse_conn.accept()
     if (addr[0] != ur.UR_ROBOT_IP):
         raise RuntimeError("Invalid client connection")
     print('Script uploaded.')
@@ -60,6 +60,7 @@ def test_script():
     rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     rt_socket.connect(('192.168.1.2', 30003))
     script = "textmsg(get_actual_tcp_pose())\n"
+    #script ="speedj([0,0,0,0,0,-1], 1, 2)\n"
     loader.socket_send_retry(rt_socket, script.encode('ascii'))
     rt_socket.close()
     print("Passed.")
@@ -74,6 +75,6 @@ def run(use_sim):
     if not use_sim:
         test_script()
         validate_script_syntax()
-   
+
 if __name__ == '__main__':
     run(False)

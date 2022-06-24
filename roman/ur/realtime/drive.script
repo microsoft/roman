@@ -6,7 +6,7 @@ from control import *
 # external parameters (passed between the interface and the drive thread)
 ur_cmd_time = 0
 ur_cmd_id = 0
-ur_cmd_kind = 0 
+ur_cmd_kind = 0
 ur_cmd_target = UR_ZERO
 ur_cmd_max_speed = 0
 ur_cmd_max_acceleration = 0
@@ -18,7 +18,7 @@ def ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_boun
     # the actual work is done on separate drive and motion threads, below
     ur_cmd_time = time
     ur_cmd_id = id
-    ur_cmd_kind = kind 
+    ur_cmd_kind = kind
     ur_cmd_target = target
     ur_cmd_max_speed = max_speed
     ur_cmd_max_acceleration = max_acceleration
@@ -37,31 +37,31 @@ end
 ur_target_speed = UR_ZERO
 ur_max_acc = 0
 
-# On CB2 (v1.8), the call to speedj BLOCKS until the speed is reached AND the time elapsed. 
-# Thus, we simulate a 0.008ms timeout by running the speedj command from a separate thread 
+# On CB2 (v1.8), the call to speedj BLOCKS until the speed is reached AND the time elapsed.
+# Thus, we simulate a 0.008ms timeout by running the speedj command from a separate thread
 # and killing and restarting the thread on every time slice.
 # Note that speedj is the only is trully interruptible ur script command (that is, it won't cause a jerky motion when the thread is killed).
 # On CB2, this is the only thread allowed to call UR motion primitives (speedj)
 thread ur_speed_command_thread_fn():
-    # Set the joint speed together with max acceleration. 
+    # Set the joint speed together with max acceleration.
     # Note: a critical section is not needed, since the globals used here are only changed by the drive thread after killing this thread
-    # Moreover, the speedj call needs to be the first instruction, otherwise the thread might be killed before the motion starts, 
-    # leading to "infinite loop detected" errors. 
+    # Moreover, the speedj call needs to be the first instruction, otherwise the thread might be killed before the motion starts,
+    # leading to "infinite loop detected" errors.
     # Adding a sync() call in the control thread would fix that, it would also make the control loop take 2 cycles instead of 1
     speedj(ur_target_speed, ur_max_acc, 0)
 end
 
 # The drive thread recomputes the target speed every cycle, while also checking forces from the FT sensor.
-# To do this, it interrupts and restarts the motion on every cycle, by killing the command thread.    
-thread ur_cb2_drive_thread_fn():    
+# To do this, it interrupts and restarts the motion on every cycle, by killing the command thread.
+thread ur_cb2_drive_thread_fn():
     # run forever, checking forces and updating targets
     cmd_thread = run ur_speed_command_thread_fn()
     while True:
         kill cmd_thread
-        enter_critical 
+        enter_critical
         target = ur_get_target_speed( ur_cmd_time,
                                       ur_cmd_id,
-                                      ur_cmd_kind, 
+                                      ur_cmd_kind,
                                       ur_cmd_target,
                                       ur_cmd_max_speed,
                                       ur_cmd_max_acceleration,
@@ -71,31 +71,29 @@ thread ur_cb2_drive_thread_fn():
         ur_target_speed = [target[0], target[1], target[2], target[3], target[4], target[5]]
         ur_max_acc = target[6]
         exit_critical
-        
+
 
         # Trigger the move, by starting and then killing the move thread. The move still executes for the current time step.
-        # Note that the call below suspends the current thread (killing the motion thread yields the remaining time), 
+        # Note that the call below suspends the current thread (killing the motion thread yields the remaining time),
         # so this loop resumes only after 8ms
         cmd_thread = run ur_speed_command_thread_fn()
     end
-end   
+end
 
 ################################################################################################################################
 ## Drive thread, CB3 and e-series version
 ################################################################################################################################
 # On CB3 (>v3.1) and e-series (v5.x), the call to speedj returns once the specified time elapsed, even if the target speed was not reached.
-# This is exactly what we need. 
+# This is exactly what we need.
 # On CB3 and e-series, this is the only thread allowed to call UR motion primitives (speedj)
-thread ur_drive_thread_fn():    
-    # run forever, checking forces and updating targets
-    cmd_thread = run ur_speed_command_thread_fn()
+thread ur_drive_thread_fn():
     textmsg("time slice: ", UR_TIME_SLICE)
-    sync()
+    timeout = UR_TIME_SLICE * 0.95 # leave a little bit of time so we actually fit in the time quota
     while True:
-        enter_critical 
+        enter_critical
         target = ur_get_target_speed( ur_cmd_time,
                                       ur_cmd_id,
-                                      ur_cmd_kind, 
+                                      ur_cmd_kind,
                                       ur_cmd_target,
                                       ur_cmd_max_speed,
                                       ur_cmd_max_acceleration,
@@ -103,14 +101,11 @@ thread ur_drive_thread_fn():
                                       ur_cmd_force_high_bound,
                                       ur_cmd_contact_handling)
         exit_critical
-        
-        # Trigger the move, by starting and then killing the move thread. The move still executes for the current time step.
-        # Note that the call below suspends the current thread (killing the motion thread yields the remaining time), 
-        # so this loop resumes only after 8ms
-        #cmd_thread = run ur_speed_command_thread_fn()
+
         target_speed = [target[0], target[1], target[2], target[3], target[4], target[5]]
         max_acc = target[6]
-        speedj(target_speed, max_acc, UR_TIME_SLICE)
+        speedj(target_speed, max_acc, timeout)
+        sync()
     end
-end     
+end
 

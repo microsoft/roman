@@ -4,6 +4,18 @@ import math
 from roman import Robot, SimScene, connect, connect_sim
 from roman import Joints, Tool, Position, GraspMode
 
+def arm_read(use_sim, config={}):
+    print(f"Running {__file__}::{arm_read.__name__}()")
+    robot = Robot(use_sim=use_sim, config=config).connect()
+    arm = robot.arm
+    position = Joints(0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0)
+    arm.read()
+    print(arm.state.joint_positions())
+    assert not arm.state.is_moving()
+
+    robot.disconnect()
+    print("Passed.")
+
 def arm_move(use_sim):
     print(f"Running {__file__}::{arm_move.__name__}()")
     robot = Robot(use_sim=use_sim).connect()
@@ -110,6 +122,7 @@ def arm_touch(use_sim):
 # Runner
 #############################################################
 def run(use_sim):
+    arm_read(False, {"hand.activate": False})
     arm_move(use_sim)
     #hand_move(use_sim)
     #arm_hand_move(use_sim)
