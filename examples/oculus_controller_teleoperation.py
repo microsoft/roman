@@ -35,8 +35,11 @@ def get_cartesian_pose(robot, matrix=True):
     return tr.RpToTrans(tr.eulerAnglesToRotationMatrix(tool_pose[3:]), tool_pose[:3])
 
 def set_gripper_position(robot, position):
-    mode = GraspMode.PINCH if robot.hand.state.mode() != GraspMode.PINCH else GraspMode.BASIC
-    robot.hand.set_mode(mode)
+    if position > 0:
+        robot.hand.set_mode(GraspMode.PINCH)
+    else:
+        robot.hand.set_mode(GraspMode.BASIC)
+
 
 if __name__ == '__main__':
     robot = connect(use_sim=True)
