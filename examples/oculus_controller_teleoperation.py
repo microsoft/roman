@@ -30,7 +30,7 @@ def get_pose_and_button(reader):
 def get_cartesian_pose(robot, matrix=True):
     tool_pose = robot.arm.state.tool_pose()
     if not matrix:
-        return tool_pose.position(), tool_pose.orientation()
+        return tool_pose
     
     return tr.RpToTrans(tr.eulerAnglesToRotationMatrix(tool_pose[3:]), tool_pose[:3])
 
@@ -72,8 +72,7 @@ if __name__ == '__main__':
                 continue
 
         prev_handle_press = True
-        print('gripper set point', 1 - trigger_continuous)
-        set_gripper_position(robot, 1 - trigger_continuous)
+        set_gripper_position(robot, trigger_continuous)
 
         current_vr_transform = oculus_to_robot(current_vr_transform)
         current_vr_transform = tr.TransInv(initial_vr_offset).dot(current_vr_transform)
@@ -81,16 +80,17 @@ if __name__ == '__main__':
 
         M_rob, v_rob = tr.TransToRp(reference_robot_transform)
         M_delta, v_delta = tr.TransToRp(delta_vr_transform)
-        new_robot_transform = tr.RpToTrans(M_delta.dot(M_rob), v_rob + v_delta)
-
-        R, p = tr.TransToRp(new_robot_transform)
-        euler = tr.rotationMatrixToEulerAngles(R)
+        # new_robot_transform = tr.RpToTrans(M_delta.dot(M_rob), v_rob + v_delta)
+        new_robot_transform = delta_vr_transform.dot(reference_robot_transform)
 
         current_pose = get_cartesian_pose(robot, matrix=False)
         print(f"cur {current_pose}")
-
-        target = Tool.from_xyzrpy(p + euler)
+        action = tr.transform2action_local(new_robot_transform, trigger_continuous, current_pose[:3])
+        x, y, z = action[:3]
+        roll, pitch, yaw = action[3:-1]
+        target = current_pose.to_xyzrpy() + [x, y, z, roll, pitch, yaw]
+        target = Tool.from_xyzrpy(target)
         print(f"target {target}")
-        robot.arm.move(target, max_speed=1, max_acc=1, blocking=False)
+        robot.arm.move(target, blocking=False)
 
     robot.disconnect()
