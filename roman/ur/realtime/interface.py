@@ -9,7 +9,6 @@ from .drive import *
 ################################################################################################################################
 
 # Builds the complete state response returned to clients after each command.
-# !!! When running on UR, this function must be called from within a critical section.
 def get_arm_state(target_pose, target_joints):
     s = ur_get_status()
     # the order below mimics the UR's order (as defined by its RT interface))
@@ -54,13 +53,12 @@ def get_arm_state(target_pose, target_joints):
             ]
 #ur:end
 
-# !!! When running on UR, this function must be called from within a critical section.
 def execute_arm_command(cmd, offset):
     kind = cmd[UR_CMD_KIND + offset]
 
     # ESTOP
     if kind == UR_CMD_KIND_ESTOP or kind >= UR_CMD_KIND_INVALID:
-        ur_drive(ur_get_time(), 0, UR_CMD_KIND_MOVE_JOINT_SPEEDS, UR_ZERO, 0, 10, UR_FORCE_IGNORE_LOW, UR_FORCE_IGNORE_HIGH, 0)
+        ur_drive(ur_get_time(), 0, UR_CMD_KIND_MOVE_JOINT_SPEEDS, UR_ZERO, 0, 10, UR_FORCE_IGNORE_LOW, UR_FORCE_IGNORE_HIGH, UR_CMD_MOVE_CONTROLLER_DEFAULT, 0)
         return get_arm_state(UR_ZERO, UR_ZERO)
     #ur:end
 
@@ -96,7 +94,13 @@ def execute_arm_command(cmd, offset):
     max_acceleration = cmd[UR_CMD_MOVE_MAX_ACCELERATION + offset]
     force_low_bound = s_(cmd, UR_CMD_MOVE_FORCE_LOW_BOUND, offset)
     force_high_bound = s_(cmd, UR_CMD_MOVE_FORCE_HIGH_BOUND, offset)
-    contact_handling = cmd[UR_CMD_MOVE_CONTACT_HANDLING + offset]
+    controller = cmd[UR_CMD_MOVE_CONTROLLER + offset]
+    controller_args = cmd[UR_CMD_MOVE_CONTROLLER_ARGS + offset]
+    # all other controllers are implemented client-side for now, so replace with default controller
+    if controller != UR_CMD_MOVE_CONTROLLER_DEFAULT:
+        controller = UR_CMD_MOVE_CONTROLLER_DEFAULT
+        controller_args = 0
+    #ur:end
     if kind == UR_CMD_KIND_MOVE_TOOL_POSE:
         # convert tool pose to joints position
         kind = UR_CMD_KIND_MOVE_JOINT_POSITIONS
@@ -114,8 +118,11 @@ def execute_arm_command(cmd, offset):
             pose_target = UR_ZERO
         #ur:end
     #ur:end
+    if UR_ROBOT_VERSION == UR_ROBOT_VERSION_ESERIES:
+        sync()
+    #ur:end
     max_speed = cmd[UR_CMD_MOVE_MAX_SPEED + offset]
-    ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, contact_handling)
+    ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, controller, controller_args)
     return get_arm_state(pose_target, joint_target)
 #ur:end
 

@@ -12,7 +12,6 @@ UR_CMD_KIND_ESTOP = 0
 UR_CMD_KIND_MOVE_JOINT_SPEEDS = 1 # Accelerate to and maintain the specified speed
 UR_CMD_KIND_MOVE_TOOL_POSE = 2 # Move towards an absolute goal position expressed as a tool pose.
 UR_CMD_KIND_MOVE_JOINT_POSITIONS = 3 # Move towards an absolute goal position expressed in joint angles.
-UR_CMD_KIND_MOVE_TOOL_LINEAR = 4 # Move in a straight line towards an absolute goal position expressed as a tool pose.
 UR_CMD_KIND_READ = 8
 UR_CMD_KIND_CONFIG = 9
 UR_CMD_KIND_IK_QUERY = 10
@@ -29,9 +28,14 @@ UR_CMD_MOVE_MAX_SPEED = 8
 UR_CMD_MOVE_MAX_ACCELERATION = 9
 UR_CMD_MOVE_FORCE_LOW_BOUND = [10, 16]
 UR_CMD_MOVE_FORCE_HIGH_BOUND = [16, 22]
-UR_CMD_MOVE_CONTACT_HANDLING = 22
-UR_CMD_MOVE_CONTROLLER = 23
+UR_CMD_MOVE_CONTROLLER = 22
+UR_CMD_MOVE_CONTROLLER_ARGS = 23
 UR_CMD_ENTRIES_COUNT = 24 # This is how many floats we expect with each command (not including the count prefix). Needs to stay under 30 (UR restriction).
+
+# Supported controllers
+UR_CMD_MOVE_CONTROLLER_DEFAULT = 0 # default controller. In pose/position control, a low-bound on the final speed of the leading joint can be specified via controller_args.
+UR_CMD_MOVE_CONTROLLER_TOUCH = 1 # expects to touch an obstacle and stop prior to eaching the specified target.
+UR_CMD_MOVE_CONTROLLER_RT = 2 # reach the target in the specified amount of time (specified by UR_CMD_MOVE_TIME)
 
 # State field indices
 UR_STATE_TIME = 0
@@ -67,12 +71,12 @@ UR_DEFAULT_TOOL_COG = [0, 0, 0.12]
 UR_DEFAULT_TCP = [0, 0, 0.12, 0, 0, 0]
 
 # control
-UR_TIME_SLICE = 1./125 # by default, use the CB2 version.
+UR_TIME_SLICE = 1./125 # by default, use the CB2 version. The value gets overriden at runtime on higher UR versions (eseries).
 UR_SPEED_TOLERANCE = 0.05 # rad/s
 UR_SPEED_NORM_ZERO = 0.05 # rad/s
 UR_JOINTS_POSITION_TOLERANCE = 0.001 # rad
 UR_TOOL_POSITION_TOLERANCE = 0.001 # m
-UR_TOOL_ROTATION_TOLERANCE = 0.001 # rad
+UR_TOOL_ROTATION_TOLERANCE = 0.005 # rad
 UR_DEADMAN_SWITCH_LIMIT = 0.1 # seconds
 UR_EPSILON = 0.00001
 

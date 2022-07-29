@@ -40,7 +40,17 @@ class Connection:
     def connect(self):
         # create and connect the real-time channel
         rt_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        rt_socket.connect((self.arm_ip, UR_RT_PORT))
+        try:
+            rt_socket.connect((self.arm_ip, UR_RT_PORT))
+        except TimeoutError:
+            ex = ConnectionError(f'Failed to connect to robot. Possible reasons:\n \
+            - robot and client are not on the same network;\n \
+            - robot IP address is not {self.arm_ip}. Check robot setup;\n\
+            - firewall settings are missing an outbound rule;\n   \
+            - robot controller is off; \n\
+            - robot controller is on but robot itself is not on (e-series) or not initialized (CB); \n\
+            ')
+            raise ex from None
         print('Connected to robot.')
 
         # now create the control channel and accept the connection from the script that will be running on the robot
@@ -49,7 +59,27 @@ class Connection:
         reverse_conn.listen(1)
         reverse_conn.settimeout(1)
 
-        # test the version of the controller by running a script that attempts to connect back
+        # test the connection by running a script that attempts to connect back
+        script = self.__generate_urscript("connection_test").encode('ascii')
+        socket_send_retry(rt_socket, script)
+        print('Checking reverse connectivity ... ')
+        try:
+            self.__ctrl_socket, addr = reverse_conn.accept()
+            print('Robot connected to client.')
+            self.__ctrl_socket.close()
+        except socket.timeout:
+            ex = ConnectionError(f'Robot could not connect back to client. Possible reasons: \n\
+            - the firewall settings are missing an inbound rule \n\
+            - network type (for {self.local_ip} adapter) is not set to private.\n\
+            - the robot is in Local mode (should be in Remote mode); \n\
+            - the robot is in protective stop (check for popup message on pendant); \n\
+            - the robot is in e-stop (check physical button); \n\
+            - the robot is paused / not started (check initialization screen); \n\
+            - a script is already running on the robot; \n\
+            ')
+            raise ex from None
+
+        # test the version of the controller by running a e-series-only script that attempts to connect back
         script = self.__generate_urscript("version_test").encode('ascii')
         socket_send_retry(rt_socket, script)
         print('Checking version ... ')
@@ -65,10 +95,15 @@ class Connection:
         # upload the runtime, which will also connect back to us
         script = self.__generate_urscript(main).encode('ascii')
         socket_send_retry(rt_socket, script)
-        print('Waiting for robot to connect... ')
-        self.__ctrl_socket, addr = reverse_conn.accept()
-        if (addr[0] != self.arm_ip):
-            raise RuntimeError("Invalid client connection")
+        print('Waiting for realtime module to start ... ')
+        try:
+            self.__ctrl_socket, addr = reverse_conn.accept()
+            if (addr[0] != self.arm_ip):
+                raise ConnectionError(f"Received an unexpected connection request from {addr[0]}")
+        except socket.timeout:
+            ex = ConnectionError('Realtime module failed to start. \n\
+                Check for a syntax error by running arm_upload_test.py.')
+            raise ex from None
         print('System ready.')
 
     def disconnect(self):

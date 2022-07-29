@@ -12,10 +12,14 @@ ur_cmd_max_speed = 0
 ur_cmd_max_acceleration = 0
 ur_cmd_force_low_bound = UR_DEFAULT_FORCE_LOW_BOUND
 ur_cmd_force_high_bound = UR_DEFAULT_FORCE_HIGH_BOUND
-ur_cmd_contact_handling = 0
+ur_cmd_controller = UR_CMD_MOVE_CONTROLLER_DEFAULT
+ur_cmd_controller_args = 0
+# the computed internal state based on the last command
+ur_last_state = [0, 0, 0, 0, 0, 0]
 
-def ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, contact_handling):
+def ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, controller, controller_args):
     # the actual work is done on separate drive and motion threads, below
+    enter_critical
     ur_cmd_time = time
     ur_cmd_id = id
     ur_cmd_kind = kind
@@ -24,10 +28,15 @@ def ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_boun
     ur_cmd_max_acceleration = max_acceleration
     ur_cmd_force_low_bound = force_low_bound
     ur_cmd_force_high_bound = force_high_bound
-    ur_cmd_contact_handling = contact_handling
+    ur_cmd_controller = controller
+    ur_cmd_controller_args = controller_args
+    exit_critical
     return 0
 end
 
+def ur_get_status():
+  return ur_last_state
+end
 
 
 ################################################################################################################################
@@ -59,19 +68,33 @@ thread ur_cb2_drive_thread_fn():
     while True:
         kill cmd_thread
         enter_critical
-        target = ur_get_target_speed( ur_cmd_time,
-                                      ur_cmd_id,
-                                      ur_cmd_kind,
-                                      ur_cmd_target,
-                                      ur_cmd_max_speed,
-                                      ur_cmd_max_acceleration,
-                                      ur_cmd_force_low_bound,
-                                      ur_cmd_force_high_bound,
-                                      ur_cmd_contact_handling)
-        ur_target_speed = [target[0], target[1], target[2], target[3], target[4], target[5]]
-        ur_max_acc = target[6]
+        cmd_time = ur_cmd_time
+        cmd_id = ur_cmd_id
+        cmd_kind = ur_cmd_kind
+        cmd_target = ur_cmd_target
+        cmd_max_speed = ur_cmd_max_speed
+        cmd_max_acceleration = ur_cmd_max_acceleration
+        cmd_force_low_bound = ur_cmd_force_low_bound
+        cmd_force_high_bound = ur_cmd_force_high_bound
+        cmd_controller = ur_cmd_controller
+        cmd_controller_args = ur_cmd_controller_args
         exit_critical
 
+        res = ur_get_target_speed(  cmd_time,
+                                    cmd_id,
+                                    cmd_kind,
+                                    cmd_target,
+                                    cmd_max_speed,
+                                    cmd_max_acceleration,
+                                    cmd_force_low_bound,
+                                    cmd_force_high_bound,
+                                    cmd_controller,
+                                    cmd_controller_args)
+        enter_critical
+        ur_target_speed = [res[0], res[1], res[2], res[3], res[4], res[5]]
+        ur_max_acc = res[6]
+        ur_last_state = [res[7], res[8], res[9], res[10], res[11], res[12]]
+        exit_critical
 
         # Trigger the move, by starting and then killing the move thread. The move still executes for the current time step.
         # Note that the call below suspends the current thread (killing the motion thread yields the remaining time),
@@ -88,24 +111,36 @@ end
 # On CB3 and e-series, this is the only thread allowed to call UR motion primitives (speedj)
 thread ur_drive_thread_fn():
     textmsg("time slice: ", UR_TIME_SLICE)
-    timeout = UR_TIME_SLICE * 0.95 # leave a little bit of time so we actually fit in the time quota
+    timeout = UR_TIME_SLICE * 0.95 # leave a little bit of time so we actually fit in the time quota and sync
     while True:
-        enter_critical
-        target = ur_get_target_speed( ur_cmd_time,
-                                      ur_cmd_id,
-                                      ur_cmd_kind,
-                                      ur_cmd_target,
-                                      ur_cmd_max_speed,
-                                      ur_cmd_max_acceleration,
-                                      ur_cmd_force_low_bound,
-                                      ur_cmd_force_high_bound,
-                                      ur_cmd_contact_handling)
-        exit_critical
+      enter_critical
+      cmd_time = ur_cmd_time
+      cmd_id = ur_cmd_id
+      cmd_kind = ur_cmd_kind
+      cmd_target = ur_cmd_target
+      cmd_max_speed = ur_cmd_max_speed
+      cmd_max_acceleration = ur_cmd_max_acceleration
+      cmd_force_low_bound = ur_cmd_force_low_bound
+      cmd_force_high_bound = ur_cmd_force_high_bound
+      cmd_controller = ur_cmd_controller
+      cmd_controller_args = ur_cmd_controller_args
+      exit_critical
 
-        target_speed = [target[0], target[1], target[2], target[3], target[4], target[5]]
-        max_acc = target[6]
-        speedj(target_speed, max_acc, timeout)
-        sync()
+      res = ur_get_target_speed(  cmd_time,
+                                  cmd_id,
+                                  cmd_kind,
+                                  cmd_target,
+                                  cmd_max_speed,
+                                  cmd_max_acceleration,
+                                  cmd_force_low_bound,
+                                  cmd_force_high_bound,
+                                  cmd_controller,
+                                  cmd_controller_args)
+      target_speed = [res[0], res[1], res[2], res[3], res[4], res[5]]
+      max_acc = res[6]
+      speedj(target_speed, max_acc, timeout)
+      ur_last_state = [res[7], res[8], res[9], res[10], res[11], res[12]]
+      sync() # this sync in conjunction with the reduced timeout ( < UR_TIME_SLICE) prevents overshoot
     end
 end
 

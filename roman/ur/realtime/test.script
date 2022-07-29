@@ -5,9 +5,9 @@
 ## by loading them and connecting back to the client to confirm.
 ## Use upload_test.py to upload it.
 ################################################################
-# If upload_test.py is hanging, comment out the import lines below 
+# If upload_test.py is hanging, comment out the import lines below
 # one by one (starting from the bottom) to find the which script
-# file has a syntax error, then remove blocks from the file to 
+# file has a syntax error, then remove blocks from the file to
 # determine the function/block/line of the error
 from constants import *
 from sensor import *

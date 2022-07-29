@@ -26,7 +26,10 @@ class BasicController:
         if cmd.is_move_command():
             at_goal = cmd._goal_reached(state)
             state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, at_goal)
-            state._set_state_flag(State._STATUS_FLAG_DONE, at_goal)
+            if cmd.controller() == UR_CMD_MOVE_CONTROLLER_DEFAULT and cmd.controller_args() == 0:
+                state._set_state_flag(State._STATUS_FLAG_DONE, at_goal and not state.is_moving())
+            else:
+                state._set_state_flag(State._STATUS_FLAG_DONE, at_goal)
         return state
 
 class EMAForceCalibrator:
@@ -61,6 +64,58 @@ class EMAForceCalibrator:
         np.subtract(state.sensor_force(), self.force_average, state.sensor_force().array)
         return state
 
+class IncrementalController:
+    '''
+    This controller moves the arm in the direction of the target pose for the specified amount
+    of time. The last portion of the trajectory is executed open-loop, to avoid hunting for the
+    target position. The final speed is unspecified, and is derived from the other motion constraints.
+    It is assumed that the client issues new commands with relatively high frequency (e.g. 30Hz),
+    providing vision-based corrections to reach some higher-level goal.
+    '''
+    def __init__(self, next, open_loop_duration=0.008):
+        self.next = next
+        self.cmd_read = Command().make()
+        self.open_loop_duration = open_loop_duration
+        self.cmd = None
+        self.start_time = 0
+        self.speed_cmd = None
+        self.target = None
+
+    def execute(self, cmd, state):
+        if self.cmd != cmd:
+            # new command
+            self.cmd = cmd.clone()
+            self.next.execute(cmd, state)
+            self.start_time = state.time()
+            self.target = state.target_joint_positions()
+            self.speed_cmd = self.cmd.clone()
+            self.speed_cmd[Command._KIND] = UR_CMD_KIND_MOVE_JOINT_SPEEDS
+            return state
+
+        time_left = self.cmd.controller_args() - state.time() + self.start_time
+        if time_left <= 0:
+            self.next.execute(self.cmd_read, state)
+        else:
+            if time_left > self.open_loop_duration:
+                # we are far enough to perform corrections
+                self.next.execute(cmd, state)
+                # prep the speed command
+                # speed derived from: d = t*(vf+v0)/2 => vf = 2d/t - v0
+                speed = (self.target - state.joint_positions()) * 2 / time_left - state.joint_speeds()
+                if np.amax(np.fabs(speed)) > self.cmd.max_speed():
+                    speed = speed * (self.cmd.max_speed() / np.amax(np.fabs(speed)))
+                self.speed_cmd[Command._MOVE_TARGET] = speed
+                acc = np.amax(np.fabs(speed - state.joint_speeds())) / time_left
+                self.speed_cmd[Command._MOVE_MAX_ACCELERATION] = min(acc, self.cmd.max_acceleration())
+            else:
+                # we are close to the time limit, no more corrections
+                self.next.execute(self.speed_cmd, state)
+
+        state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, cmd._goal_reached(state))
+        self.cmd.controller_args() - state.time() + self.start_time
+        state._set_state_flag(State._STATUS_FLAG_DONE, time_left <= 0)
+        return state
+
 class TouchController:
     '''
     Expects contact before completing the motion. Verifies that the contact is not spurrious before assuming the goal is reached.
@@ -92,14 +147,14 @@ class TouchController:
         if cmd.id() != self.cmd_id and cmd.is_move_command():
             # new command, reset
             self.cmd_id = cmd.id()
-            self.count = self.validation_count = cmd.contact_handling()
+            self.count = self.validation_count = cmd.controller_args()
             self.force_sum[:] = 0
             return state
 
         if state.is_moving() and not state.is_contact():
             return state
 
-        if self.count == 0 or np.any(self.force_sum < cmd.force_low_bound()*cmd.contact_handling()) or np.any(self.force_sum > cmd.force_high_bound()*cmd.contact_handling()):
+        if self.count == 0 or np.any(self.force_sum < cmd.force_low_bound()*cmd.controller_args()) or np.any(self.force_sum > cmd.force_high_bound()*cmd.controller_args()):
             state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 1)
             state._set_state_flag(State._STATUS_FLAG_DONE, 1)
             self.count = 0
@@ -128,10 +183,14 @@ class ArmController:
         basic = BasicController(connection)
         ema = EMAForceCalibrator(basic)
         touch = TouchController(ema)
-        self.controllers = [ema, touch]
+        inc = IncrementalController(ema)
+        self.controllers = {
+            UR_CMD_MOVE_CONTROLLER_DEFAULT: ema,
+            UR_CMD_MOVE_CONTROLLER_TOUCH: touch,
+            UR_CMD_MOVE_CONTROLLER_RT: inc}
         self.cmd = Command()
 
     def execute(self, cmd, state):
         self.cmd[:] = cmd
-        controller = self.controllers[int(self.cmd.controller_flags())]
+        controller = self.controllers[int(self.cmd.controller())]
         return controller.execute(self.cmd, state)

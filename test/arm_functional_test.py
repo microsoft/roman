@@ -124,4 +124,4 @@ def run(use_sim):
 
 
 if __name__ == '__main__':
-    run(use_sim=False)
+    run(use_sim=True)

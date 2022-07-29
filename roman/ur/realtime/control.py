@@ -39,7 +39,7 @@ def ur_joint_distances(current, target):
 #ur:end
 
 # finds the joint that requires the longest time to reach the target position
-def ur_get_leading_dim(distances, speeds, max_speed, max_acc, decel_to_zero):
+def ur_get_leading_dim(distances, speeds, max_speed, max_acc, final_speed):
     i = 0
     itime = 10000.
     litime = 0.
@@ -53,8 +53,8 @@ def ur_get_leading_dim(distances, speeds, max_speed, max_acc, decel_to_zero):
                 extra = speed*speed / max_acc # add the (double) distance this joint will travel before it can reverse
                 dist = dist + extra
             #ur:end
-
-            if decel_to_zero and (dist <= 0.5 * speed * speed / max_acc):
+            speed_delta = fabs(speed) - final_speed
+            if speed_delta > 0 and (dist <= 0.5 * speed_delta * speed_delta / max_acc):
                 sign = -sign # we are close to the final goal and need to decelerate
             #ur:end
             speed = fabs(speed + sign * max_acc * UR_TIME_SLICE)
@@ -74,11 +74,11 @@ def ur_get_leading_dim(distances, speeds, max_speed, max_acc, decel_to_zero):
 #ur:end
 
 # joint-linear motion
-def ur_speed_joint_linear(target, max_speed, max_acc):
-    positions = get_actual_joint_positions()
+def ur_speed_joint_linear(target, max_speed, max_acc, final_speed):
+    positions = get_target_joint_positions()
     speeds = get_target_joint_speeds()
     distances = ur_joint_distances(positions, target)
-    itime = ur_get_leading_dim(distances, speeds, max_speed, max_acc, True)
+    itime = ur_get_leading_dim(distances, speeds, max_speed, max_acc, final_speed)
     return [
         distances[0] * itime,
         distances[1] * itime,
@@ -98,36 +98,11 @@ ctrl_is_contact = False
 ctrl_is_moving = False
 ctrl_is_deadman = False
 
-def ur_get_status():
-    global ctrl_last_loop_time
-    global ctrl_last_cmd_id
-    global ctrl_is_contact
-    global ctrl_is_moving
-    global ctrl_is_deadman
-    if ctrl_is_moving:
-        is_moving = 1
-    else:
-        is_moving = 0
-    #ur:end
-    if ctrl_is_contact:
-        is_contact = 1
-    else:
-        is_contact = 0
-    #ur:end
-    if ctrl_is_deadman:
-        is_deadman = 1
-    else:
-        is_deadman = 0
-    #ur:end
-    return [ctrl_last_loop_time, ctrl_last_cmd_id, ctrl_last_loop_time, is_moving, is_contact, is_deadman]
-#ur:end
-
-
 # verifies that the control loop runs fast enough.
 def ur_check_loop_delay(loop_time):
     time = ur_get_time()
     delay = time - loop_time
-    if delay >= UR_TIME_SLICE*2:
+    if delay >= UR_TIME_SLICE*3:
         textmsg("drive loop delayed: ", delay)
     #ur:end
     return time
@@ -135,7 +110,7 @@ def ur_check_loop_delay(loop_time):
 
 # Generate a target speed based on the latest command and current state
 # Note that this is called in a loop on the drive thread by the real robot
-def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_low_bound, force_high_bound, contact_handling):
+def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_low_bound, force_high_bound, controller, controller_args):
     # verify we are not running behind
     global ctrl_last_loop_time
     ctrl_last_loop_time = ur_check_loop_delay(ctrl_last_loop_time)
@@ -155,6 +130,7 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
 
     cmd = UR_ZERO
     acc = UR_FAST_STOP_ACCELERATION
+
     # determine desired speed
     if ctrl_is_deadman:
         if not was_deadman:
@@ -166,7 +142,8 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
         cmd = target
         acc = max_acc
     elif kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS: # this covers UR_CMD_KIND_MOVE_TOOL_POSE too, see interface.py
-        cmd = ur_speed_joint_linear(target, max_speed, max_acc)
+        final_speed = fabs(controller_args)
+        cmd = ur_speed_joint_linear(target, max_speed, max_acc, final_speed)
         acc = max_acc
     #ur:end
 
@@ -177,9 +154,36 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
     #ur:end
 
     global ctrl_is_moving
-    ctrl_is_moving = norm(cmd) > UR_SPEED_NORM_ZERO or norm(get_actual_joint_speeds()) > UR_SPEED_NORM_ZERO
+    ctrl_is_moving = norm(cmd) > UR_SPEED_NORM_ZERO or norm(get_target_joint_speeds()) > UR_SPEED_NORM_ZERO
 
     # update state
     ctrl_last_cmd = cmd
-    return [cmd[0], cmd[1], cmd[2], cmd[3], cmd[4], cmd[5], acc]
+    if ctrl_is_moving:
+        is_moving = 1
+    else:
+        is_moving = 0
+    #ur:end
+    if ctrl_is_contact:
+        is_contact = 1
+    else:
+        is_contact = 0
+    #ur:end
+    if ctrl_is_deadman:
+        is_deadman = 1
+    else:
+        is_deadman = 0
+    #ur:end
+    return [cmd[0],
+            cmd[1],
+            cmd[2],
+            cmd[3],
+            cmd[4],
+            cmd[5],
+            acc,
+            ctrl_last_loop_time,
+            ctrl_last_cmd_id,
+            ctrl_last_loop_time,
+            is_moving,
+            is_contact,
+            is_deadman]
 #ur:end

@@ -96,7 +96,7 @@ def command_test():
     assert c.max_acceleration() == UR_DEFAULT_ACCELERATION
     assert type(c.force_low_bound()) is Tool
     assert type(c.force_high_bound()) is Tool
-    assert c.contact_handling() == 0
+    assert c.controller_args() == 0
     assert type(c.target()) is Joints
     assert c.max_speed() == UR_DEFAULT_MAX_SPEED
     assert c.controller_flags() == 0
@@ -107,7 +107,7 @@ def command_test():
     assert c.max_acceleration() == UR_CMD_MOVE_MAX_ACCELERATION
     assert np.all(c.force_low_bound().array == np.arange(*UR_CMD_MOVE_FORCE_LOW_BOUND))
     assert np.all(c.force_high_bound().array == np.arange(*UR_CMD_MOVE_FORCE_HIGH_BOUND))
-    assert c.contact_handling() == UR_CMD_MOVE_CONTACT_HANDLING
+    assert c.controller_args() == UR_CMD_MOVE_CONTROLLER_ARGS
     assert np.all(c.target().array == np.arange(*UR_CMD_MOVE_TARGET))
     assert c.max_speed() == UR_CMD_MOVE_MAX_SPEED
     assert c.controller_flags() == UR_CMD_MOVE_CONTROLLER
@@ -207,7 +207,7 @@ def touch_controller_test():
     print(f"Running {__file__}::{touch_controller_test.__name__}()")
     arm_state = State()
     arm_state[State._STATUS] = State._STATUS_FLAG_GOAL_REACHED
-    cmd = Command().make(kind =UR_CMD_KIND_MOVE_JOINT_POSITIONS, target=Joints(0,0,0,0,0,0), contact_handling=3)
+    cmd = Command().make(kind =UR_CMD_KIND_MOVE_JOINT_POSITIONS, target=Joints(0,0,0,0,0,0), controller_args=3)
     ctrl = TouchController(Connection(arm_state))
     state = State()
     ctrl.execute(cmd, state)
@@ -215,7 +215,7 @@ def touch_controller_test():
     assert state.is_done()
 
     arm_state[State._STATUS] = State._STATUS_FLAG_CONTACT
-    cmd.make(kind =UR_CMD_KIND_MOVE_JOINT_POSITIONS, target=Joints(1,1,1,1,1,1), contact_handling=3)
+    cmd.make(kind =UR_CMD_KIND_MOVE_JOINT_POSITIONS, target=Joints(1,1,1,1,1,1), controller_args=3)
     ctrl.execute(cmd, state)
     assert not state.is_goal_reached()
     assert not state.is_done()

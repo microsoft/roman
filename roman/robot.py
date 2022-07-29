@@ -1,5 +1,7 @@
 from math import inf
 import numpy as np
+
+from roman.ur.realtime.constants import UR_CMD_MOVE_CONTROLLER_DEFAULT, UR_CMD_MOVE_CONTROLLER_RT
 from .rq.hand import GraspMode, Hand, Position
 from . import rq
 from .ur.arm import Arm, Tool, Joints
@@ -106,14 +108,44 @@ class Robot:
              max_acc=UR_DEFAULT_ACCELERATION,
              force_limit=None,
              timeout=None,
+             max_final_speed=0,
              completion=None):
         self.__check_connected()
         force_limit = force_limit or self.active_force_limit
+
+        controller = UR_CMD_MOVE_CONTROLLER_DEFAULT
+        controller_args = max_final_speed
+
         self.arm.move(target,
                       max_speed=max_speed,
                       max_acc=max_acc,
                       force_low_bound=force_limit[0],
                       force_high_bound=force_limit[1],
+                      controller=controller,
+                      controller_args=controller_args,
+                      blocking=False)
+        return self.__complete_move(timeout, completion)
+
+    def move_rt(self,
+             target,
+             duration,
+             max_speed=UR_DEFAULT_MAX_SPEED,
+             max_acc=UR_DEFAULT_ACCELERATION,
+             force_limit=None,
+             timeout=None,
+             completion=None):
+        self.__check_connected()
+        force_limit = force_limit or self.active_force_limit
+        controller = UR_CMD_MOVE_CONTROLLER_RT
+        controller_args = duration
+
+        self.arm.move(target,
+                      max_speed=max_speed,
+                      max_acc=max_acc,
+                      force_low_bound=force_limit[0],
+                      force_high_bound=force_limit[1],
+                      controller=controller,
+                      controller_args=controller_args,
                       blocking=False)
         return self.__complete_move(timeout, completion)
 
@@ -122,7 +154,7 @@ class Robot:
               max_speed=UR_DEFAULT_MAX_SPEED,
               max_acc=UR_DEFAULT_ACCELERATION,
               force_limit=FORCE_LIMIT_TOUCH,
-              contact_force_multiplier=2,
+              contact_force_multiplier=5,
               timeout=None,
               completion=None):
         self.__check_connected()
@@ -132,6 +164,7 @@ class Robot:
                        max_acc=max_acc,
                        force_low_bound=force_limit[0],
                        force_high_bound=force_limit[1],
+                       contact_force_multiplier=contact_force_multiplier,
                        blocking=False)
         return self.__complete_move(timeout, completion)
 

@@ -1,0 +1,12 @@
+
+################################################################
+## connection_test.script
+## Used to validate the connection to robot at startup.
+################################################################
+
+connected = False
+while not connected:
+    connected = socket_open(UR_CLIENT_IP, UR_CLIENT_PORT, "ctrl")
+end
+
+

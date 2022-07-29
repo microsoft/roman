@@ -70,7 +70,7 @@ def test_script():
 #############################################################
 def run(use_sim):
     # run the tests
-    generate_script()
+    # generate_script()
 
     if not use_sim:
         test_script()

@@ -207,8 +207,7 @@ class Command(Vec):
     Represents a command that can be sent to the arm.
     The move target can be joint speeds, or an absolute position, specified either as a tool pose or as joint angles.
     In either case, the arm stops when contact is detected, that is, if fabs(actual_force - expected_force) > max_force.
-    The type of reaction to contact is determined by the contact_handling parameter.
-    An optional motion controller choice can be specified using the controller parameter.
+    An optional motion controller choice can be specified using the controller and controler_args parameters.
     Other commands (read and config) can be initialized using the as_xxx methods.
     '''
     _BUFFER_SIZE = UR_CMD_ENTRIES_COUNT
@@ -222,8 +221,8 @@ class Command(Vec):
     _MOVE_MAX_ACCELERATION = UR_CMD_MOVE_MAX_ACCELERATION
     _MOVE_FORCE_LOW_BOUND = slice(*UR_CMD_MOVE_FORCE_LOW_BOUND)
     _MOVE_FORCE_HIGH_BOUND = slice(*UR_CMD_MOVE_FORCE_HIGH_BOUND)
-    _MOVE_CONTACT_HANDLING = UR_CMD_MOVE_CONTACT_HANDLING
     _MOVE_CONTROLLER = UR_CMD_MOVE_CONTROLLER
+    _MOVE_CONTROLLER_ARGS = UR_CMD_MOVE_CONTROLLER_ARGS
 
     def __init__(self):
         super().__init__(Command._BUFFER_SIZE)
@@ -236,23 +235,23 @@ class Command(Vec):
             max_acc=UR_DEFAULT_ACCELERATION,
             force_low_bound:Tool=UR_DEFAULT_FORCE_LOW_BOUND,
             force_high_bound:Tool=UR_DEFAULT_FORCE_HIGH_BOUND,
-            contact_handling=0,
-            controller_flags=0):
+            controller=0,
+            controller_args=0):
 
         self[Command._KIND] = kind
         self[Command._MOVE_TARGET] = target
         self[Command._MOVE_MAX_SPEED] = max_speed
-        self[Command._MOVE_MAX_ACCELERATION]  =max_acc
+        self[Command._MOVE_MAX_ACCELERATION] = max_acc
         self[Command._MOVE_FORCE_LOW_BOUND] = force_low_bound if force_low_bound is not None else UR_FORCE_IGNORE_LOW
         self[Command._MOVE_FORCE_HIGH_BOUND] = force_high_bound if force_high_bound is not None else UR_FORCE_IGNORE_HIGH
-        self[Command._MOVE_CONTACT_HANDLING] = contact_handling
-        self[Command._MOVE_CONTROLLER] = controller_flags
+        self[Command._MOVE_CONTROLLER] = controller
+        self[Command._MOVE_CONTROLLER_ARGS] = controller_args
         return self
 
     def id(self): return self[Command._ID]
     def kind(self): return self[Command._KIND]
     def target(self):
-            if self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE or self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_LINEAR:
+            if self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE:
                 return Tool.fromarray(self[Command._MOVE_TARGET], False)
             elif self[Command._KIND] == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
                 return Joints.fromarray(self[Command._MOVE_TARGET], False)
@@ -261,16 +260,16 @@ class Command(Vec):
     def max_acceleration(self): return self[Command._MOVE_MAX_ACCELERATION]
     def force_low_bound(self): return Tool.fromarray(self[Command._MOVE_FORCE_LOW_BOUND], False)
     def force_high_bound(self): return Tool.fromarray(self[Command._MOVE_FORCE_HIGH_BOUND], False)
-    def contact_handling(self): return self[Command._MOVE_CONTACT_HANDLING]
-    def controller_flags(self): return self[Command._MOVE_CONTROLLER]
+    def controller(self): return self[Command._MOVE_CONTROLLER]
+    def controller_args(self): return self[Command._MOVE_CONTROLLER_ARGS]
     def is_move_command(self): return self[Command._KIND] > UR_CMD_KIND_ESTOP and self[Command._KIND] < UR_CMD_KIND_READ
     def _goal_reached(self, state):
         if self[Command._KIND] == UR_CMD_KIND_MOVE_JOINT_SPEEDS:
             return self.target().allclose(state.joint_speeds(), UR_SPEED_TOLERANCE)
         elif self[Command._KIND] == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
-            return self.target().allclose(state.joint_positions()) and not state.is_moving()
-        elif self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE or self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_LINEAR:
-            return self.target().allclose(state.tool_pose()) and not state.is_moving()
+            return self.target().allclose(state.joint_positions())
+        elif self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE:
+            return self.target().allclose(state.tool_pose())
         else:
             raise Exception("Invalid command type")
 
@@ -314,8 +313,8 @@ class Arm:
             max_acc=UR_DEFAULT_ACCELERATION,
             force_low_bound=UR_DEFAULT_FORCE_LOW_BOUND,
             force_high_bound=UR_DEFAULT_FORCE_HIGH_BOUND,
-            contact_handling=0,
-            controller_flags=0,
+            controller=0,
+            controller_args=0,
             blocking=True):
 
         if type(target_position) is Joints:
@@ -335,8 +334,8 @@ class Arm:
             max_acc=max_acc,
             force_low_bound=force_low_bound,
             force_high_bound=force_high_bound,
-            contact_handling=contact_handling,
-            controller_flags=controller_flags)
+            controller=controller,
+            controller_args=controller_args)
         self.__execute(blocking)
 
     def speed(self,
@@ -344,8 +343,8 @@ class Arm:
             acc=UR_DEFAULT_ACCELERATION,
             force_low_bound=UR_DEFAULT_FORCE_LOW_BOUND,
             force_high_bound=UR_DEFAULT_FORCE_HIGH_BOUND,
-            contact_handling=0,
-            controller_flags=0,
+            controller=0,
+            controller_args=0,
             blocking=True):
         if type(target_speed) is not JointSpeeds:
             raise TypeError("Speed can only be specified as joint velocities. Argument target_speed must be of type JointSpeeds.")
@@ -356,8 +355,8 @@ class Arm:
             max_acc = acc,
             force_low_bound=force_low_bound,
             force_high_bound=force_high_bound,
-            contact_handling=contact_handling,
-            controller_flags=controller_flags)
+            controller=0,
+            controller_args=0)
         self.__execute(blocking)
 
     def stop(self, acc = UR_FAST_STOP_ACCELERATION, blocking = True):
@@ -369,7 +368,7 @@ class Arm:
             max_acc=UR_DEFAULT_ACCELERATION,
             force_low_bound=[-5,-5,-5,-0.5, -0.5, -0.5],
             force_high_bound=[5,5,5,0.5, 0.5, 0.5],
-            contact_handling=5,
+            contact_force_multiplier=5,
             blocking=True):
         self.move(
             target_position,
@@ -377,8 +376,8 @@ class Arm:
             max_acc=max_acc,
             force_low_bound=force_low_bound,
             force_high_bound=force_high_bound,
-            contact_handling=contact_handling,
-            controller_flags=1,
+            controller=UR_CMD_MOVE_CONTROLLER_TOUCH,
+            controller_args=contact_force_multiplier,
             blocking=blocking)
 
     def config(self, mass = UR_DEFAULT_MASS, cog = UR_DEFAULT_TOOL_COG, tcp = UR_DEFAULT_TCP):
