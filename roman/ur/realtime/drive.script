@@ -64,6 +64,8 @@ end
 # To do this, it interrupts and restarts the motion on every cycle, by killing the command thread.
 thread ur_cb2_drive_thread_fn():
     # run forever, checking forces and updating targets
+    textmsg("CB2 drive thread started")
+    textmsg("time slice: ", UR_TIME_SLICE)
     cmd_thread = run ur_speed_command_thread_fn()
     while True:
         kill cmd_thread
@@ -78,7 +80,6 @@ thread ur_cb2_drive_thread_fn():
         cmd_force_high_bound = ur_cmd_force_high_bound
         cmd_controller = ur_cmd_controller
         cmd_controller_args = ur_cmd_controller_args
-        exit_critical
 
         res = ur_get_target_speed(  cmd_time,
                                     cmd_id,
@@ -90,7 +91,6 @@ thread ur_cb2_drive_thread_fn():
                                     cmd_force_high_bound,
                                     cmd_controller,
                                     cmd_controller_args)
-        enter_critical
         ur_target_speed = [res[0], res[1], res[2], res[3], res[4], res[5]]
         ur_max_acc = res[6]
         ur_last_state = [res[7], res[8], res[9], res[10], res[11], res[12]]
@@ -110,6 +110,7 @@ end
 # This is exactly what we need.
 # On CB3 and e-series, this is the only thread allowed to call UR motion primitives (speedj)
 thread ur_drive_thread_fn():
+    textmsg("e-series drive thread started")
     textmsg("time slice: ", UR_TIME_SLICE)
     timeout = UR_TIME_SLICE * 0.95 # leave a little bit of time so we actually fit in the time quota and sync
     while True:
