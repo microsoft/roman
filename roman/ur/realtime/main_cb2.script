@@ -1,3 +1,8 @@
+# this function exists only on eseries. On cb2 it needs to be defined to pass syntax checking (since it's referenced in communication.script)
+def zero_ftsensor():
+    return 0
+end
+
 from communication import *
 
 ################################################################
