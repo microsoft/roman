@@ -102,6 +102,7 @@ class IncrementalController:
                 # prep the speed command
                 # speed derived from: d = t*(vf+v0)/2 => vf = 2d/t - v0
                 speed = (self.target - state.joint_positions()) * 2 / time_left - state.joint_speeds()
+                speed = np.where(np.fabs(speed) > UR_SPEED_TOLERANCE, speed, 0)
                 if np.amax(np.fabs(speed)) > self.cmd.max_speed():
                     speed = speed * (self.cmd.max_speed() / np.amax(np.fabs(speed)))
                 self.speed_cmd[Command._MOVE_TARGET] = speed
