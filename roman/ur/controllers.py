@@ -82,6 +82,10 @@ class IncrementalController:
         self.target = None
 
     def execute(self, cmd, state):
+        if cmd.kind() != UR_CMD_KIND_MOVE_JOINT_POSITIONS and cmd.kind() != UR_CMD_KIND_MOVE_TOOL_POSE:
+            self.next.execute(self.speed_cmd, state)
+            return state
+
         if self.cmd != cmd:
             # new command
             self.cmd = cmd.clone()

@@ -109,7 +109,7 @@ def execute_arm_command(cmd, offset):
         joint_target = get_inverse_kin(ur_pose(target))
         target = joint_target
         #textmsg("joint position",target_position)
-    else:
+    elif kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
         joint_target = target
 
         if UR_ROBOT_VERSION == UR_ROBOT_VERSION_ESERIES:
@@ -117,6 +117,9 @@ def execute_arm_command(cmd, offset):
         else:
             pose_target = UR_ZERO
         #ur:end
+    else:
+        pose_target = UR_ZERO
+        joint_target = UR_ZERO
     #ur:end
     if UR_ROBOT_VERSION == UR_ROBOT_VERSION_ESERIES:
         sync()
