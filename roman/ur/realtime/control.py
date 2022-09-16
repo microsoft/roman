@@ -180,7 +180,7 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
             cmd[4],
             cmd[5],
             acc,
-            ctrl_last_loop_time,
+            ctrl_last_cmd_time,
             ctrl_last_cmd_id,
             ctrl_last_loop_time,
             is_moving,

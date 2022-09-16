@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import time
+from decimal import Decimal, Context
 from scipy.spatial.transform import Rotation
 from ..common import Vec, equal_angle
 from .realtime.constants import *
@@ -224,9 +225,10 @@ class Command(Vec):
     _MOVE_CONTROLLER = UR_CMD_MOVE_CONTROLLER
     _MOVE_CONTROLLER_ARGS = UR_CMD_MOVE_CONTROLLER_ARGS
 
-    def __init__(self):
+    def __init__(self, id=0):
         super().__init__(Command._BUFFER_SIZE)
-        self[Command._KIND]  = UR_CMD_KIND_ESTOP
+        self[Command._KIND]  = UR_CMD_KIND_READ
+        self[Command._ID] = id
 
     def make(self,
             kind = UR_CMD_KIND_READ,
@@ -247,6 +249,12 @@ class Command(Vec):
         self[Command._MOVE_CONTROLLER] = controller
         self[Command._MOVE_CONTROLLER_ARGS] = controller_args
         return self
+
+    def make_read(self):
+        return self.make(kind=UR_CMD_KIND_READ)
+
+    def make_estop(self):
+        return self.make(kind=UR_CMD_KIND_MOVE_JOINT_SPEEDS, max_acc=10, force_low_bound=None, force_high_bound=None)
 
     def id(self): return self[Command._ID]
     def kind(self): return self[Command._KIND]
@@ -281,19 +289,24 @@ class Arm:
         self.controller = controller
         self.command = Command()
         self.state = State()
+        self.decimal_ctx = Context(prec=4)
 
     def __execute(self, blocking):
-        self.command[Command._ID] = time.time()
+        start_time = time.perf_counter()
+        self.command[Command._ID] = self.decimal_ctx.create_decimal(start_time)
         self.controller.execute(self.command, self.state)
-        while blocking and not self.state.is_done():
-            self.controller.execute(self.command, self.state)
+        # print(time.perf_counter()- start_time)
+        while blocking and (self.state.cmd_id() != self.command.id() or not self.state.is_done()):
+            self.step()
 
     def execute(self, command, blocking):
         self.command[:] = command
         self.__execute(blocking)
 
     def step(self):
-        self.controller.execute(self.command, self.state)
+        last_time = self.state.time()
+        while last_time == self.state.time() or self.state.cmd_id() != self.command.id():
+            self.controller.execute(self.command, self.state)
 
     def read(self):
         self.execute(Arm._READ_CMD, False)
@@ -305,6 +318,7 @@ class Arm:
             kind = UR_CMD_KIND_IK_QUERY,
             target = target_position)
         self.__execute(blocking=False)
+        self.step() # wait for the result
         return self.state.target_joint_positions().clone()
 
     def move(self,
@@ -386,3 +400,4 @@ class Arm:
         self.command[Command._CONFIG_MASS]=mass
         self.command[Command._CONFIG_TOOL_COG]=cog
         self.command[Command._CONFIG_TOOL_TIP]=tcp
+        self.__execute(blocking=False)

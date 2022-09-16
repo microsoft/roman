@@ -9,7 +9,7 @@ from .drive import *
 ################################################################################################################################
 
 # Builds the complete state response returned to clients after each command.
-def get_arm_state(target_pose, target_joints):
+def get_arm_state(id, target_pose, target_joints):
     s = ur_get_status()
     # the order below mimics the UR's order (as defined by its RT interface))
     q = get_actual_joint_positions()
@@ -32,9 +32,18 @@ def get_arm_state(target_pose, target_joints):
         ft = f # on e-series, the ft sensor is built in and the value reported by get_tcp_force()
     #ur:end
 
-    return [s[0], # read time
-            s[1], # cmd_id
-            0 + s[3] * UR_STATUS_FLAG_MOVING + s[4] * UR_STATUS_FLAG_CONTACT + s[5] * UR_STATUS_FLAG_DEADMAN, #status
+    moving_flag = s[3] * UR_STATUS_FLAG_MOVING
+    # if this is a new command, ignore the deadman and contact results
+    contact_flag = 0
+    deadman_flag = 0 
+    if id == s[1]:
+        contact_flag = s[4] * UR_STATUS_FLAG_CONTACT
+        deadman_flag = s[5] * UR_STATUS_FLAG_DEADMAN
+    #ur:end
+
+    return [s[0], # time
+            id, #s[1], # cmd_id. 
+            moving_flag + contact_flag + deadman_flag, #status
 
             q[0], q[1], q[2], q[3], q[4], q[5],
             qd[0], qd[1], qd[2], qd[3], qd[4], qd[5],
@@ -55,23 +64,18 @@ def get_arm_state(target_pose, target_joints):
 
 def execute_arm_command(cmd, offset):
     kind = cmd[UR_CMD_KIND + offset]
-
-    # ESTOP
-    if kind == UR_CMD_KIND_ESTOP or kind >= UR_CMD_KIND_INVALID:
-        ur_drive(ur_get_time(), 0, UR_CMD_KIND_MOVE_JOINT_SPEEDS, UR_ZERO, 0, 10, UR_FORCE_IGNORE_LOW, UR_FORCE_IGNORE_HIGH, UR_CMD_MOVE_CONTROLLER_DEFAULT, 0)
-        return get_arm_state(UR_ZERO, UR_ZERO)
-    #ur:end
+    id = cmd[UR_CMD_ID + offset]
 
     # READ
     if kind == UR_CMD_KIND_READ:
-        return get_arm_state(UR_ZERO, UR_ZERO)
+        return get_arm_state(id, UR_ZERO, UR_ZERO)
     #ur:end
 
     # IK_QUERY
     if kind == UR_CMD_KIND_IK_QUERY:
         target = s_(cmd, UR_CMD_MOVE_TARGET, offset)
         joint_target = get_inverse_kin(ur_pose(target))
-        return get_arm_state(target, joint_target)
+        return get_arm_state(id, target, joint_target)
     #ur:end
 
     # CONFIG: payload (kg), tool center of gravity (vec3), tool tip (vec6)
@@ -80,7 +84,7 @@ def execute_arm_command(cmd, offset):
         set_tcp(ur_pose(s_(cmd, UR_CMD_CONFIG_TOOL_TIP, offset)))
         # todo: add support for setting workspace bounds
         # todo: add support for setting speed, acc and force bounds
-        return get_arm_state(UR_ZERO, UR_ZERO)
+        return get_arm_state(id, UR_ZERO, UR_ZERO)
     #ur:end
 
     # MOVE_XXX
@@ -88,19 +92,32 @@ def execute_arm_command(cmd, offset):
     # Thus, the state of the arm does not reflect the command effects until the next cycle.
     # Rather than blocking for a full cycle, we simply return the previous state.
     # Note that the state vector contains the timestamp of the last command executed, and thus correctly reflects this behavior.
-    id = cmd[UR_CMD_ID + offset]
     time = ur_get_time()
-    target = s_(cmd, UR_CMD_MOVE_TARGET, offset)
-    max_acceleration = cmd[UR_CMD_MOVE_MAX_ACCELERATION + offset]
-    force_low_bound = s_(cmd, UR_CMD_MOVE_FORCE_LOW_BOUND, offset)
-    force_high_bound = s_(cmd, UR_CMD_MOVE_FORCE_HIGH_BOUND, offset)
-    controller = cmd[UR_CMD_MOVE_CONTROLLER + offset]
-    controller_args = cmd[UR_CMD_MOVE_CONTROLLER_ARGS + offset]
-    # all other controllers are implemented client-side for now, so replace with default controller
-    if controller != UR_CMD_MOVE_CONTROLLER_DEFAULT:
+    if kind == UR_CMD_KIND_ESTOP or kind >= UR_CMD_KIND_INVALID:
+        kind = UR_CMD_KIND_MOVE_JOINT_SPEEDS
+        target = UR_ZERO
+        max_speed = 0
+        max_acceleration = 10
+        force_low_bound = UR_FORCE_IGNORE_LOW
+        force_high_bound = UR_FORCE_IGNORE_HIGH
         controller = UR_CMD_MOVE_CONTROLLER_DEFAULT
         controller_args = 0
+    else:
+        target = s_(cmd, UR_CMD_MOVE_TARGET, offset)
+        max_speed = cmd[UR_CMD_MOVE_MAX_SPEED + offset]
+        max_acceleration = cmd[UR_CMD_MOVE_MAX_ACCELERATION + offset]
+        force_low_bound = s_(cmd, UR_CMD_MOVE_FORCE_LOW_BOUND, offset)
+        force_high_bound = s_(cmd, UR_CMD_MOVE_FORCE_HIGH_BOUND, offset)
+        controller = cmd[UR_CMD_MOVE_CONTROLLER + offset]
+        controller_args = cmd[UR_CMD_MOVE_CONTROLLER_ARGS + offset]
+
+        # all other controllers are implemented client-side for now, so replace with default controller
+        if controller != UR_CMD_MOVE_CONTROLLER_DEFAULT:
+            controller = UR_CMD_MOVE_CONTROLLER_DEFAULT
+            controller_args = 0
+        #ur:end
     #ur:end
+
     if kind == UR_CMD_KIND_MOVE_TOOL_POSE:
         # convert tool pose to joints position
         kind = UR_CMD_KIND_MOVE_JOINT_POSITIONS
@@ -111,21 +128,12 @@ def execute_arm_command(cmd, offset):
         #textmsg("joint position",target_position)
     elif kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
         joint_target = target
-
-        if UR_ROBOT_VERSION == UR_ROBOT_VERSION_ESERIES:
-            pose_target = get_forward_kin(target)
-        else:
-            pose_target = UR_ZERO
-        #ur:end
+        pose_target = UR_ZERO
     else:
         pose_target = UR_ZERO
         joint_target = UR_ZERO
     #ur:end
-    if UR_ROBOT_VERSION == UR_ROBOT_VERSION_ESERIES:
-        sync()
-    #ur:end
-    max_speed = cmd[UR_CMD_MOVE_MAX_SPEED + offset]
     ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, controller, controller_args)
-    return get_arm_state(pose_target, joint_target)
+    return get_arm_state(id, pose_target, joint_target)
 #ur:end
 
