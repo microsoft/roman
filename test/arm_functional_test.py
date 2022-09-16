@@ -18,6 +18,16 @@ def read_test(con):
     print("Joint positions:" + str(state.joint_positions()))
     print("Passed.")
 
+def kin_test(con):
+    arm_ctrl = ur.ArmController(con)
+    arm = ur.Arm(arm_ctrl)
+    target_position=ur.Joints(-math.pi / 4, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 4, -math.pi / 4)
+    arm.move(target_position, max_speed=0, max_acc=0, timeout=0)
+    target_pose = arm.state.target_tool_pose()
+    arm.move(target_pose, max_speed=0, max_acc=0, timeout=0)
+    target_position2 = arm.state.target_joint_positions()
+    assert(target_position == target_pose)
+
 def move_test(con):
     print(f"Running {__file__}::{move_test.__name__}()")
 
@@ -115,6 +125,7 @@ def run(use_sim):
 
     con.connect()
     read_test(con)
+    kin_test(con)
     move_test(con)
     move_test2(con)
     con.disconnect()

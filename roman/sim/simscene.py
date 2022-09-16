@@ -109,12 +109,13 @@ class SimScene:
             self.__tag_map[id] = tag
         return id
 
-    def load_obj(self, mesh_file, position, orientation, scale, mass, vhacd_file=None, tex=None, color=None, tag=None,  **kwargs):
-        '''Like loadURDF, but simpler and without requiring a urdf file. Supports concave objects (requires a vhacd file).
+    def load_obj(self, mesh_file, position, orientation, scale, mass, collision_file=None, tex=None, color=None, tag=None,  **kwargs):
+        '''Like loadURDF, but simpler and without requiring a urdf file. Supports concave objects
+        via the collision_file arg (requires a vhacd file).
         Use pb.vhacd(in_mesh_file, out_vhacd_file, log_file, alpha=0.04,resolution=50000 ) to generate a vhacd file. '''
 
-        vhacd_file = vhacd_file if vhacd_file else mesh_file
-        cid = pb.createCollisionShape(pb.GEOM_MESH, fileName=vhacd_file, meshScale=scale, collisionFrameOrientation=orientation)
+        collision_file = collision_file if collision_file else mesh_file
+        cid = pb.createCollisionShape(pb.GEOM_MESH, fileName=collision_file, meshScale=scale, collisionFrameOrientation=orientation)
         vid = pb.createVisualShape(pb.GEOM_MESH, fileName=mesh_file, meshScale=scale, visualFrameOrientation=orientation)
         id = pb.createMultiBody(mass, baseCollisionShapeIndex=cid, baseVisualShapeIndex=vid, basePosition=position)
         if color is not None:

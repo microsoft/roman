@@ -23,12 +23,14 @@ class Robotiq3FGripper:
     ]
 
     fingerIndices = [slice(0, 3), slice(3, 6), slice(6, 9)]
+    fingerTipIdx = [2, 5, 8]
     fingerAll = slice(0, 9)
     scissors = slice(9,11)
 
     def __init__(self, body_id):
         self.body_id = body_id
         self.joints = {}
+        self.fingerTips = []
         numJoints = pb.getNumJoints(body_id)
         names = self.jointNames
         for i in range(numJoints):
@@ -39,12 +41,19 @@ class Robotiq3FGripper:
 
             self.joints[jointName] = info
             jointID = info[0]
+
+            if jointName in [names[ft] for ft in self.fingerTipIdx]:
+                # default value is 0.5
+                pb.changeDynamics(body_id, jointID, lateralFriction=10)
+                self.fingerTips += [jointID]
+                pb.enableJointForceTorqueSensor(self.body_id, jointID, True)
+
             pb.resetJointState(self.body_id, jointID, 0)
             pb.setJointMotorControl2(body_id, jointID, pb.VELOCITY_CONTROL, targetVelocity=0, force=100)
-            pb.enableJointForceTorqueSensor(self.body_id, jointID, True)
 
         self.jointIDs = [self.joints[name][0] for name in Robotiq3FGripper.jointNames]
         self._targets = [0, 0, 0]
+        self._current_target = [0, 0, 0]
 
         joint1Stops = np.array(range(256)) / 255.
         joint2Stops = np.zeros(256)
@@ -68,8 +77,8 @@ class Robotiq3FGripper:
         # grasp modes: normal, pinch, wide, scissors, narrow
         # urdf joint limit are [0.16, -0.25], but 0.16 causes a self collision in pinch mode,
         # which messes up the FT sensor reading, so we use 0.13 instead
-        self.modeStopsB = [0, 0.13, -0.25, -0.25, 0.13]
-        self.modeStopsC = [0, -0.13, 0.25, 0.25, -0.13]
+        self.modeStopsB = [0, 0.13, -0.25, -0.25, 0.07]
+        self.modeStopsC = [0, -0.13, 0.25, 0.25, -0.07]
         self.last_joint_positions  = np.zeros(len(self.jointNames))
         self.last_joint_speeds  = np.zeros(len(self.jointNames))
         self._mode_limit = 255
@@ -80,38 +89,42 @@ class Robotiq3FGripper:
         self.move(0, 255, 255)
 
     def move(self, position, speed, force):
-        self.read()
-        self._targets[0] = self._targets[1] = self._targets[2] = position
-        # This is a very rough approximation of how the real hand moves. Needs more work.
-        speed = 2 + speed // 8 # min 2 to avoid stall
-        current = self.positions()[0]
-        inc = min(abs(position - current), speed) 
-        if position < current:
-            inc = -inc
-        position = current + inc
-        joints = self.jointIDs[self.fingerAll]
-        position = min(position, self._mode_limit) # account for pinch mode
-        positions = self.jointStops[position]
-        force = force + 1 # non-zero
-        forces = [force * 2] * 3 + [force] * 6 # middle finger has twice the force, to compensate for the other two
-        pb.setJointMotorControlArray(self.body_id, joints, pb.POSITION_CONTROL, targetPositions=positions, forces=forces)
+        for finger in range(3):
+            self.move_finger(finger, position, speed, force)
 
     def move_finger(self, finger, position, speed, force):
-        self.read()
-        self._targets[finger] = position
-        # This is a very rough approximation of how the real hand moves. Needs more work.
         joints = self.jointIDs[self.fingerIndices[finger]]
         cnt = len(joints)
-        position = min(position, self._mode_limit)  # account for pinch mode
-        positions = self.jointStops[position, self.fingerIndices[finger]]
+        self.read()
+        is_new_cmd = self._targets[finger] != position
+        contact = self._check_contact_threshold(finger, force)
+
+        # compute the next intermediate position if not in contact,
+        # else keep the last intermediate target
+        if is_new_cmd or not contact:
+            self._targets[finger] = position
+            # This is a very rough approximation of how the real hand moves. Needs more work.
+            speed = 2 + speed // 8 # min 2 to avoid stall
+            current = self.positions()[0]
+            inc = min(abs(position - current), speed)
+            if position < current:
+                inc = -inc
+            position = current + inc
+            self._current_target[finger] = min(position, self._mode_limit)  # account for pinch mode
+
+        joint_positions = self.jointStops[self._current_target[finger], self.fingerIndices[finger]]
         forces = [force + 1] * cnt
-        pb.setJointMotorControlArray(self.body_id, joints, pb.POSITION_CONTROL, targetPositions=positions, forces=forces)
+        pb.setJointMotorControlArray(self.body_id, joints, pb.POSITION_CONTROL, targetPositions=joint_positions, forces=forces)
 
     def stop(self):
         self.read()
         cnt = len(self.jointIDs)
         pb.setJointMotorControlArray(self.body_id, self.jointIDs, pb.VELOCITY_CONTROL, targetVelocities=[0] * cnt, forces=[255] * cnt)
         self._targets[:] = self.positions()
+
+    def _check_contact_threshold(self, finger, force):
+        ft_force = self.get_finger_sensor_force(finger)
+        return np.any(np.abs(ft_force) > 1 + abs(force) / 64)
 
     def set_mode(self, mode):
         self.read()
@@ -151,5 +164,9 @@ class Robotiq3FGripper:
     def is_moving(self):
         return self._is_moving
 
-
+    def get_finger_sensor_force(self, finger):
+        ftid = self.fingerTips[finger]
+        ft_joint_state = pb.getJointState(self.body_id, ftid)
+        ft_force = np.array(ft_joint_state[2]) * -1 # getJointState returns a reaction force, we need the action
+        return ft_force
 
