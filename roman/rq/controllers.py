@@ -11,7 +11,7 @@ class HandController:
         self.connection = connection
         self.lastcmd = Command()
         self.readcmd = Command()
-        self.__last = time.time()
+        self.__last = time.perf_counter()
 
     def execute(self, cmd, state):
         # if not np.array_equal(cmd, self.lastcmd):
@@ -21,9 +21,10 @@ class HandController:
         #     self.connection.execute(self.readcmd, state)
         #     self.__last = time.time()
 
-        if time.time() - self.__last > 0.01:
+        if time.perf_counter() - self.__last > 0.01:
             self.connection.execute(cmd, state)
             self.lastcmd[:] = cmd
+            self.__last = time.perf_counter()
 
         return state
 
