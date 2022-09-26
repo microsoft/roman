@@ -102,7 +102,7 @@ ctrl_is_deadman = False
 def ur_check_loop_delay(loop_time):
     time = ur_get_time()
     delay = time - loop_time
-    if delay >= UR_TIME_SLICE*3:
+    if delay > UR_TIME_SLICE * 1.0001:
         textmsg("drive loop delayed: ", delay)
     #ur:end
     return time

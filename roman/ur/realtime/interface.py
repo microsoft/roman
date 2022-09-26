@@ -42,7 +42,7 @@ def get_arm_state(id, target_pose, target_joints):
     #ur:end
 
     return [s[0], # time
-            id, #s[1], # cmd_id. 
+            id, # s[1], # cmd_id. # because of READ and IK_QUERY
             moving_flag + contact_flag + deadman_flag, #status
 
             q[0], q[1], q[2], q[3], q[4], q[5],
@@ -62,20 +62,14 @@ def get_arm_state(id, target_pose, target_joints):
             ]
 #ur:end
 
-def execute_arm_command(cmd, offset):
-    kind = cmd[UR_CMD_KIND + offset]
-    id = cmd[UR_CMD_ID + offset]
-
-    # READ
-    if kind == UR_CMD_KIND_READ:
-        return get_arm_state(id, UR_ZERO, UR_ZERO)
-    #ur:end
+def execute_read_command(kind, id, cmd, offset):
+    target = UR_ZERO
+    joint_target = UR_ZERO
 
     # IK_QUERY
     if kind == UR_CMD_KIND_IK_QUERY:
         target = s_(cmd, UR_CMD_MOVE_TARGET, offset)
         joint_target = get_inverse_kin(ur_pose(target))
-        return get_arm_state(id, target, joint_target)
     #ur:end
 
     # CONFIG: payload (kg), tool center of gravity (vec3), tool tip (vec6)
@@ -84,16 +78,25 @@ def execute_arm_command(cmd, offset):
         set_tcp(ur_pose(s_(cmd, UR_CMD_CONFIG_TOOL_TIP, offset)))
         # todo: add support for setting workspace bounds
         # todo: add support for setting speed, acc and force bounds
-        return get_arm_state(id, UR_ZERO, UR_ZERO)
+    #ur:end
+    
+    # READ
+    return get_arm_state(id, target, joint_target)
+#ur:end
+
+def execute_arm_command(cmd, offset):
+    kind = cmd[UR_CMD_KIND + offset]
+    id = cmd[UR_CMD_ID + offset]
+
+    if kind >= UR_CMD_KIND_READ:
+        return execute_read_command(kind, id, cmd, offset)
     #ur:end
 
-    # MOVE_XXX
-    # When running on the real robot, the move command simply updates global variables that are picked up by the background drive thread.
+    # When running on the real robot, move commands simply update global variables that are picked up by the background drive thread.
     # Thus, the state of the arm does not reflect the command effects until the next cycle.
-    # Rather than blocking for a full cycle, we simply return the previous state.
-    # Note that the state vector contains the timestamp of the last command executed, and thus correctly reflects this behavior.
+    # Un e-series, we block for a full cycle because the control code doesn't fit in the 2ms timeslice,  but on CB2 we simply return the previous state.
     time = ur_get_time()
-    if kind == UR_CMD_KIND_ESTOP or kind >= UR_CMD_KIND_INVALID:
+    if kind == UR_CMD_KIND_ESTOP:
         kind = UR_CMD_KIND_MOVE_JOINT_SPEEDS
         target = UR_ZERO
         max_speed = 0
@@ -118,7 +121,10 @@ def execute_arm_command(cmd, offset):
         #ur:end
     #ur:end
 
-    if kind == UR_CMD_KIND_MOVE_TOOL_POSE:
+    if kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
+        joint_target = target
+        pose_target = UR_ZERO
+    elif kind == UR_CMD_KIND_MOVE_TOOL_POSE:
         # convert tool pose to joints position
         kind = UR_CMD_KIND_MOVE_JOINT_POSITIONS
         #textmsg("target position",target_position)
@@ -126,14 +132,14 @@ def execute_arm_command(cmd, offset):
         joint_target = get_inverse_kin(ur_pose(target))
         target = joint_target
         #textmsg("joint position",target_position)
-    elif kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
-        joint_target = target
-        pose_target = UR_ZERO
     else:
         pose_target = UR_ZERO
         joint_target = UR_ZERO
     #ur:end
     ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, controller, controller_args)
+    if UR_ROBOT_VERSION == UR_ROBOT_VERSION_ESERIES:
+        sync()
+    #ur:end
     return get_arm_state(id, pose_target, joint_target)
 #ur:end
 
