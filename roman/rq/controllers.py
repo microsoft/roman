@@ -11,19 +11,12 @@ class HandController:
         self.connection = connection
         self.lastcmd = Command()
         self.readcmd = Command()
-        self.__last = time.time()
 
     def execute(self, cmd, state):
-        # if not np.array_equal(cmd, self.lastcmd):
-        #     self.connection.execute(cmd, state)
-        #     self.lastcmd[:] = cmd
-        # elif time.time() - self.__last > 0.01: # max recommended hand freq
-        #     self.connection.execute(self.readcmd, state)
-        #     self.__last = time.time()
-
-        if time.time() - self.__last > 0.01:
+        if not np.array_equal(cmd, self.lastcmd): 
             self.connection.execute(cmd, state)
             self.lastcmd[:] = cmd
+            time.sleep(0.1)
 
         return state
 
