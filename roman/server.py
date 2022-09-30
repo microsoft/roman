@@ -128,7 +128,7 @@ def client_loop(client, shared_cmd, shared_state, lock, shutdown_event):
                 
             client.send_bytes(local_state.array)
 
-def control_loop(controller, shared_cmd, shared_state, lock, shutdown_event):
+def control_loop(controller, shared_cmd, shared_state, lock, shutdown_event, keep_alive_cmd=None):
     '''
     Control loop running as fast as the hardware controller allows (best effort but not guaranteed).
     For e-series UR arms, 250Hz (4ms loop). For UR CB2, 125Hz (8ms loop). For Robotiq hands, 100Hz (10ms loop).
@@ -146,7 +146,8 @@ def control_loop(controller, shared_cmd, shared_state, lock, shutdown_event):
         # only move the hardware as long as the client is sending us commands  
         if time.perf_counter() - last_client_pulse  < MIN_CLIENT_REQ_INTERVAL:
             controller.execute(local_cmd, local_state)
-
+        elif keep_alive_cmd:
+            controller.execute(keep_alive_cmd, local_state)
 
 def server(arm_client, hand_client, shutdown_event, reset_event, robot_type, config):
     robot = robot_type(config)
@@ -155,7 +156,7 @@ def server(arm_client, hand_client, shutdown_event, reset_event, robot_type, con
     lock = Lock()
     cmd = ur.Command()
     state = ur.State()
-    arm_control_thread = Thread(target=control_loop, args=(robot.arm, cmd, state, lock, shutdown_event))
+    arm_control_thread = Thread(target=control_loop, args=(robot.arm, cmd, state, lock, shutdown_event, ur.Command().make_estop()))
     arm_control_thread.start()
     arm_client_thread = Thread(target=client_loop, args=(arm_client, cmd, state, lock, shutdown_event))
     arm_client_thread.start()

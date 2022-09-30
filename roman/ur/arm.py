@@ -254,7 +254,7 @@ class Command(Vec):
         return self.make(kind=UR_CMD_KIND_READ)
 
     def make_estop(self):
-        return self.make(kind=UR_CMD_KIND_MOVE_JOINT_SPEEDS, max_acc=10, force_low_bound=None, force_high_bound=None)
+        return self.make(kind=UR_CMD_KIND_MOVE_JOINT_SPEEDS, max_acc=6, force_low_bound=None, force_high_bound=None)
 
     def id(self): return self[Command._ID]
     def kind(self): return self[Command._KIND]
@@ -380,8 +380,8 @@ class Arm:
             target_position,
             max_speed=UR_DEFAULT_MAX_SPEED,
             max_acc=UR_DEFAULT_ACCELERATION,
-            force_low_bound=[-5,-5,-5,-0.5, -0.5, -0.5],
-            force_high_bound=[5,5,5,0.5, 0.5, 0.5],
+            force_low_bound=[-6, -6,-6,-1, -1, -1],
+            force_high_bound=[6, 6, 6, 1, 1, 1],
             contact_force_multiplier=5,
             blocking=True):
         self.move(

@@ -48,6 +48,9 @@ def get_tcp_force():
 def get_joint_torques():
     return sim.arm.get_joint_torques()
 
+def ur_get_force():
+    return sim.arm.ur_get_tcp_sensor_force()
+
 def ur_get_tcp_sensor_force(_=0):
     return sim.arm.ur_get_tcp_sensor_force()
 

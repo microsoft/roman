@@ -26,7 +26,7 @@ class BasicController:
         if cmd.is_move_command():
             at_goal = cmd._goal_reached(state)
             state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, at_goal)
-            if cmd.kind() != UR_CMD_KIND_MOVE_JOINT_SPEEDS and cmd.controller() == UR_CMD_MOVE_CONTROLLER_DEFAULT and cmd.controller_args() == 0:
+            if cmd.controller() == UR_CMD_MOVE_CONTROLLER_DEFAULT and cmd.controller_args() == 0:
                 state._set_state_flag(State._STATUS_FLAG_DONE, at_goal and not state.is_moving())
             else:
                 state._set_state_flag(State._STATUS_FLAG_DONE, at_goal)
@@ -42,8 +42,8 @@ class EMAForceCalibrator:
     def __init__(self, next, alpha = 0.01):
         self.next = next
         self.alpha = alpha
-        self.sample = np.zeros(6)
-        self.force_average = np.zeros(6) # we are assuming the FT sensor is reset to zero on startup
+        self.sample = Joints()
+        self.force_average = Joints() # we are assuming the FT sensor is reset to zero on startup
         self.cmd = Command()
 
     def execute(self, cmd, state):
@@ -55,9 +55,9 @@ class EMAForceCalibrator:
         self.next.execute(self.cmd, state)
         if not state.is_contact():
             self.sample[:] = state.sensor_force()
-            np.multiply(self.force_average, 1-self.alpha, self.force_average)
-            np.multiply(self.sample, self.alpha, self.sample)
-            np.add(self.force_average, self.sample, self.force_average)
+            np.multiply(self.force_average, 1-self.alpha, self.force_average.array)
+            np.multiply(self.sample, self.alpha, self.sample.array)
+            np.add(self.force_average, self.sample, self.force_average.array)
         # else:
         #     print(f"Contact detected:{state.sensor_force()}, outside of bounds {self.cmd.force_low_bound()} and {self.cmd.force_high_bound()}")
 
@@ -74,124 +74,72 @@ class IncrementalController:
     '''
     def __init__(self, next, open_loop_duration=0.008):
         self.next = next
+        self.cmd_read = Command().make()
         self.open_loop_duration = open_loop_duration
-        self.cmd = Command()
-        self.cmd_read = Command()
+        self.cmd = None
         self.start_time = 0
+        self.speed_cmd = None
         self.target = None
-        self.done = 0
-        self.goal_reached = 0
 
     def execute(self, cmd, state):
         if cmd.kind() != UR_CMD_KIND_MOVE_JOINT_POSITIONS and cmd.kind() != UR_CMD_KIND_MOVE_TOOL_POSE:
-            self.next.execute(cmd, state)
+            self.next.execute(self.speed_cmd, state)
             return state
 
-        if self.cmd.id() != cmd.id():
+        if self.cmd != cmd:
             # new command
-            self.cmd[:] = cmd
-            self.cmd_read[:] = cmd
-            self.cmd_read.make_read() # this preserves the id of the initial command
+            self.cmd = cmd.clone()
             self.next.execute(cmd, state)
             self.start_time = state.time()
             self.target = state.target_joint_positions()
-            self.done = 0
-            self.goal_reached = 0
+            self.speed_cmd = self.cmd.clone()
+            self.speed_cmd[Command._KIND] = UR_CMD_KIND_MOVE_JOINT_SPEEDS
             return state
 
-        if self.done:
-            # read state but stop sending speed commands
+        time_left = self.cmd.controller_args() - state.time() + self.start_time
+        if time_left <= 0:
             self.next.execute(self.cmd_read, state)
-            state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, self.goal_reached)
-            state._set_state_flag(State._STATUS_FLAG_DONE, self.done)
-            return state
+        else:
+            if time_left > self.open_loop_duration:
+                # we are far enough to perform corrections
+                self.next.execute(cmd, state)
+                # prep the speed command
+                # speed derived from: d = t*(vf+v0)/2 => vf = 2d/t - v0
+                speed = (self.target - state.joint_positions()) * 2 / time_left - state.joint_speeds()
+                speed = np.where(np.fabs(speed) > UR_SPEED_TOLERANCE, speed, 0)
+                if np.amax(np.fabs(speed)) > self.cmd.max_speed():
+                    speed = speed * (self.cmd.max_speed() / np.amax(np.fabs(speed)))
+                self.speed_cmd[Command._MOVE_TARGET] = speed
+                acc = np.amax(np.fabs(speed - state.joint_speeds())) / time_left
+                self.speed_cmd[Command._MOVE_MAX_ACCELERATION] = min(acc, self.cmd.max_acceleration())
+            else:
+                # we are close to the time limit, no more corrections
+                self.next.execute(self.speed_cmd, state)
 
-        self.next.execute(self.cmd, state)
-        time_left = cmd.controller_args() - state.time() + self.start_time
-        self.done = time_left <= 0
-        self.goal_reached = cmd._goal_reached(state)
-        if time_left > self.open_loop_duration:
-            # prep the speed command
-            # speed derived from: d = t*(vf+v0)/2 => vf = 2d/t - v0
-            speed = (self.target - state.joint_positions()) * 2 / time_left - state.joint_speeds()
-            speed = np.where(np.fabs(speed) > UR_SPEED_TOLERANCE, speed, 0)
-            if np.amax(np.fabs(speed)) > self.cmd.max_speed():
-                speed = speed * (self.cmd.max_speed() / np.amax(np.fabs(speed)))
-            self.cmd[Command._KIND] = UR_CMD_KIND_MOVE_JOINT_SPEEDS
-            self.cmd[Command._MOVE_TARGET] = speed
-            acc = np.amax(np.fabs(speed - state.joint_speeds())) / time_left
-            self.cmd[Command._MOVE_MAX_ACCELERATION] = min(acc, self.cmd.max_acceleration())
-
-        state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, self.goal_reached)
-        state._set_state_flag(State._STATUS_FLAG_DONE, self.done)
+        state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, cmd._goal_reached(state))
+        self.cmd.controller_args() - state.time() + self.start_time
+        state._set_state_flag(State._STATUS_FLAG_DONE, time_left <= 0)
         return state
 
 class TouchController:
     '''
-    Expects contact before completing the motion. Verifies that the contact is not spurrious before assuming the goal is reached.
+    Expects contact before completing the motion.
     '''
     def __init__(self, next):
         self.next = next
-        self.contact_position = Joints()
-        self.contact_counter = 1
-        self.validation_count = 1
-        self.cmd_id = 0
-        self.force_sum = np.zeros(6)
-        self.done = 0
-        self.goal_reached = 0
 
     def execute(self, cmd, state):
-
-        if self.done and cmd.id() == self.cmd_id:
-            self.next.execute(self.cmd_stop, state)
-            state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, self.goal_reached)
-            state._set_state_flag(State._STATUS_FLAG_DONE, self.done)
+        self.next.execute(cmd, state)
+        if state.cmd_id() != cmd.id():
             return state
-        else:
-            self.next.execute(cmd, state)
-
-        if cmd.id() != self.cmd_id and cmd.is_move_command():
-            # new command, reset
-            self.cmd_id = cmd.id()
-            self.cmd_stop = cmd.clone().make_estop() # this preserves the id
-            self.contact_counter = self.validation_count = cmd.controller_args()
-            self.force_sum[:] = 0
-            self.done = 0
-            self.goal_reached = 0
-
-        if state.is_goal_reached():
-            # the arm reached the position goal but didn't detect contact, so this is a failure, and goal_reached remains False
-            self.goal_reached = 0
-            self.done = 1
-            state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, self.goal_reached)
-            state._set_state_flag(State._STATUS_FLAG_DONE, self.done)
-            return state
-
-        if state.is_moving() and not state.is_contact():
-            return state
-
-        if np.any(self.force_sum < cmd.force_low_bound()*cmd.controller_args()) or np.any(self.force_sum > cmd.force_high_bound()*cmd.controller_args()):
-            self.goal_reached = 1
-            self.done = 1
-            state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, self.goal_reached)
-            state._set_state_flag(State._STATUS_FLAG_DONE, self.done)
-            return state
-
-        if not state.is_contact():
-            return state
-
-        if self.contact_position.allclose(state.joint_positions()):
-            # we hit something that doesn't budge
-            self.force_sum += state.sensor_force()
-            self.contact_counter -= 1
-        else:
-            # we encountered an obstacle for the first time, or the obstacle moved, or the previous spikes were just noise
-            self.contact_counter = self.validation_count - 1 
-            self.force_sum[:] = state.sensor_force()
-            self.contact_position[:] = state.joint_positions()
-
+        if state.is_contact():
+            state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 1)
+            state._set_state_flag(State._STATUS_FLAG_DONE, 1)
+        elif state.is_goal_reached():
+            # stopped because the arm reached the goal but didn't detect contact, so this is a failure
+            state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 0)
+            state._set_state_flag(State._STATUS_FLAG_DONE, 1)
         return state
-
 
 class ArmController:
     '''
@@ -207,7 +155,9 @@ class ArmController:
             UR_CMD_MOVE_CONTROLLER_DEFAULT: ema,
             UR_CMD_MOVE_CONTROLLER_TOUCH: touch,
             UR_CMD_MOVE_CONTROLLER_RT: inc}
+        self.cmd = Command()
 
     def execute(self, cmd, state):
-        controller = self.controllers[int(cmd.controller())]
-        return controller.execute(cmd, state)
+        self.cmd[:] = cmd
+        controller = self.controllers[int(self.cmd.controller())]
+        return controller.execute(self.cmd, state)

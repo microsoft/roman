@@ -9,14 +9,14 @@ class HandController:
     '''
     def __init__(self, connection):
         self.connection = connection
-        self.lastcmd = Command()
         self.readcmd = Command()
+        self.last_execution_time = time.perf_counter()
 
     def execute(self, cmd, state):
-        if not np.array_equal(cmd, self.lastcmd): 
-            self.connection.execute(cmd, state)
-            self.lastcmd[:] = cmd
-            time.sleep(0.1)
+        if time.perf_counter() - self.last_execution_time < 0.01:
+            time.sleep(0.01) # throttle to the frequency that the hand can sustain
+        self.connection.execute(cmd, state)
+        self.last_execution_time = time.perf_counter()
 
         return state
 
