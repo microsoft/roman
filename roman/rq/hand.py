@@ -4,7 +4,7 @@
 ################################################################
 import socket
 import numpy as np
-import timeit
+import time
 import struct
 import time
 from ..common import *
@@ -34,22 +34,23 @@ class Position:
 class State(Vec):
     '''Controls the Robotiq 3-finger gripper'''
     _TIME = 0
-    _FLAGS = 1
-    _MODE = 2
-    _TARGET_A = 3
-    _POSITION_A = 4
-    _CURRENT_A = 5
-    _TARGET_B = 6
-    _POSITION_B = 7
-    _CURRENT_B = 8
-    _TARGET_C = 9
-    _POSITION_C = 10
-    _CURRENT_C = 11
-    _TARGET_S = 12
-    _POSITION_S = 13
-    _CURRENT_S = 14
-    _RESERVED = 15
-    _BUFFER_SIZE = 16
+    _CMD_ID = 1
+    _FLAGS = 2
+    _MODE = 3
+    _TARGET_A = 4
+    _POSITION_A = 5
+    _CURRENT_A = 6
+    _TARGET_B = 7
+    _POSITION_B = 8
+    _CURRENT_B = 9
+    _TARGET_C = 10
+    _POSITION_C = 11
+    _CURRENT_C = 12
+    _TARGET_S = 13
+    _POSITION_S = 14
+    _CURRENT_S = 15
+    _RESERVED = 16
+    _BUFFER_SIZE = 17
 
     _FLAG_READY = 1
     _FLAG_INCONSISTENT = 2
@@ -61,6 +62,7 @@ class State(Vec):
         super().__init__(State._BUFFER_SIZE, dtype=np.int16)
 
     def time(self): return self[State._TIME]
+    def cmd_id(self): return self[State._CMD_ID]
     def is_ready(self): return self[State._FLAGS] & State._FLAG_READY
     def is_inconsistent(self): return self[State._FLAGS] & State._FLAG_INCONSISTENT
     def is_faulted(self): return self[State._FLAGS] & State._FLAG_FAULTED
@@ -83,22 +85,25 @@ class State(Vec):
 
 class Command(Vec):
     '''Controls the Robotiq 3-finger gripper.'''
-    _KIND = 0
-    _MODE = 1
-    _FINGER = 2
-    _POSITION = 3
-    _SPEED = 4
-    _FORCE = 5
-    _BUFFER_SIZE = 6
+    _ID = 0
+    _TIME = 1
+    _KIND = 2
+    _MODE = 3
+    _FINGER = 4
+    _POSITION = 5
+    _SPEED = 6
+    _FORCE = 7
+    _BUFFER_SIZE = 8
 
     _CMD_KIND_READ = 0
     _CMD_KIND_STOP = 1
     _CMD_KIND_MOVE = 2
     _CMD_KIND_CHANGE = 4
 
-    def __init__(self):
+    def __init__(self, id=0):
         super().__init__(Command._BUFFER_SIZE, dtype=np.int16)
         self[Command._KIND] = Command._CMD_KIND_READ
+        self[Command._ID] = id
 
     def make(self, kind, finger, position, speed, force, mode):
         self[Command._KIND] = kind
@@ -109,6 +114,8 @@ class Command(Vec):
         self[Command._FORCE] = force
         return self
 
+    def id(self): return self[Command._ID]
+    def time(self): return self[Command._TIME]
     def kind(self): return self[Command._KIND]
     def mode(self): return self[Command._MODE]
     def finger(self): return self[Command._FINGER]
@@ -123,21 +130,27 @@ class Hand:
         self.controller = controller
         self.command = Command()
         self.state = State()
+        self.last_cmd_id = 0
 
     def __execute(self, blocking):
+        self.last_cmd_id += 1
+        self.command[Command._ID] = self.last_cmd_id
+        self.command[Command._TIME] = int(time.perf_counter()*1000) / 1000 # ms rounding, for consistency with the arm
         self.controller.execute(self.command, self.state)
-        while blocking and not self.state.is_done():
-            self.read()
+        while blocking and(self.state.cmd_id() != self.command.id() or not self.state.is_done()):
+            self.step()
 
     def execute(self, command, blocking):
         self.command[:] = command
         self.__execute(blocking)
 
     def step(self):
-        self.controller.execute(self.command, self.state)
+        last_time = self.state.time()
+        while last_time == self.state.time() or self.state.cmd_id() != self.command.id():
+            self.controller.execute(self.command, self.state)
 
     def read(self):
-        self.controller.execute(Hand._READ_CMD, self.state)
+        self.execute(Hand._READ_CMD, self.state)
 
     def move(self, position, finger = Finger.All, speed = 255, force = 0, blocking = True):
         self.command.make(Command._CMD_KIND_MOVE, finger, position, speed, force, GraspMode.CURRENT)

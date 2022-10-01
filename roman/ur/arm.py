@@ -212,6 +212,7 @@ class Command(Vec):
     '''
     _BUFFER_SIZE = UR_CMD_ENTRIES_COUNT
     _ID = UR_CMD_ID
+    _TIME = UR_CMD_TIME
     _KIND = UR_CMD_KIND
     _CONFIG_MASS = UR_CMD_CONFIG_MASS
     _CONFIG_TOOL_COG = slice(*UR_CMD_CONFIG_TOOL_COG)
@@ -224,9 +225,10 @@ class Command(Vec):
     _MOVE_CONTROLLER = UR_CMD_MOVE_CONTROLLER
     _MOVE_CONTROLLER_ARGS = UR_CMD_MOVE_CONTROLLER_ARGS
 
-    def __init__(self):
+    def __init__(self, id=0):
         super().__init__(Command._BUFFER_SIZE)
-        self[Command._KIND]  = UR_CMD_KIND_ESTOP
+        self[Command._KIND]  = UR_CMD_KIND_READ
+        self[Command._ID] = id
 
     def make(self,
             kind = UR_CMD_KIND_READ,
@@ -248,7 +250,14 @@ class Command(Vec):
         self[Command._MOVE_CONTROLLER_ARGS] = controller_args
         return self
 
+    def make_read(self):
+        return self.make(kind=UR_CMD_KIND_READ)
+
+    def make_estop(self):
+        return self.make(kind=UR_CMD_KIND_MOVE_JOINT_SPEEDS, max_acc=6, force_low_bound=None, force_high_bound=None)
+
     def id(self): return self[Command._ID]
+    def time(self): return self[Command._TIME]
     def kind(self): return self[Command._KIND]
     def target(self):
             if self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE:
@@ -264,6 +273,8 @@ class Command(Vec):
     def controller_args(self): return self[Command._MOVE_CONTROLLER_ARGS]
     def is_move_command(self): return self[Command._KIND] > UR_CMD_KIND_ESTOP and self[Command._KIND] < UR_CMD_KIND_READ
     def _goal_reached(self, state):
+        if state.cmd_id() != self.id():
+            return False
         if self[Command._KIND] == UR_CMD_KIND_MOVE_JOINT_SPEEDS:
             return self.target().allclose(state.joint_speeds(), UR_SPEED_TOLERANCE)
         elif self[Command._KIND] == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
@@ -281,19 +292,25 @@ class Arm:
         self.controller = controller
         self.command = Command()
         self.state = State()
+        self.last_cmd_id = 0
 
     def __execute(self, blocking):
-        self.command[Command._ID] = time.time()
+        self.last_cmd_id += 1
+        self.command[Command._ID] = self.last_cmd_id
+        self.command[Command._TIME] = int(time.perf_counter()*1000)/1000
         self.controller.execute(self.command, self.state)
-        while blocking and not self.state.is_done():
-            self.controller.execute(self.command, self.state)
+        # print(time.perf_counter()- start_time)
+        while blocking and (self.state.cmd_id() != self.command.id() or not self.state.is_done()):
+            self.step()
 
     def execute(self, command, blocking):
         self.command[:] = command
         self.__execute(blocking)
 
     def step(self):
-        self.controller.execute(self.command, self.state)
+        last_time = self.state.time()
+        while last_time == self.state.time() or self.state.cmd_id() != self.command.id():
+            self.controller.execute(self.command, self.state)
 
     def read(self):
         self.execute(Arm._READ_CMD, False)
@@ -305,6 +322,7 @@ class Arm:
             kind = UR_CMD_KIND_IK_QUERY,
             target = target_position)
         self.__execute(blocking=False)
+        self.step() # wait for the result
         return self.state.target_joint_positions().clone()
 
     def move(self,
@@ -366,8 +384,8 @@ class Arm:
             target_position,
             max_speed=UR_DEFAULT_MAX_SPEED,
             max_acc=UR_DEFAULT_ACCELERATION,
-            force_low_bound=[-5,-5,-5,-0.5, -0.5, -0.5],
-            force_high_bound=[5,5,5,0.5, 0.5, 0.5],
+            force_low_bound=[-6, -6,-6,-1, -1, -1],
+            force_high_bound=[6, 6, 6, 1, 1, 1],
             contact_force_multiplier=5,
             blocking=True):
         self.move(
@@ -386,3 +404,4 @@ class Arm:
         self.command[Command._CONFIG_MASS]=mass
         self.command[Command._CONFIG_TOOL_COG]=cog
         self.command[Command._CONFIG_TOOL_TIP]=tcp
+        self.__execute(blocking=False)

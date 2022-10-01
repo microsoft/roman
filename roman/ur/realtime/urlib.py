@@ -13,7 +13,7 @@ sim = None
 # URScript-like functions needed by our script layer.
 #*****************************************************************************
 def ur_get_time():
-    return sim.time()
+    return int(sim.time() * 1000)/1000
 
 def get_inverse_kin(pose):
     return sim.arm.get_inverse_kin(pose)
@@ -47,6 +47,9 @@ def get_tcp_force():
 
 def get_joint_torques():
     return sim.arm.get_joint_torques()
+
+def ur_get_force():
+    return sim.arm.ur_get_tcp_sensor_force()
 
 def ur_get_tcp_sensor_force(_=0):
     return sim.arm.ur_get_tcp_sensor_force()
@@ -111,7 +114,6 @@ def ur_pose(v):
 def ur_check_loop_delay(last_loop_time):
     return ur_get_time()
 
-def ur_force_limit_exceeded(low_bound, high_bound):
-    ft = ur_get_tcp_sensor_force()
+def ur_force_limit_exceeded(ft, low_bound, high_bound):
     return np.any(np.greater(low_bound, ft)) or np.any(np.greater(ft, high_bound))
 

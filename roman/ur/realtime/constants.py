@@ -19,18 +19,19 @@ UR_CMD_KIND_INVALID = 11
 
 # Command field indices
 UR_CMD_ID = 0
-UR_CMD_KIND = 1
-UR_CMD_CONFIG_MASS = 2
-UR_CMD_CONFIG_TOOL_COG = [3, 6]
-UR_CMD_CONFIG_TOOL_TIP = [6, 12]
-UR_CMD_MOVE_TARGET = [2, 8]
-UR_CMD_MOVE_MAX_SPEED = 8
-UR_CMD_MOVE_MAX_ACCELERATION = 9
-UR_CMD_MOVE_FORCE_LOW_BOUND = [10, 16]
-UR_CMD_MOVE_FORCE_HIGH_BOUND = [16, 22]
-UR_CMD_MOVE_CONTROLLER = 22
-UR_CMD_MOVE_CONTROLLER_ARGS = 23
-UR_CMD_ENTRIES_COUNT = 24 # This is how many floats we expect with each command (not including the count prefix). Needs to stay under 30 (UR restriction).
+UR_CMD_TIME = 1
+UR_CMD_KIND = 2
+UR_CMD_CONFIG_MASS = 3
+UR_CMD_CONFIG_TOOL_COG = [4, 7]
+UR_CMD_CONFIG_TOOL_TIP = [7, 13]
+UR_CMD_MOVE_TARGET = [3, 9]
+UR_CMD_MOVE_MAX_SPEED = 9
+UR_CMD_MOVE_MAX_ACCELERATION = 10
+UR_CMD_MOVE_FORCE_LOW_BOUND = [11, 17]
+UR_CMD_MOVE_FORCE_HIGH_BOUND = [17, 23]
+UR_CMD_MOVE_CONTROLLER = 23
+UR_CMD_MOVE_CONTROLLER_ARGS = 24
+UR_CMD_ENTRIES_COUNT = 25 # This is how many floats we expect with each command (not including the count prefix). Needs to stay under 30 (UR restriction).
 
 # Supported controllers
 UR_CMD_MOVE_CONTROLLER_DEFAULT = 0 # default controller. In pose/position control, a low-bound on the final speed of the leading joint can be specified via controller_args.
@@ -72,8 +73,8 @@ UR_DEFAULT_TCP = [0, 0, 0.12, 0, 0, 0]
 
 # control
 UR_TIME_SLICE = 1./125 # by default, use the CB2 version. The value gets overriden at runtime on higher UR versions (eseries).
-UR_SPEED_TOLERANCE = 0.05 # rad/s
-UR_SPEED_NORM_ZERO = 0.05 # rad/s
+UR_SPEED_TOLERANCE = 0.005 # rad/s
+UR_SPEED_NORM_ZERO = 0.005 # rad/s
 UR_JOINTS_POSITION_TOLERANCE = 0.001 # rad
 UR_TOOL_POSITION_TOLERANCE = 0.001 # m
 UR_TOOL_ROTATION_TOLERANCE = 0.005 # rad
@@ -84,7 +85,10 @@ UR_DEFAULT_FORCE_LOW_BOUND = [-20.0, -20.0, -20.0, -2, -2, -2]
 UR_DEFAULT_FORCE_HIGH_BOUND = [20.0, 20.0, 20.0, 2, 2, 2]
 UR_FORCE_IGNORE_HIGH = [1000, 1000, 1000, 100, 100, 100]
 UR_FORCE_IGNORE_LOW = [-1000, -1000, -1000, -100, -100, -100]
+UR_DEFAULT_CONTACT_ALPHA = 0.5
+
 UR_DEFAULT_ACCELERATION = 0.1 # rad/s2
+UR_CONTACT_STOP_ACCELERATION = 50.0 # rad/s2
 UR_FAST_STOP_ACCELERATION = 3.0 # rad/s2
 UR_DEFAULT_MAX_SPEED = 0.1  # rad/s
 

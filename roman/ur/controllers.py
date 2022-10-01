@@ -123,61 +123,23 @@ class IncrementalController:
 
 class TouchController:
     '''
-    Expects contact before completing the motion. Verifies that the contact is not spurrious before assuming the goal is reached.
+    Expects contact before completing the motion.
     '''
     def __init__(self, next):
         self.next = next
-        self.contact_position = Joints()
-        self.count = 1
-        self.validation_count = 1
-        self.cmd_id = 0
-        self.force_sum = np.zeros(6)
-        self.cmd_stop = Command()
 
     def execute(self, cmd, state):
-
-        if self.count == 0 and cmd.id() == self.cmd_id:
-            self.next.execute(self.cmd_stop, state)
+        self.next.execute(cmd, state)
+        if state.cmd_id() != cmd.id():
+            return state
+        if state.is_contact():
             state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 1)
             state._set_state_flag(State._STATUS_FLAG_DONE, 1)
-            return state
-        else:
-            self.next.execute(cmd, state)
-
-        if state.is_goal_reached():
+        elif state.is_goal_reached():
             # stopped because the arm reached the goal but didn't detect contact, so this is a failure
             state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 0)
             state._set_state_flag(State._STATUS_FLAG_DONE, 1)
-
-        if cmd.id() != self.cmd_id and cmd.is_move_command():
-            # new command, reset
-            self.cmd_id = cmd.id()
-            self.count = self.validation_count = cmd.controller_args()
-            self.force_sum[:] = 0
-            return state
-
-        if state.is_moving() and not state.is_contact():
-            return state
-
-        if self.count == 0 or np.any(self.force_sum < cmd.force_low_bound()*cmd.controller_args()) or np.any(self.force_sum > cmd.force_high_bound()*cmd.controller_args()):
-            state._set_state_flag(State._STATUS_FLAG_GOAL_REACHED, 1)
-            state._set_state_flag(State._STATUS_FLAG_DONE, 1)
-            self.count = 0
-            return state
-
-        if not state.is_contact():
-            return state
-
-        if self.contact_position.allclose(state.joint_positions()):
-            self.force_sum += state.sensor_force()
-            self.count -= 1
-        else:
-            self.count = self.validation_count
-            self.force_sum[:] = 0
-            self.contact_position[:] = state.joint_positions()
-
         return state
-
 
 class ArmController:
     '''

@@ -1,5 +1,7 @@
+from threading import Thread
 import time
-from multiprocessing import Process, Pipe, Event
+from multiprocessing import Lock, Process, Pipe, Event
+
 from . import rq
 from . import ur
 from .sim.simenv import SimEnv
@@ -82,7 +84,7 @@ class RemoteRobotProxy():
         self.__shutdown_event = Event()
         self.__reset_event = Event()
         self.__reset_event.set()
-        self.__process = Process(target=server_loop,
+        self.__process = Process(target=server,
                                  args=(arm_client,
                                        hand_client,
                                        self.__shutdown_event,
@@ -108,53 +110,70 @@ class RemoteRobotProxy():
 #************************************************************************************************
 # Server loop
 #************************************************************************************************
-def server_loop(arm_client, hand_client, shutdown_event, reset_event, robot_type, config):
+last_client_pulse = 0
+MIN_CLIENT_REQ_INTERVAL = 0.5 #seconds
+
+def client_loop(client, shared_cmd, shared_state, lock, shutdown_event):
+    global last_client_pulse
+    local_cmd = shared_cmd.clone()
+    local_state = shared_state.clone()
+    while not shutdown_event.is_set():
+        if client.poll(MIN_CLIENT_REQ_INTERVAL):
+            last_client_pulse = time.perf_counter()
+            client.recv_bytes_into(local_cmd.array) 
+            
+            with lock:
+                shared_cmd[:] = local_cmd
+                local_state[:] = shared_state
+                
+            client.send_bytes(local_state.array)
+
+def control_loop(controller, shared_cmd, shared_state, lock, shutdown_event, keep_alive_cmd=None):
     '''
-    Control loop running at the same frequency as the hardware (e.g. 125Hz) (best effort but not guaranteed).
-    It enables high(er)-speed closed-loop control using force and tactile sensing (but no vision).
+    Control loop running as fast as the hardware controller allows (best effort but not guaranteed).
+    For e-series UR arms, 250Hz (4ms loop). For UR CB2, 125Hz (8ms loop). For Robotiq hands, 100Hz (10ms loop).
+    This enables high(er)-speed closed-loop control using force and tactile sensing (but no vision).
     '''
+    global last_client_pulse
+    local_cmd = shared_cmd.clone()
+    local_state = shared_state.clone()
+    
+    while not shutdown_event.is_set():
+        with lock:
+            shared_state[:] = local_state
+            local_cmd[:] = shared_cmd
+            
+        # only move the hardware as long as the client is sending us commands  
+        if time.perf_counter() - last_client_pulse  < MIN_CLIENT_REQ_INTERVAL:
+            controller.execute(local_cmd, local_state)
+        elif keep_alive_cmd:
+            controller.execute(keep_alive_cmd, local_state)
+
+def server(arm_client, hand_client, shutdown_event, reset_event, robot_type, config):
     robot = robot_type(config)
     robot.connect()
 
-    arm_cmd = ur.Command()
-    arm_state = ur.State()
-    hand_cmd = rq.Command()
-    hand_state = rq.State()
-    deadman_timer = time.time()
-    while not shutdown_event.is_set():
-        #start_time = time.time()
+    lock = Lock()
+    cmd = ur.Command()
+    state = ur.State()
+    arm_control_thread = Thread(target=control_loop, args=(robot.arm, cmd, state, lock, shutdown_event, ur.Command().make_estop()))
+    arm_control_thread.start()
+    arm_client_thread = Thread(target=client_loop, args=(arm_client, cmd, state, lock, shutdown_event))
+    arm_client_thread.start()
 
-        if not reset_event.is_set():
-            # primarily in support of sim, this enables restoring the environment to an initial state
-            robot.reset()
-            reset_event.set()
+    lock = Lock()
+    cmd = rq.Command()
+    state = rq.State()
+    hand_control_thread = Thread(target=control_loop, args=(robot.hand, cmd, state, lock, shutdown_event))
+    hand_control_thread.start()
+    hand_client_thread = Thread(target=client_loop, args=(hand_client, cmd, state, lock, shutdown_event))
+    hand_client_thread.start()
 
-        arm_cmd_is_new = arm_client.poll()
-        if arm_cmd_is_new:
-            arm_client.recv_bytes_into(arm_cmd.array) # blocking
-            deadman_timer = time.time()
+    shutdown_event.wait()
+        
+    arm_control_thread.join()
+    arm_client_thread.join()
+    hand_control_thread.join()
+    hand_client_thread.join()
 
-        hand_cmd_is_new = hand_client.poll()
-        if hand_cmd_is_new:
-            hand_client.recv_bytes_into(hand_cmd.array) # blocking
-            deadman_timer = time.time()
-
-        if time.time() - deadman_timer < ur.UR_DEADMAN_SWITCH_LIMIT:
-            robot.hand.execute(hand_cmd, hand_state)
-            robot.arm.execute(arm_cmd, arm_state)
-        else:
-            robot.arm.execute(ur.Command(), arm_state) # ESTOP, but keep the communication alive
-
-
-        if arm_cmd_is_new:
-            arm_client.send_bytes(arm_state.array)
-
-        if hand_cmd_is_new:
-            hand_client.send_bytes(hand_state.array)
-
-        # if time.time()-start_time > 2*freq:
-        #     print("Server loop lagging: " + str(time.time()-start_time))
-
-    # Disconnect the arm and gripper.
     robot.disconnect()
-

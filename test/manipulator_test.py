@@ -1,6 +1,6 @@
 
 import math
-
+import time
 from roman import Robot, SimScene, connect, connect_sim
 from roman import Joints, Tool, Position, GraspMode
 
@@ -94,27 +94,35 @@ def arm_hand_move(use_sim):
     robot.disconnect()
     print("Passed.")
 
-def arm_touch(use_sim):
+def arm_touch(use_sim, iter=1):
     '''This requires a horizontal surface that the arm can touch.'''
     print(f"Running {__file__}::{arm_touch.__name__}()")
     if use_sim:
         (robot, scene) = connect_sim()
     else:
         robot = connect()
-    robot.hand.open()
     robot.hand.set_mode(mode=GraspMode.PINCH)
     robot.hand.close()
+    
+    
     home_pos = Joints(0, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 2, 0)
-    robot.arm.move(target_position=home_pos, max_speed=1, max_acc=0.5)
-    below_table = robot.arm.state.tool_pose().clone()
-    below_table[2] = -0.2 # lower than the table
+    robot.arm.move(target_position=home_pos, max_speed=2, max_acc=1)
+    time.sleep(2)
+    while iter:
+        robot.arm.move(target_position=home_pos, max_speed=2, max_acc=1)
+        time.sleep(2)
+        below_table = robot.arm.state.tool_pose().clone()
+        below_table[2] = -0.2 # lower than the table
 
-    robot.arm.touch(below_table, max_speed=0.1, max_acc=0.1)
-    assert robot.arm.state.is_goal_reached()
+        robot.arm.touch(below_table, max_speed=0.1, max_acc=0.1, contact_force_multiplier=5)
+        assert robot.arm.state.is_goal_reached()
 
-    # go back
-    robot.arm.move(target_position=home_pos, max_speed=1, max_acc=1)
-    scene.disconnect()
+        # # go back
+        robot.arm.move(target_position=home_pos, max_speed=1, max_acc=1)
+        iter -= 1
+
+    if use_sim:
+        scene.disconnect()
     robot.disconnect()
     print("Passed.")
 
@@ -126,7 +134,7 @@ def run(use_sim):
     arm_move(use_sim)
     #hand_move(use_sim)
     #arm_hand_move(use_sim)
-    arm_touch(use_sim)
+    arm_touch(use_sim=False, iter=1)
 
 
 if __name__ == '__main__':
