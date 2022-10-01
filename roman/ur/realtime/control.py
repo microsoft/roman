@@ -145,15 +145,16 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
     was_deadman = ctrl_is_deadman
     ctrl_is_deadman = (ctrl_last_loop_time - cmd_time) > UR_DEADMAN_SWITCH_LIMIT
 
-    cmd = UR_ZERO
-    acc = UR_FAST_STOP_ACCELERATION
-
     # determine desired speed
     if ctrl_is_deadman:
+        cmd = UR_ZERO
+        acc = UR_FAST_STOP_ACCELERATION
         if not was_deadman:
             textmsg("deadman")
         #ur:end
     elif ctrl_is_contact:
+        cmd = UR_ZERO
+        acc = UR_CONTACT_STOP_ACCELERATION
         if not was_contact:
             textmsg("force limit STOP ", cmd_time)
         #ur:end
@@ -163,13 +164,11 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
     elif kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS: # this covers UR_CMD_KIND_MOVE_TOOL_POSE too, see interface.py
         final_speed = fabs(controller_args)
         cmd = ur_speed_joint_linear(target, max_speed, max_acc, final_speed)
-        acc = max_acc
-    #ur:end
-
-    global ctrl_last_cmd
-    if (norm(cmd) < UR_SPEED_NORM_ZERO) and (norm(cmd) <= norm(ctrl_last_cmd)):
-        cmd = UR_ZERO
-        acc = UR_FAST_STOP_ACCELERATION
+        acc = max_acc 
+        global ctrl_last_cmd
+        if (norm(cmd) < UR_SPEED_NORM_ZERO) and (norm(cmd) <= norm(ctrl_last_cmd)):
+            cmd = UR_ZERO
+        #ur:end
     #ur:end
 
     global ctrl_is_moving

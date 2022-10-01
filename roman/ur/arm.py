@@ -1,7 +1,6 @@
 import numpy as np
 import math
 import time
-from decimal import Decimal, Context
 from scipy.spatial.transform import Rotation
 from ..common import Vec, equal_angle
 from .realtime.constants import *
@@ -213,6 +212,7 @@ class Command(Vec):
     '''
     _BUFFER_SIZE = UR_CMD_ENTRIES_COUNT
     _ID = UR_CMD_ID
+    _TIME = UR_CMD_TIME
     _KIND = UR_CMD_KIND
     _CONFIG_MASS = UR_CMD_CONFIG_MASS
     _CONFIG_TOOL_COG = slice(*UR_CMD_CONFIG_TOOL_COG)
@@ -257,6 +257,7 @@ class Command(Vec):
         return self.make(kind=UR_CMD_KIND_MOVE_JOINT_SPEEDS, max_acc=6, force_low_bound=None, force_high_bound=None)
 
     def id(self): return self[Command._ID]
+    def time(self): return self[Command._TIME]
     def kind(self): return self[Command._KIND]
     def target(self):
             if self[Command._KIND] == UR_CMD_KIND_MOVE_TOOL_POSE:
@@ -272,6 +273,8 @@ class Command(Vec):
     def controller_args(self): return self[Command._MOVE_CONTROLLER_ARGS]
     def is_move_command(self): return self[Command._KIND] > UR_CMD_KIND_ESTOP and self[Command._KIND] < UR_CMD_KIND_READ
     def _goal_reached(self, state):
+        if state.cmd_id() != self.id():
+            return False
         if self[Command._KIND] == UR_CMD_KIND_MOVE_JOINT_SPEEDS:
             return self.target().allclose(state.joint_speeds(), UR_SPEED_TOLERANCE)
         elif self[Command._KIND] == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
@@ -289,11 +292,12 @@ class Arm:
         self.controller = controller
         self.command = Command()
         self.state = State()
-        self.decimal_ctx = Context(prec=4)
+        self.last_cmd_id = 0
 
     def __execute(self, blocking):
-        start_time = time.perf_counter()
-        self.command[Command._ID] = self.decimal_ctx.create_decimal(start_time)
+        self.last_cmd_id += 1
+        self.command[Command._ID] = self.last_cmd_id
+        self.command[Command._TIME] = int(time.perf_counter()*1000)/1000
         self.controller.execute(self.command, self.state)
         # print(time.perf_counter()- start_time)
         while blocking and (self.state.cmd_id() != self.command.id() or not self.state.is_done()):

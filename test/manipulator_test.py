@@ -101,9 +101,6 @@ def arm_touch(use_sim, iter=1):
         (robot, scene) = connect_sim()
     else:
         robot = connect()
-    robot.hand.open()
-    robot.hand.close()
-    robot.hand.open()
     robot.hand.set_mode(mode=GraspMode.PINCH)
     robot.hand.close()
     
@@ -117,7 +114,7 @@ def arm_touch(use_sim, iter=1):
         below_table = robot.arm.state.tool_pose().clone()
         below_table[2] = -0.2 # lower than the table
 
-        robot.arm.touch(below_table, max_speed=1, max_acc=1, contact_force_multiplier=5)
+        robot.arm.touch(below_table, max_speed=0.1, max_acc=0.1, contact_force_multiplier=5)
         assert robot.arm.state.is_goal_reached()
 
         # # go back
@@ -133,12 +130,12 @@ def arm_touch(use_sim, iter=1):
 # Runner
 #############################################################
 def run(use_sim):
-    #arm_read(False, {"hand.activate": False})
-    #arm_move(use_sim)
+    arm_read(False, {"hand.activate": False})
+    arm_move(use_sim)
     #hand_move(use_sim)
     #arm_hand_move(use_sim)
-    arm_touch(use_sim=False, iter=100)
+    arm_touch(use_sim=False, iter=1)
 
 
 if __name__ == '__main__':
-    run(False)
+    run(True)

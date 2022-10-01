@@ -98,7 +98,8 @@ class Connection:
             self.__send()
 
         # prepare the state
-        state[State._TIME] = time.time()
+        state[State._TIME] = int(time.perf_counter()*1000)/1000
+        state[State._CMD_ID] = cmd[Command._ID]
         state[State._FLAGS] = State._FLAG_READY*self.is_ready() \
             + State._FLAG_FAULTED*self.is_faulted() \
             + State._FLAG_INCONSISTENT * self.is_inconsistent() \

@@ -41,8 +41,8 @@ def get_arm_state(id, target_pose, target_joints):
         deadman_flag = s[5] * UR_STATUS_FLAG_DEADMAN
     #ur:end
 
-    return [s[0], # time
-            id, # s[1], # cmd_id. # because of READ and IK_QUERY
+    return [floor(s[0]*1000), # time - as int(ms) because UR limits float precision over the wire to 6 
+            floor(id), # s[1], # cmd_id. # because of READ and IK_QUERY
             moving_flag + contact_flag + deadman_flag, #status
 
             q[0], q[1], q[2], q[3], q[4], q[5],

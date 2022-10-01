@@ -119,7 +119,9 @@ class Connection:
 
     def execute(self, cmd, state):
         self.__send_cmd(cmd)
-        return self.__receive_state(state)
+        self.__receive_state(state)
+        state[State._TIME] = state[State._TIME] / 1000 # convert to seconds
+        return state
 
     def __send_cmd(self, cmd):
         """Private. Encodes and sends the command to the robot. Must be followed by a call to __receive_state."""
