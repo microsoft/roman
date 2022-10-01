@@ -9,7 +9,6 @@ class HandController:
     '''
     def __init__(self, connection):
         self.connection = connection
-        self.readcmd = Command()
         self.last_execution_time = time.perf_counter()
 
     def execute(self, cmd, state):
@@ -17,7 +16,6 @@ class HandController:
             time.sleep(0.01) # throttle to the frequency that the hand can sustain
         self.connection.execute(cmd, state)
         self.last_execution_time = time.perf_counter()
-
         return state
 
 class NoHandController:
