@@ -173,7 +173,7 @@ class Connection:
     def is_faulted(self): return self.__read_registers[2] != 0
     def is_moving(self): return self.__read_registers[0] & 0xC8 == 0x08  
     
-    def object_detected(self): return self.is_ready() and self.__read_registers[1] != 0xFF
+    def object_detected(self): return self.is_ready() and not self.is_moving() and self.__read_registers[1] != 0xFF
     def mode(self): return self.__read_registers[0] & 6
 
     def deactivate(self): 

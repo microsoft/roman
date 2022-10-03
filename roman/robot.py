@@ -1,6 +1,6 @@
 from math import inf
 import numpy as np
-
+import time
 from roman.ur.realtime.constants import UR_CMD_MOVE_CONTROLLER_DEFAULT, UR_CMD_MOVE_CONTROLLER_RT
 from .rq.hand import GraspMode, Hand, Position
 from . import rq
@@ -251,13 +251,14 @@ class Robot:
         completion = completion or _default_completion_condition
         self.__log()
         endtime = (self.arm.state.time() + timeout) if timeout is not None else inf
+        self.step()
         while not completion(self.arm.state, self.hand.state) and self.arm.state.time() < endtime:
             self.step()
         return completion(self.arm.state, self.hand.state)
 
     def __log(self):
         if self._writer is not None:
-            self._writer(self.arm.state, self.hand.state, self.arm.command, self.hand.command)
+            self._writer(time.perf_counter(), self.arm.state, self.hand.state, self.arm.command, self.hand.command)
 
 
 def connect(use_sim=False, config={}):

@@ -63,12 +63,12 @@ class State(Vec):
 
     def time(self): return self[State._TIME]
     def cmd_id(self): return self[State._CMD_ID]
-    def is_ready(self): return self[State._FLAGS] & State._FLAG_READY
-    def is_inconsistent(self): return self[State._FLAGS] & State._FLAG_INCONSISTENT
-    def is_faulted(self): return self[State._FLAGS] & State._FLAG_FAULTED
-    def is_moving(self): return self[State._FLAGS] & State._FLAG_MOVING
+    def is_ready(self): return self[State._FLAGS] & State._FLAG_READY != 0
+    def is_inconsistent(self): return self[State._FLAGS] & State._FLAG_INCONSISTENT != 0
+    def is_faulted(self): return self[State._FLAGS] & State._FLAG_FAULTED != 0
+    def is_moving(self): return self[State._FLAGS] & State._FLAG_MOVING != 0
     def is_done(self): return self.is_ready() and not self.is_moving()
-    def object_detected(self): return self[State._FLAGS] & State._FLAG_OBJECT_DETECTED
+    def object_detected(self): return self[State._FLAGS] & State._FLAG_OBJECT_DETECTED != 0
     def mode(self): return self[State._MODE]
     def target(self): return self[State._TARGET_A]
     def position(self): return self[State._POSITION_A]
