@@ -59,9 +59,9 @@ class State(Vec):
     _FLAG_OBJECT_DETECTED = 32
 
     def __init__(self):
-        super().__init__(State._BUFFER_SIZE, dtype=np.int16)
+        super().__init__(State._BUFFER_SIZE, dtype=np.int32)
 
-    def time(self): return self[State._TIME]
+    def time(self): return self[State._TIME] / 1000
     def cmd_id(self): return self[State._CMD_ID]
     def is_ready(self): return self[State._FLAGS] & State._FLAG_READY != 0
     def is_inconsistent(self): return self[State._FLAGS] & State._FLAG_INCONSISTENT != 0
@@ -101,7 +101,7 @@ class Command(Vec):
     _CMD_KIND_CHANGE = 4
 
     def __init__(self, id=0):
-        super().__init__(Command._BUFFER_SIZE, dtype=np.int16)
+        super().__init__(Command._BUFFER_SIZE, dtype=np.int32)
         self[Command._KIND] = Command._CMD_KIND_READ
         self[Command._ID] = id
 

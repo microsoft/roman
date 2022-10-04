@@ -137,8 +137,10 @@ def execute_arm_command(cmd, offset):
         joint_target = UR_ZERO
     #ur:end
     ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, controller, controller_args)
-    if UR_ROBOT_VERSION == UR_ROBOT_VERSION_ESERIES:
+    s = ur_get_status()
+    while time != s[0]: # make sure we are returning state that reflects the command. client-side controllers rely on this. 
         sync()
+        s = ur_get_status()
     #ur:end
     return get_arm_state(id, pose_target, joint_target)
 #ur:end

@@ -111,9 +111,6 @@ def ur_check_loop_delay(loop_time):
 ctrl_avg_force = UR_ZERO
 def ur_check_contact(force_low_bound, force_high_bound, reset_avg):
     ft = ur_get_force()
-    # a = ur_get_tcp_acceleration()
-    # a = [fabs(a[0])+1, fabs(a[1])+1, fabs(a[2])+1]
-    # ft = [ft[0]/a[0], ft[0]/a[1], ft[0]/a[2], ft[3]/a[0], ft[4]/a[1], ft[5]/a[2]]
     global ctrl_avg_force
     if reset_avg:
         ctrl_avg_force = UR_ZERO

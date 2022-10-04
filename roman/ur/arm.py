@@ -122,6 +122,10 @@ class State(Vec):
         '''The id of the last drive command, set to client time when command was submitted.'''
         return self[State._CMD_ID]
 
+    def is_valid(self):
+        '''True if the state represents an actual arm state, false if this is is an empty vector.'''
+        return self[State._TIME] > 0
+
     def is_moving(self):
         '''True if the arm is stopped, false if the arm is moving.'''
         return int(self[State._STATUS]) & State._STATUS_FLAG_MOVING != 0
@@ -299,6 +303,9 @@ class Arm:
         self.command[Command._ID] = self.last_cmd_id
         self.command[Command._TIME] = int(time.perf_counter()*1000)/1000
         self.controller.execute(self.command, self.state)
+        assert self.state.cmd_id() != self.command.id()
+        self.state[:] = 0 # invalidate the state, since it doesn't reflect the command yet. 
+
         # print(time.perf_counter()- start_time)
         while blocking and (self.state.cmd_id() != self.command.id() or not self.state.is_done()):
             self.step()
@@ -384,8 +391,8 @@ class Arm:
             target_position,
             max_speed=UR_DEFAULT_MAX_SPEED,
             max_acc=UR_DEFAULT_ACCELERATION,
-            force_low_bound=[-6, -6,-6,-1, -1, -1],
-            force_high_bound=[6, 6, 6, 1, 1, 1],
+            force_low_bound=[-5, -5, -5, -0.5, -0.5, -0.5],
+            force_high_bound=[5, 5, 5, 0.5, 0.5, 0.5],
             contact_force_multiplier=5,
             blocking=True):
         self.move(
