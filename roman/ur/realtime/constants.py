@@ -37,6 +37,7 @@ UR_CMD_ENTRIES_COUNT = 25 # This is how many floats we expect with each command 
 UR_CMD_MOVE_CONTROLLER_DEFAULT = 0 # default controller. In pose/position control, a low-bound on the final speed of the leading joint can be specified via controller_args.
 UR_CMD_MOVE_CONTROLLER_TOUCH = 1 # expects to touch an obstacle and stop prior to eaching the specified target.
 UR_CMD_MOVE_CONTROLLER_RT = 2 # reach the target in the specified amount of time (specified by UR_CMD_MOVE_TIME)
+UR_CMD_MOVE_CONTROLLER_LINEAR = 4
 
 # State field indices
 UR_STATE_TIME = 0

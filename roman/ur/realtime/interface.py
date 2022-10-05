@@ -121,20 +121,25 @@ def execute_arm_command(cmd, offset):
         #ur:end
     #ur:end
 
-    if kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
-        joint_target = target
-        pose_target = UR_ZERO
-    elif kind == UR_CMD_KIND_MOVE_TOOL_POSE:
-        # convert tool pose to joints position
-        kind = UR_CMD_KIND_MOVE_JOINT_POSITIONS
-        #textmsg("target position",target_position)
+    if kind == UR_CMD_KIND_MOVE_TOOL_POSE:
         pose_target = target
-        joint_target = get_inverse_kin(ur_pose(target))
-        target = joint_target
-        #textmsg("joint position",target_position)
-    else:
-        pose_target = UR_ZERO
         joint_target = UR_ZERO
+    else:
+        if kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
+            joint_target = target
+            pose_target = UR_ZERO
+        elif kind == UR_CMD_KIND_MOVE_TOOL_POSE:
+            # convert tool pose to joints position
+            kind = UR_CMD_KIND_MOVE_JOINT_POSITIONS
+            #textmsg("target position",target_position)
+            pose_target = target
+            joint_target = get_inverse_kin(ur_pose(target))
+            target = joint_target
+            #textmsg("joint position",target_position)
+        else:
+            pose_target = UR_ZERO
+            joint_target = UR_ZERO
+        #ur:end
     #ur:end
     ur_drive(time, id, kind, target, max_speed, max_acceleration, force_low_bound, force_high_bound, controller, controller_args)
     s = ur_get_status()

@@ -121,6 +121,43 @@ class IncrementalController:
         state._set_state_flag(State._STATUS_FLAG_DONE, time_left <= 0)
         return state
 
+class ToolLinearController:
+    def __init__(self, next):
+        self.next = next
+        self.last_state = State()
+        self.cmd = Command()
+        self.last_time = time.perf_counter()
+        self.start_time = time.perf_counter()
+        self.start_pose = Tool()
+
+    def execute(self, cmd, state):
+        ts = time.perf_counter() - self.last_time
+        self.last_time = time.perf_counter()
+        if cmd.kind() != UR_CMD_KIND_MOVE_TOOL_POSE:
+            self.next.execute(cmd, state)
+            self.last_state[:] = state
+            return state
+        if self.cmd.id() != cmd.id():
+            # new command
+            self.start_time = time.perf_counter()
+            self.start_pose = self.last_state.tool_pose().clone()
+
+        timespan = time.perf_counter() - self.start_time
+        delta = cmd.target() - self.start_pose 
+        distance = np.linalg.norm(delta[:3])
+        if distance > 0:
+            d = min(np.linalg.norm((self.last_state.tool_pose() - self.start_pose)[:3]) + cmd.max_speed() * ts * 4, distance)
+            actual_target = self.start_pose + delta * d / distance
+        else:
+           actual_target = pose 
+        self.cmd[:] = cmd
+        self.cmd[Command._MOVE_TARGET] = actual_target
+        # self.cmd[Command._MOVE_MAX_SPEED] *= 2
+        # self.cmd[Command._MOVE_MAX_ACCELERATION] *= 2
+        self.next.execute(self.cmd, state)
+        self.last_state[:] = state
+        return state
+
 class TouchController:
     '''
     Expects contact before completing the motion.
@@ -149,10 +186,11 @@ class ArmController:
     def __init__(self, connection):
         basic = BasicController(connection)
         ema = EMAForceCalibrator(basic)
-        touch = TouchController(ema)
+        tlc = ToolLinearController(ema)
+        touch = TouchController(tlc)
         inc = IncrementalController(ema)
         self.controllers = {
-            UR_CMD_MOVE_CONTROLLER_DEFAULT: ema,
+            UR_CMD_MOVE_CONTROLLER_DEFAULT: tlc,
             UR_CMD_MOVE_CONTROLLER_TOUCH: touch,
             UR_CMD_MOVE_CONTROLLER_RT: inc}
         self.cmd = Command()

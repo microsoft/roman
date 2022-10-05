@@ -89,6 +89,59 @@ def ur_speed_joint_linear(target, max_speed, max_acc, final_speed):
     ]
 #ur:end
 
+# tool-linear motion
+ur_ctrl_start_pose = ur_pose(UR_ZERO)
+def ur_speed_tool_linear(is_new, cmd_time, target, max_speed, max_acc):
+    global ur_ctrl_start_pose
+    if is_new:
+        ur_ctrl_start_pose = get_actual_tcp_pose()
+    #ur:end
+    distance = pose_dist(ur_ctrl_start_pose, target)
+    if distance < UR_TOOL_POSITION_TOLERANCE:
+        delta = pose_sub(ur_ctrl_start_pose, target) 
+        i = 3 # only rotations
+        while i < 6:
+            rot_dist = fabs(delta[i])
+            if rot_dist > distance:
+                distance = rot_dist
+            #ur:end 
+            i = i + 1
+        #ur:end 
+        if distance < UR_TOOL_POSITION_TOLERANCE:
+            return UR_ZERO
+        #ur:end
+    #ur:end    
+    
+    d = max_speed * (ur_get_time() - cmd_time)
+    if d > distance:
+        d = distance
+    #ur:end
+    actual_target = interpolate_pose(ur_ctrl_start_pose, target, d / distance)
+    joint_target = get_inverse_kin(actual_target)
+    
+    positions = get_actual_joint_positions()
+    distances = ur_joint_distances(positions, joint_target)
+    # return [
+    #     distances[0] / UR_TIME_SLICE,
+    #     distances[1] / UR_TIME_SLICE,
+    #     distances[2] / UR_TIME_SLICE,
+    #     distances[3] / UR_TIME_SLICE,
+    #     distances[4] / UR_TIME_SLICE,
+    #     distances[5] / UR_TIME_SLICE
+    # ]
+
+    speeds = get_target_joint_speeds()
+    itime = ur_get_leading_dim(distances, speeds, max_speed*2, max_acc*3, max_speed*2)
+    return [
+        distances[0] * itime,
+        distances[1] * itime,
+        distances[2] * itime,
+        distances[3] * itime,
+        distances[4] * itime,
+        distances[5] * itime
+    ]
+#ur:end
+
 # state globals
 ctrl_last_cmd_id = 0
 ctrl_last_cmd_time = 0
@@ -125,17 +178,19 @@ def ur_check_contact(force_low_bound, force_high_bound, reset_avg):
 # Generate a target speed based on the latest command and current state
 # Note that this is called in a loop on the drive thread by the real robot
 def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_low_bound, force_high_bound, controller, controller_args):
+    global ctrl_last_cmd
     global ctrl_last_cmd_id
+    global ctrl_last_cmd_time
     is_new_cmd = id != ctrl_last_cmd_id
+    is_new_submission = cmd_time != ctrl_last_cmd_time
     # verify we are not running behind
     global ctrl_last_loop_time
     ctrl_last_loop_time = ur_check_loop_delay(ctrl_last_loop_time)
     # determine external forces and motion status
     global ctrl_is_contact
-    global ctrl_last_cmd_time
     contact = ur_check_contact(force_low_bound, force_high_bound, is_new_cmd)
     was_contact = ctrl_is_contact
-    ctrl_is_contact = (contact or (ctrl_is_contact and cmd_time == ctrl_last_cmd_time)) and not is_new_cmd
+    ctrl_is_contact = (contact or (ctrl_is_contact and not is_new_submission)) and not is_new_cmd
     ctrl_last_cmd_time = cmd_time
     ctrl_last_cmd_id = id
     global ctrl_is_deadman
@@ -158,11 +213,16 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
     elif kind == UR_CMD_KIND_MOVE_JOINT_SPEEDS:
         cmd = target
         acc = max_acc
-    elif kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS: # this covers UR_CMD_KIND_MOVE_TOOL_POSE too, see interface.py
+    elif kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS: # this covers UR_CMD_KIND_MOVE_TOOL_POSE too, for motion linear in joint-space, see interface.py
         final_speed = fabs(controller_args)
         cmd = ur_speed_joint_linear(target, max_speed, max_acc, final_speed)
         acc = max_acc 
-        global ctrl_last_cmd
+        if (norm(cmd) < UR_SPEED_NORM_ZERO) and (norm(cmd) <= norm(ctrl_last_cmd)):
+            cmd = UR_ZERO
+        #ur:end
+    elif kind == UR_CMD_KIND_MOVE_TOOL_POSE: # motion linear in tool-space move
+        cmd = ur_speed_tool_linear(is_new_submission, cmd_time, ur_pose(target), max_speed, max_acc)
+        acc = max_acc * 3
         if (norm(cmd) < UR_SPEED_NORM_ZERO) and (norm(cmd) <= norm(ctrl_last_cmd)):
             cmd = UR_ZERO
         #ur:end
