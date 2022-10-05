@@ -98,7 +98,8 @@ class IncrementalController:
 
         time_left = self.cmd.controller_args() - state.time() + self.start_time
         if time_left <= 0:
-            self.next.execute(self.cmd_read, state)
+            self.speed_cmd[Command._MOVE_TARGET] = UR_ZERO
+            self.next.execute(self.speed_cmd, state)
         else:
             if time_left > self.open_loop_duration:
                 # we are far enough to perform corrections
