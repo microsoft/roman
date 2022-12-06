@@ -44,6 +44,9 @@ class Vec:
     def clone(self):
         return self.__class__.fromarray(self.array, clone = True)
 
+    def _fix(self):
+        return
+
     def __getitem__(self, idx):
         return self.array[idx]
 
@@ -67,42 +70,50 @@ class Vec:
 
     def __iadd__(self, other):
         self.array += other
+        self._fix()
         return self
 
     def __isub__(self, other):
         self.array -= other
+        self._fix()
         return self
 
     def __add__(self, other):
         cls = self.__class__
         res = cls.__new__(cls)
         res.array = self.array + other
+        res._fix()
         return res
 
     def __sub__(self, other):
         cls = self.__class__
         res = cls.__new__(cls)
         res.array = self.array - other
+        res._fix()
         return res
 
     def __imul__(self, other):
         self.array *= other
+        self._fix()
         return self
 
     def __mul__(self, other):
         cls = self.__class__
         res = cls.__new__(cls)
         res.array = self.array * other
+        res._fix()
         return res
     
     def __idiv__(self, other):
         self.array /= other
+        self._fix()
         return self
 
     def __div__(self, other):
         cls = self.__class__
         res = cls.__new__(cls)
         res.array = self.array / other
+        res._fix()
         return res
 
     def __lt__(self, other):

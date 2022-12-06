@@ -22,14 +22,16 @@ class Robot:
     Combines the manipulator components (arm, hand, FT and tactile sensors).
     '''
 
-    def __init__(self, use_sim=True, writer=None, config={}):
+    def __init__(self, use_sim=True, config={}):
         self.use_sim = use_sim
         self.config = config
-        self._writer = writer
         self._server = None
         self.arm = None
         self.hand = None
-        self.active_force_limit = self.config.get("force_limit", FORCE_LIMIT_DEFAULT)
+        fl = self.config.get("force_limit", FORCE_LIMIT_DEFAULT)
+        self.active_force_limit = fl if isinstance(fl, tuple) else eval(fl)
+        self.completion_condition = _default_completion_condition
+        self._trace = None
 
     def connect(self):
         '''
@@ -215,7 +217,6 @@ class Robot:
         self.__check_connected()
         self.arm.read()
         self.hand.read()
-        self.__log()
         return self.arm.state.clone(), self.hand.state.clone()
 
     def last_command(self):
@@ -228,7 +229,7 @@ class Robot:
 
     def is_done(self):
         self.__check_connected()
-        return self.arm.state.is_done() and self.hand.state.is_done()
+        return self.completion_condition(self.arm.state, self.hand.state)
 
     def is_moving(self):
         self.__check_connected()
@@ -238,28 +239,33 @@ class Robot:
         self.__check_connected()
         self.arm.step()
         self.hand.step()
-        self.__log()
+        if self._trace is not None:
+            self._trace += [np.concatenate(self.last_state() + self.last_command())]
+        return self.is_done()
 
     def wait(self, timeout):
         self.__check_connected()
         self.arm.read()
         end = self.arm.state.time() + timeout
         while self.arm.state.time() < end:
-            self.read()
+            self.read() 
 
     def __complete_move(self, timeout, completion):
-        completion = completion or _default_completion_condition
-        self.__log()
-        endtime = (self.arm.state.time() + timeout) if timeout is not None else inf
+        self.completion_condition = completion or _default_completion_condition
         self.step()
-        while not completion(self.arm.state, self.hand.state) and self.arm.state.time() < endtime:
-            self.step()
-        return completion(self.arm.state, self.hand.state)
+        endtime = (self.arm.state.time() + timeout) if timeout is not None else inf
+        done = self.is_done()
+        while not done and self.arm.state.time() < endtime:
+            done = self.step()
+        return done
 
-    def __log(self):
-        if self._writer is not None:
-            self._writer(time.perf_counter(), self.arm.state, self.hand.state, self.arm.command, self.hand.command)
+    def start_trace(self):
+        self._trace = []
 
+    def end_trace(self):
+        trace = self._trace
+        self._trace = None
+        return trace
 
 def connect(use_sim=False, config={}):
     '''

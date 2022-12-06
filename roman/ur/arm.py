@@ -2,7 +2,7 @@ import numpy as np
 import math
 import time
 from scipy.spatial.transform import Rotation
-from ..common import Vec, equal_angle
+from ..common import Vec, equal_angle, clamp_angle
 from .realtime.constants import *
 
 class Joints(Vec):
@@ -20,6 +20,10 @@ class Joints(Vec):
     def __init__(self, base=0, shoulder=0, elbow=0, wrist1=0, wrist2=0, wrist3=0):
         super().__init__(6)
         self.array[:] = [base, shoulder, elbow, wrist1, wrist2, wrist3]
+
+    def _fix(self):
+        for i in range(6):
+            self.array[i] = clamp_angle(self.array[i])
 
     def allclose(self, array, tolerance = UR_JOINTS_POSITION_TOLERANCE):
         if isinstance(array, Tool):
@@ -50,6 +54,10 @@ class Tool(Vec):
         super().__init__(6)
         self.array[:] = [x, y, z, rx, ry, rz]
 
+    def _fix(self):
+        for i in range(3, 6):
+            self.array[i] = clamp_angle(self.array[i])
+
     def allclose(self, array, position_tolerance = UR_TOOL_POSITION_TOLERANCE, rotation_tolerance = UR_TOOL_ROTATION_TOLERANCE):
         if isinstance(array, Joints):
             raise TypeError("Cannot compare tool pose with joint positions.")
@@ -78,6 +86,18 @@ class Tool(Vec):
 
     def orientation(self):
         return Rotation.from_rotvec(self.array[3:]).as_quat()
+
+    def __add__(self, other):
+        cls = self.__class__
+        res = cls.__new__(cls)
+        res.array = self.array + other
+        return res
+
+    def __sub__(self, other):
+        cls = self.__class__
+        res = cls.__new__(cls)
+        res.array = self.array - other
+        return res
 
 class ToolSpeed(Tool):
     pass

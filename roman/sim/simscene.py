@@ -136,6 +136,7 @@ class SimScene:
     def create_camera(self,
                       cameraEyePosition,
                       img_res=[84, 84],
+                      img_type="rgbd",
                       cameraTargetPosition=[0, 0, 0.2],
                       cameraUpVector=[0, 0, 1],
                       fov=90,
@@ -150,6 +151,7 @@ class SimScene:
         camera_cfg["img_h"] = img_h
         camera_cfg["near"] = camera_near
         camera_cfg["far"] = camera_far
+        camera_cfg["type"] = img_type
         tag = tag or len(self.__cameras)
         self._cameras[tag] = camera_cfg
         return tag
@@ -157,10 +159,7 @@ class SimScene:
     def get_camera_count(self):
         return len(self._cameras)
 
-    def get_camera_images(self):
-        return list(self.get_camera_image(id) for id in self._cameras.keys())
-
-    def get_camera_image(self, id):
+    def get_camera_capture(self, id):
         if id not in self._cameras.keys():
             if type(id) is int and id > 0 and id < len(self._cameras):
                 id = self._cameras.keys[id]
@@ -187,11 +186,13 @@ class SimScene:
         near = camera_cfg["near"]
         depth = far * near / (far - (far - near) * depth_buffer)
 
-        # segmentation mask
-        # TBD
+        return (time.perf_counter(), rgb, depth)
 
-        #return (rgb, depth)
-        return rgb
+    def get_camera_captures(self):
+        captures = {}
+        for k in self.cameras.keys():
+            captures[k] = self.get_camera_capture(k)
+        return captures
 
     def get_world_state(self):
         '''Enumerates and returns the state of the objects that have a tag.'''
