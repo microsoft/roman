@@ -146,7 +146,7 @@ def control_loop(controller, shared_cmd, shared_state, lock, shutdown_event, kee
         # only move the hardware as long as the client is sending us commands  
         if time.perf_counter() - last_client_pulse  < MIN_CLIENT_REQ_INTERVAL:
             controller.execute(local_cmd, local_state)
-        elif keep_alive_cmd:
+        elif keep_alive_cmd is not None:
             controller.execute(keep_alive_cmd, local_state)
 
 def server(arm_client, hand_client, shutdown_event, reset_event, robot_type, config):

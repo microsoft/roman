@@ -17,9 +17,19 @@ def get_arm_state(id, target_pose, target_joints):
     tp = get_actual_tcp_pose()
     tv = get_actual_tcp_speed()
 
-    q_t = target_joints #get_target_joint_positions()
+    if target_pose != UR_ZERO:
+        tp_t = target_pose
+    else:
+        tp_t = get_target_tcp_pose()
+    #ur:end
+
+    if target_joints != UR_ZERO:
+        q_t = target_joints
+    else:
+        q_t = get_target_joint_positions()
+    #ur:end
+
     qd_t = get_target_joint_speeds()
-    tp_t = target_pose #get_target_tcp_pose()
     tv_t = get_target_tcp_speed()
 
     f = get_tcp_force()

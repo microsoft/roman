@@ -156,8 +156,8 @@ class Robot:
               max_speed=UR_DEFAULT_MAX_SPEED,
               max_acc=UR_DEFAULT_ACCELERATION,
               force_limit=FORCE_LIMIT_TOUCH,
-              contact_force_multiplier=5,
               timeout=None,
+              max_final_speed=0,
               completion=None):
         self.__check_connected()
         force_limit = force_limit or self.active_force_limit
@@ -166,7 +166,7 @@ class Robot:
                        max_acc=max_acc,
                        force_low_bound=force_limit[0],
                        force_high_bound=force_limit[1],
-                       contact_force_multiplier=contact_force_multiplier,
+                       max_final_speed=max_final_speed,
                        blocking=False)
         return self.__complete_move(timeout, completion)
 

@@ -36,6 +36,9 @@ class Joints(Vec):
                 return False
         return True
 
+    def interpolate(self, target, fraction):
+        return (target - self) * fraction
+
 class JointSpeeds(Joints):
     pass
 
@@ -87,17 +90,11 @@ class Tool(Vec):
     def orientation(self):
         return Rotation.from_rotvec(self.array[3:]).as_quat()
 
-    def __add__(self, other):
-        cls = self.__class__
-        res = cls.__new__(cls)
-        res.array = self.array + other
-        return res
-
-    def __sub__(self, other):
-        cls = self.__class__
-        res = cls.__new__(cls)
-        res.array = self.array - other
-        return res
+    def interpolate(self, target, fraction):
+        current = self.to_xyzrpy()
+        delta = Tool.fromarray(target.to_xyzrpy() - current)
+        intermediate_target = delta * fraction + current
+        return Tool.from_xyzrpy(intermediate_target)
 
 class ToolSpeed(Tool):
     pass
@@ -413,7 +410,7 @@ class Arm:
             max_acc=UR_DEFAULT_ACCELERATION,
             force_low_bound=[-5, -5, -5, -0.5, -0.5, -0.5],
             force_high_bound=[5, 5, 5, 0.5, 0.5, 0.5],
-            contact_force_multiplier=5,
+            max_final_speed=0,
             blocking=True):
         self.move(
             target_position,
@@ -422,7 +419,7 @@ class Arm:
             force_low_bound=force_low_bound,
             force_high_bound=force_high_bound,
             controller=UR_CMD_MOVE_CONTROLLER_TOUCH,
-            controller_args=contact_force_multiplier,
+            controller_args=max_final_speed,
             blocking=blocking)
 
     def config(self, mass = UR_DEFAULT_MASS, cog = UR_DEFAULT_TOOL_COG, tcp = UR_DEFAULT_TCP):

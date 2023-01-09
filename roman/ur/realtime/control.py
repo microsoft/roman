@@ -21,8 +21,8 @@ def get_joint_distance(current, target):
             alt = alt + 2 * pi
             i = i + 1
         #ur:end
-    elif fabs(delta)<UR_JOINTS_POSITION_TOLERANCE:
-        delta=0
+    # elif fabs(delta)<UR_JOINTS_POSITION_TOLERANCE:
+    #     delta=0
     #ur:end
     return delta
 #ur:end
@@ -89,6 +89,50 @@ def ur_speed_joint_linear(target, max_speed, max_acc, final_speed):
     ]
 #ur:end
 
+# not used
+# def ur_speed_tool_linear(target, max_speed, max_acc):
+#     pose_target = ur_pose(target)
+#     pose = get_actual_tcp_pose()
+#     vel = get_actual_tcp_speed()
+#     speed = norm([vel[0], vel[1], vel[2]])
+#     dist = point_dist(pose, pose_target)
+#     if dist <= UR_TOOL_POSITION_TOLERANCE:
+#         return ur_speed_joint_linear(get_inverse_kin(pose_target), 3, 5, 0)
+#     #ur:end
+
+#     min_dist = (speed / 2) * (speed / max_acc) # avg_speed * time
+#     if min_dist >= dist:
+#         speed = speed - UR_TIME_SLICE * max_acc
+#         if speed <= 0:
+#             return ur_speed_joint_linear(get_inverse_kin(pose_target), 3, 5, 0)
+#         #ur:end
+#     else:
+#         speed = speed + UR_TIME_SLICE * max_acc
+#         if speed > max_speed:
+#             speed = max_speed
+#         #ur:end
+#     #ur:end
+#     step = UR_TIME_SLICE * speed
+#     fraction = step / dist
+#     if fraction > 1:
+#         fraction = 1
+#     #ur:end
+#     waypoint = interpolate_pose(pose, pose_target, fraction)
+#     target_joints = get_inverse_kin(waypoint)
+#     positions = get_actual_joint_positions()
+#     distances = ur_joint_distances(positions, target_joints)
+#     joint_speeds = [
+#         1.1 * distances[0] / UR_TIME_SLICE,
+#         1.1 * distances[1] / UR_TIME_SLICE,
+#         1.1 * distances[2] / UR_TIME_SLICE,
+#         1.1 * distances[3] / UR_TIME_SLICE,
+#         1.1 * distances[4] / UR_TIME_SLICE,
+#         1.1 * distances[5] / UR_TIME_SLICE
+#     ]
+#     return joint_speeds
+# #ur:end
+
+
 # state globals
 ctrl_last_cmd_id = 0
 ctrl_last_cmd_time = 0
@@ -141,6 +185,7 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
     global ctrl_is_deadman
     was_deadman = ctrl_is_deadman
     ctrl_is_deadman = (ctrl_last_loop_time - cmd_time) > UR_DEADMAN_SWITCH_LIMIT
+    global ctrl_last_cmd
 
     # determine desired speed
     if ctrl_is_deadman:
@@ -158,14 +203,19 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
     elif kind == UR_CMD_KIND_MOVE_JOINT_SPEEDS:
         cmd = target
         acc = max_acc
-    elif kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS: # this covers UR_CMD_KIND_MOVE_TOOL_POSE too, see interface.py
+    elif kind == UR_CMD_KIND_MOVE_JOINT_POSITIONS:
         final_speed = fabs(controller_args)
         cmd = ur_speed_joint_linear(target, max_speed, max_acc, final_speed)
         acc = max_acc 
-        global ctrl_last_cmd
         if (norm(cmd) < UR_SPEED_NORM_ZERO) and (norm(cmd) <= norm(ctrl_last_cmd)):
             cmd = UR_ZERO
         #ur:end
+    # elif kind == UR_CMD_KIND_MOVE_TOOL_POSE:
+    #     cmd = ur_speed_tool_linear(target, max_speed, max_acc)
+    #     acc = 5 
+    #     if (norm(cmd) < UR_SPEED_NORM_ZERO) and (norm(cmd) <= norm(ctrl_last_cmd)):
+    #         cmd = UR_ZERO
+    #     #ur:end
     #ur:end
 
     global ctrl_is_moving

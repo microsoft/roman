@@ -8,11 +8,13 @@ import math
 TWO_PI = 2*math.pi
 
 def clamp_angle(a):
-    if a > math.pi:
-        return  a - TWO_PI
-    if a < -math.pi:
-        return a + TWO_PI
-    return a 
+    # if a > math.pi:
+    #     return  a - TWO_PI
+    # if a < -math.pi:
+    #     return a + TWO_PI
+    # return a 
+    d = (((math.degrees(a) % 360) + 540) % 360) - 180
+    return math.radians(d)
 
 def equal_angle(a, b, tolerance = 0):
     a = clamp_angle(a)
@@ -39,6 +41,7 @@ class Vec:
     def fromarray(cls, array, clone = True):
         self = cls.__new__(cls)
         self.array = np.array(array) if clone else array
+        self._fix()
         return self
 
     def clone(self):
