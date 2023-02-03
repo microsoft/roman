@@ -172,3 +172,6 @@ class Hand:
         self.command.make(Command._CMD_KIND_CHANGE, Finger.All, 0, 0, 0, mode)
         self.__execute(True)
 
+    def normalize(position):
+        return position / 255
+
