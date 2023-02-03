@@ -77,12 +77,22 @@ class Tool(Vec):
 
     @staticmethod
     def from_xyzrpy(xyzrpy):
+        # convert from euler angles
         r = Rotation.from_euler("xyz", xyzrpy[3:]).as_rotvec()
         return Tool.fromarray(np.concatenate((xyzrpy[:3], r)))
+     
+    @staticmethod
+    def from_xyzrpy_normalized(xyzrpy_norm):
+        # convert from euler angles normalized to [-1,1]
+        return roman.Tool.from_xyzrpy(xyzrpy_norm * [1, 1, 1, 2*np.pi, 2*np.pi, 2*np.pi])
 
     def to_xyzrpy(self):
         r = Rotation.from_rotvec(self.array[3:]).as_euler("xyz")
         return np.concatenate((self.array[:3], r))
+
+    def normalize_angles(self):
+        # normalize tool angles to [-1,1]
+        return self.array / [1, 1, 1, 2*np.pi, 2*np.pi, 2*np.pi]
 
     def position(self):
         return self.array[:3]
