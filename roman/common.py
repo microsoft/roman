@@ -38,9 +38,9 @@ class Vec:
         self.array = np.zeros(size, dtype)
 
     @classmethod
-    def fromarray(cls, array, clone = True):
+    def fromarray(cls, array, clone = True, dtype=np.float):
         self = cls.__new__(cls)
-        self.array = np.array(array) if clone else array
+        self.array = np.array(array, dtype) if clone else array
         self._fix()
         return self
 
