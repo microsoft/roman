@@ -1,7 +1,7 @@
 from math import inf
 import numpy as np
 import time
-from roman.ur.realtime.constants import UR_CMD_MOVE_CONTROLLER_DEFAULT, UR_CMD_MOVE_CONTROLLER_RT
+from .ur.realtime.constants import UR_CMD_MOVE_CONTROLLER_DEFAULT, UR_CMD_MOVE_CONTROLLER_RT
 from .rq.hand import GraspMode, Hand, Position
 from . import rq
 from .ur.arm import Arm, Tool, Joints
