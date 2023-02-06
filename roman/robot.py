@@ -87,19 +87,6 @@ class Robot:
         self.__check_connected()
         return self.hand.state.object_detected()
 
-    def move_simple(self, dx, dy, dz, dyaw, max_speed=0.5, max_acc=0.5, timeout=0.2):
-        '''
-        Moves the arm relative to the current position in carthesian coordinates,
-        assuming the gripper is vertical (aligned with the z-axis), pointing down.
-        This version returns after the amount of time specified by dt.
-        '''
-        self.__check_connected()
-        self.arm.read()
-        pose = self.arm.state.tool_pose()
-        pose = Tool.from_xyzrpy(pose.to_xyzrpy() + [dx, dy, dz, 0, 0, dyaw])
-        self.arm.move(pose, max_speed=max_speed, max_acc=max_acc, blocking=False)
-        self.__complete_move(timeout, None)
-
     def get_inverse_kinematics(self, target):
         self.__check_connected()
         return self.arm.get_inverse_kinematics(target)
@@ -169,6 +156,21 @@ class Robot:
                        max_final_speed=max_final_speed,
                        blocking=False)
         return self.__complete_move(timeout, completion)
+
+    def move_and_grasp(self,
+             arm_target,
+             max_speed=UR_DEFAULT_MAX_SPEED,
+             max_acc=UR_DEFAULT_ACCELERATION,
+             force_limit=None,
+             max_final_speed=0,
+             grasp_target=Position.CLOSED,
+             grasp_speed=255,
+             grasp_force=0,
+             timeout=None,
+             completion=None):
+        self.__check_connected()
+        self.hand.move(position=grasp_target, speed=grasp_speed, force=grasp_force, blocking=False)
+        return self.move(target=arm_target, max_speed=max_speed, max_acc=max_acc, force_limit=force_limit, max_final_speed=max_final_speed, timeout=timeout, completion=completion)
 
     def set_hand_mode(self, mode=GraspMode.BASIC):
         self.__check_connected()
