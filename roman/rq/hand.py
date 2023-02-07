@@ -172,3 +172,11 @@ class Hand:
         self.command.make(Command._CMD_KIND_CHANGE, Finger.All, 0, 0, 0, mode)
         self.__execute(True)
 
+    @staticmethod
+    def normalize(position):
+        return position / 255
+
+    @staticmethod
+    def from_normalized(position):
+        return int(position * 255)
+

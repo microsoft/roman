@@ -40,7 +40,9 @@ class Vec:
     @classmethod
     def fromarray(cls, array, clone = True):
         self = cls.__new__(cls)
-        self.array = np.array(array) if clone else array
+        if clone:
+            array = np.array(array)
+        self.array = array
         self._fix()
         return self
 
@@ -107,12 +109,12 @@ class Vec:
         res._fix()
         return res
     
-    def __idiv__(self, other):
+    def __itruediv__(self, other):
         self.array /= other
         self._fix()
         return self
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         cls = self.__class__
         res = cls.__new__(cls)
         res.array = self.array / other
