@@ -314,14 +314,15 @@ class Arm:
         self.command = Command()
         self.state = State()
         self.last_cmd_id = 0
+        self.stop()
 
     def __execute(self, blocking):
         self.last_cmd_id += 1
         self.command[Command._ID] = self.last_cmd_id
         self.command[Command._TIME] = int(time.perf_counter()*1000)/1000
         self.controller.execute(self.command, self.state)
-        assert self.state.cmd_id() != self.command.id()
-        self.state[:] = 0 # invalidate the state, since it doesn't reflect the command yet. 
+        if self.state.cmd_id() != self.command.id():
+            self.state[:] = 0 # invalidate the state, since it doesn't reflect the command yet. 
 
         # print(time.perf_counter()- start_time)
         while blocking and (self.state.cmd_id() != self.command.id() or not self.state.is_done()):

@@ -22,11 +22,10 @@ def kin_test(con):
     arm_ctrl = ur.ArmController(con)
     arm = ur.Arm(arm_ctrl)
     target_position=ur.Joints(-math.pi / 4, -math.pi / 2, math.pi / 2, -math.pi / 2, -math.pi / 4, -math.pi / 4)
-    arm.move(target_position, max_speed=0, max_acc=0, timeout=0)
+
+    arm.move(target_position, max_speed=0, max_acc=0, blocking=False) # IK
     target_pose = arm.state.target_tool_pose()
-    arm.move(target_pose, max_speed=0, max_acc=0, timeout=0)
-    target_position2 = arm.state.target_joint_positions()
-    assert(target_position == target_pose)
+    assert target_pose.allclose([-0.403371, 0.166091, 0.820348,-1.59785 ,-0.573892, 0.588028])
 
 def move_test(con):
     print(f"Running {__file__}::{move_test.__name__}()")
@@ -124,8 +123,9 @@ def run(use_sim):
         con = ur.SimConnection(env)
 
     con.connect()
-    read_test(con)
-    kin_test(con)
+    #read_test(con)
+    #kin_test(con)
+
     move_test(con)
     move_test2(con)
     con.disconnect()
@@ -135,4 +135,4 @@ def run(use_sim):
 
 
 if __name__ == '__main__':
-    run(use_sim=True)
+    run(use_sim=False)

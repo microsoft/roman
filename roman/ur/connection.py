@@ -56,7 +56,7 @@ class Connection:
         # now create the control channel and accept the connection from the script that will be running on the robot
         reverse_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         reverse_conn.bind((self.local_ip, self.local_port))
-        reverse_conn.listen(1)
+        reverse_conn.listen(2)
         reverse_conn.settimeout(1)
 
         # test the connection by running a script that attempts to connect back
@@ -94,6 +94,7 @@ class Connection:
 
         # upload the runtime, which will also connect back to us
         script = self.__generate_urscript(main).encode('ascii')
+        reverse_conn.settimeout(10)
         socket_send_retry(rt_socket, script)
         print('Waiting for realtime module to start ... ')
         try:

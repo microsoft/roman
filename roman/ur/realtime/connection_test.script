@@ -4,9 +4,11 @@
 ## Used to validate the connection to robot at startup.
 ################################################################
 
+textmsg("connecting to ", UR_CLIENT_IP)
 connected = False
 while not connected:
-    connected = socket_open(UR_CLIENT_IP, UR_CLIENT_PORT, "ctrl")
+    connected = socket_open(UR_CLIENT_IP, UR_CLIENT_PORT, "connection_test")
 end
+socket_close("connection_test")
 
 

@@ -49,12 +49,12 @@ def ur_get_leading_dim(distances, speeds, max_speed, max_acc, final_speed):
             sign = fabs(dist) / dist
             dist = sign * dist  #fabs
             speed = speeds[i]
-            if speed * sign < 0: # moving in the wrong direction
+            if (speed * sign) < 0: # moving in the wrong direction
                 extra = speed*speed / max_acc # add the (double) distance this joint will travel before it can reverse
                 dist = dist + extra
             #ur:end
             speed_delta = fabs(speed) - final_speed
-            if speed_delta > 0 and (dist <= 0.5 * speed_delta * speed_delta / max_acc):
+            if (speed_delta > 0) and (dist <= (0.5 * speed_delta * speed_delta / max_acc)):
                 sign = -sign # we are close to the final goal and need to decelerate
             #ur:end
             speed = fabs(speed + sign * max_acc * UR_TIME_SLICE)
@@ -170,7 +170,7 @@ def ur_check_contact(force_low_bound, force_high_bound, reset_avg):
 # Note that this is called in a loop on the drive thread by the real robot
 def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_low_bound, force_high_bound, controller, controller_args):
     global ctrl_last_cmd_id
-    is_new_cmd = id != ctrl_last_cmd_id
+    is_new_cmd = (id != ctrl_last_cmd_id)
     # verify we are not running behind
     global ctrl_last_loop_time
     ctrl_last_loop_time = ur_check_loop_delay(ctrl_last_loop_time)
@@ -179,7 +179,7 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
     global ctrl_last_cmd_time
     contact = ur_check_contact(force_low_bound, force_high_bound, is_new_cmd)
     was_contact = ctrl_is_contact
-    ctrl_is_contact = (contact or (ctrl_is_contact and cmd_time == ctrl_last_cmd_time)) and not is_new_cmd
+    ctrl_is_contact = (contact or (ctrl_is_contact and (cmd_time == ctrl_last_cmd_time))) and (not is_new_cmd)
     ctrl_last_cmd_time = cmd_time
     ctrl_last_cmd_id = id
     global ctrl_is_deadman
@@ -210,6 +210,9 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
         if (norm(cmd) < UR_SPEED_NORM_ZERO) and (norm(cmd) <= norm(ctrl_last_cmd)):
             cmd = UR_ZERO
         #ur:end
+    else: # estop
+        cmd = UR_ZERO
+        acc = UR_CONTACT_STOP_ACCELERATION
     # elif kind == UR_CMD_KIND_MOVE_TOOL_POSE:
     #     cmd = ur_speed_tool_linear(target, max_speed, max_acc)
     #     acc = 5 
@@ -219,7 +222,7 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
     #ur:end
 
     global ctrl_is_moving
-    ctrl_is_moving = norm(cmd) > UR_SPEED_NORM_ZERO or norm(get_target_joint_speeds()) > UR_SPEED_NORM_ZERO
+    ctrl_is_moving = (norm(cmd) > UR_SPEED_NORM_ZERO) or (norm(get_target_joint_speeds()) > UR_SPEED_NORM_ZERO)
 
     # update state
     ctrl_last_cmd = cmd
@@ -238,6 +241,7 @@ def ur_get_target_speed(cmd_time, id, kind, target, max_speed, max_acc, force_lo
     else:
         is_deadman = 0
     #ur:end
+
     return [cmd[0],
             cmd[1],
             cmd[2],

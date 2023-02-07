@@ -77,7 +77,7 @@ def start():
         ft_disconnect(ft_thread)
     end
     kill timer_thread
-
+    socket_close("ctrl")
     textmsg("roman exited")
 end
 

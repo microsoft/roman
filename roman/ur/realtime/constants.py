@@ -73,7 +73,7 @@ UR_DEFAULT_TCP = [0, 0, 0.12, 0, 0, 0]
 
 # control
 UR_TIME_SLICE = 1./125 # by default, use the CB2 version. The value gets overriden at runtime on higher UR versions (eseries).
-UR_SPEED_TOLERANCE = 0.005 # rad/s
+UR_SPEED_TOLERANCE = 0.05 # rad/s # for ur5e, this worked better: UR_SPEED_TOLERANCE = 0.005 # rad/s
 UR_SPEED_NORM_ZERO = 0.005 # rad/s
 UR_JOINTS_POSITION_TOLERANCE = 0.001 # rad
 UR_TOOL_POSITION_TOLERANCE = 0.001 # m

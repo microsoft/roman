@@ -9,7 +9,7 @@ st = get_steptime()
 
 connected = False
 while not connected:
-    connected = socket_open(UR_CLIENT_IP, UR_CLIENT_PORT, "ctrl")
+    connected = socket_open(UR_CLIENT_IP, UR_CLIENT_PORT, "version_test")
 end
-
+socket_close("version_test")
 
